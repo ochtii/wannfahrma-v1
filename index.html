@@ -10,7 +10,7 @@
 <body>
     <div id="app">
         <!-- Navigation -->
-        <nav class="bottom-nav">
+        <nav class="navigation">
             <button class="nav-btn" data-page="start">
                 <i class="fas fa-home"></i>
                 <span>Start</span>
@@ -85,10 +85,6 @@
                             <button id="addToFavorites" class="btn btn-secondary" style="display: none;">
                                 <i class="fas fa-star"></i>
                             </button>
-                            <div class="auto-refresh-container">
-                                <input type="checkbox" id="autoRefresh" class="checkbox">
-                                <label for="autoRefresh">Auto-Refresh (30s)</label>
-                            </div>
                         </div>
                     </div>
 
@@ -142,6 +138,17 @@
                             <input type="checkbox" id="darkModeToggle">
                             <span class="slider"></span>
                         </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Auto-Refresh</h4>
+                            <p>Automatische Aktualisierung der Abfahrtszeiten</p>
+                        </div>
+                        <div class="setting-control">
+                            <input type="checkbox" id="autoRefreshToggle" class="checkbox">
+                            <label for="autoRefreshToggle" class="toggle-label">Aktiviert</label>
+                        </div>
                     </div>
 
                     <div class="setting-item">

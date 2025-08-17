@@ -78,7 +78,6 @@ class WienOPNVApp {
         const searchInput = document.getElementById('stationSearch');
         const clearBtn = document.getElementById('clearSearch');
         const refreshBtn = document.getElementById('refreshBtn');
-        const autoRefreshCheckbox = document.getElementById('autoRefresh');
 
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
@@ -98,23 +97,25 @@ class WienOPNVApp {
             });
         }
 
-        if (autoRefreshCheckbox) {
-            autoRefreshCheckbox.addEventListener('change', (e) => {
-                this.toggleAutoRefresh(e.target.checked);
-            });
-        }
-
         // Settings
         const darkModeToggle = document.getElementById('darkModeToggle');
+        const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+        const refreshIntervalSelect = document.getElementById('refreshInterval');
+        
         if (darkModeToggle) {
             darkModeToggle.addEventListener('change', () => {
                 this.toggleDarkMode();
             });
         }
 
-        const refreshInterval = document.getElementById('refreshInterval');
-        if (refreshInterval) {
-            refreshInterval.addEventListener('change', (e) => {
+        if (autoRefreshToggle) {
+            autoRefreshToggle.addEventListener('change', (e) => {
+                this.toggleAutoRefresh(e.target.checked);
+            });
+        }
+
+        if (refreshIntervalSelect) {
+            refreshIntervalSelect.addEventListener('change', (e) => {
                 this.setRefreshInterval(parseInt(e.target.value));
             });
         }
@@ -152,6 +153,11 @@ class WienOPNVApp {
         // Initialize favorites and settings
         this.loadFavorites();
         this.loadSettings();
+        
+        // Start auto-refresh if enabled
+        if (this.settings.autoRefresh) {
+            this.toggleAutoRefresh(true);
+        }
     }
 
     handleStationSearch(query) {
@@ -517,21 +523,6 @@ class WienOPNVApp {
         }
     }
 
-    toggleAutoRefresh(enabled) {
-        if (enabled) {
-            this.autoRefreshInterval = setInterval(() => {
-                this.refreshDepartures();
-            }, 30000); // Alle 30 Sekunden
-            console.log('✓ Auto-Refresh aktiviert (30s)');
-        } else {
-            if (this.autoRefreshInterval) {
-                clearInterval(this.autoRefreshInterval);
-                this.autoRefreshInterval = null;
-            }
-            console.log('○ Auto-Refresh deaktiviert');
-        }
-    }
-
     updateLastRefreshTime() {
         const lastRefreshElement = document.getElementById('lastRefresh');
         if (lastRefreshElement) {
@@ -721,7 +712,8 @@ class WienOPNVApp {
         const saved = localStorage.getItem('wien_opnv_settings');
         this.settings = saved ? JSON.parse(saved) : {
             darkMode: false,
-            refreshInterval: 30
+            refreshInterval: 30,
+            autoRefresh: false
         };
         this.applySettings();
     }
@@ -736,6 +728,18 @@ class WienOPNVApp {
         } else {
             document.body.classList.remove('dark-mode');
         }
+        
+        // Apply auto-refresh setting
+        const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+        if (autoRefreshToggle) {
+            autoRefreshToggle.checked = this.settings.autoRefresh;
+        }
+        
+        // Apply refresh interval setting
+        const refreshIntervalSelect = document.getElementById('refreshInterval');
+        if (refreshIntervalSelect) {
+            refreshIntervalSelect.value = this.settings.refreshInterval.toString();
+        }
     }
 
     toggleDarkMode() {
@@ -744,16 +748,37 @@ class WienOPNVApp {
         this.applySettings();
     }
 
+    toggleAutoRefresh(enabled) {
+        this.settings.autoRefresh = enabled;
+        this.saveSettings();
+        
+        if (enabled) {
+            const intervalMs = this.settings.refreshInterval * 1000;
+            
+            this.autoRefreshInterval = setInterval(() => {
+                this.refreshDepartures();
+            }, intervalMs);
+            console.log(`✓ Auto-Refresh aktiviert (${this.settings.refreshInterval}s)`);
+        } else {
+            if (this.autoRefreshInterval) {
+                clearInterval(this.autoRefreshInterval);
+                this.autoRefreshInterval = null;
+            }
+            console.log('○ Auto-Refresh deaktiviert');
+        }
+    }
+
     setRefreshInterval(seconds) {
         this.settings.refreshInterval = seconds;
         this.saveSettings();
         
         // Restart auto-refresh if it's enabled
-        const autoRefreshCheckbox = document.getElementById('autoRefresh');
-        if (autoRefreshCheckbox && autoRefreshCheckbox.checked) {
+        if (this.settings.autoRefresh) {
             this.toggleAutoRefresh(false);
             this.toggleAutoRefresh(true);
         }
+        
+        console.log(`⏱️ Refresh-Intervall geändert: ${seconds}s`);
     }
 
     // Quick Actions
