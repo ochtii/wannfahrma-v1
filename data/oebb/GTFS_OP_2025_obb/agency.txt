@@ -1,0 +1,4 @@
+agency_id,agency_name,agency_url,agency_timezone,agency_lang,agency_phone
+"01","OEBB Personenverkehr AG Kundenservice","https://www.oebb.at","Europe/Vienna","DE","+43 (0)5 1717"
+"10","Montafonerbahn AG","http://www.montafonerbahn.at/","Europe/Vienna","DE","+43 5556 9000"
+"08","City Air Terminal Betriebsgesellschaft m.b.H.","https://www.cityairporttrain.com/de/home","Europe/Vienna","DE","+43 1 25 25 0"

@@ -1,0 +1,1423 @@
+[
+  {
+    "lineId": "301",
+    "lineText": "U1",
+    "type": "metro",
+    "color": "#dc3545",
+    "realtime": false
+  },
+  {
+    "lineId": "302",
+    "lineText": "U2",
+    "type": "metro",
+    "color": "#dc3545",
+    "realtime": false
+  },
+  {
+    "lineId": "303",
+    "lineText": "U3",
+    "type": "metro",
+    "color": "#dc3545",
+    "realtime": false
+  },
+  {
+    "lineId": "304",
+    "lineText": "U4",
+    "type": "metro",
+    "color": "#dc3545",
+    "realtime": false
+  },
+  {
+    "lineId": "306",
+    "lineText": "U6",
+    "type": "metro",
+    "color": "#dc3545",
+    "realtime": false
+  },
+  {
+    "lineId": "101",
+    "lineText": "1",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "102",
+    "lineText": "2",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "105",
+    "lineText": "5",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "106",
+    "lineText": "6",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "109",
+    "lineText": "9",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "110",
+    "lineText": "10",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "111",
+    "lineText": "11",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "115",
+    "lineText": "E4",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "118",
+    "lineText": "18",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "125",
+    "lineText": "25",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "126",
+    "lineText": "26",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "130",
+    "lineText": "30",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "131",
+    "lineText": "31",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "133",
+    "lineText": "33",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "137",
+    "lineText": "37",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "138",
+    "lineText": "38",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "140",
+    "lineText": "40",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "141",
+    "lineText": "41",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "142",
+    "lineText": "42",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "143",
+    "lineText": "43",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "144",
+    "lineText": "44",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "146",
+    "lineText": "46",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "149",
+    "lineText": "49",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "152",
+    "lineText": "52",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "160",
+    "lineText": "60",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "162",
+    "lineText": "62",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "171",
+    "lineText": "71",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "136",
+    "lineText": "D",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "170",
+    "lineText": "O",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "399",
+    "lineText": "WLB",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "825",
+    "lineText": "25BR",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "844",
+    "lineText": "44BR",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "849",
+    "lineText": "49BR",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "401",
+    "lineText": "1A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "402",
+    "lineText": "2A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "403",
+    "lineText": "3A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "404",
+    "lineText": "4A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "405",
+    "lineText": "5A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "407",
+    "lineText": "7A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "408",
+    "lineText": "8A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "409",
+    "lineText": "9A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "410",
+    "lineText": "10A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "411",
+    "lineText": "11A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "412",
+    "lineText": "12A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "413",
+    "lineText": "13A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "414",
+    "lineText": "14A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "415",
+    "lineText": "15A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "416",
+    "lineText": "16A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "417",
+    "lineText": "17A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "419",
+    "lineText": "19A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "420",
+    "lineText": "20A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "422",
+    "lineText": "22A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "424",
+    "lineText": "24A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "425",
+    "lineText": "25A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "426",
+    "lineText": "26A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "427",
+    "lineText": "27A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "428",
+    "lineText": "28A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "429",
+    "lineText": "29A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "430",
+    "lineText": "30A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "431",
+    "lineText": "31A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "432",
+    "lineText": "32A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "433",
+    "lineText": "33A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "434",
+    "lineText": "34A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "435",
+    "lineText": "35A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "436",
+    "lineText": "36A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "437",
+    "lineText": "37A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "438",
+    "lineText": "38A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "439",
+    "lineText": "39A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "440",
+    "lineText": "40A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "441",
+    "lineText": "41A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "841",
+    "lineText": "41AR",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "442",
+    "lineText": "42A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "443",
+    "lineText": "43A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "444",
+    "lineText": "44A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "445",
+    "lineText": "45A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "446",
+    "lineText": "46A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "447",
+    "lineText": "47A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "448",
+    "lineText": "48A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "449",
+    "lineText": "49A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "450",
+    "lineText": "50A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "451",
+    "lineText": "51A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "452",
+    "lineText": "52A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "453",
+    "lineText": "53A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "454",
+    "lineText": "54A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "456",
+    "lineText": "56A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "457",
+    "lineText": "57A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "458",
+    "lineText": "58A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "459",
+    "lineText": "59A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "460",
+    "lineText": "60A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "461",
+    "lineText": "61A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "462",
+    "lineText": "62A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "463",
+    "lineText": "63A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "464",
+    "lineText": "64A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "465",
+    "lineText": "65A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "466",
+    "lineText": "66A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "467",
+    "lineText": "67A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "468",
+    "lineText": "68A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "469",
+    "lineText": "69A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "470",
+    "lineText": "70A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "471",
+    "lineText": "71A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "472",
+    "lineText": "72A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "473",
+    "lineText": "73A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "474",
+    "lineText": "74A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "476",
+    "lineText": "76A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "477",
+    "lineText": "77A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "479",
+    "lineText": "79A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "480",
+    "lineText": "80A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "482",
+    "lineText": "82A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "484",
+    "lineText": "84A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "485",
+    "lineText": "85A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "486",
+    "lineText": "86A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "886",
+    "lineText": "86AR",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "487",
+    "lineText": "87A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "488",
+    "lineText": "88A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "489",
+    "lineText": "89A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "889",
+    "lineText": "89AR",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "492",
+    "lineText": "92A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "493",
+    "lineText": "93A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "494",
+    "lineText": "94A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "495",
+    "lineText": "95A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "496",
+    "lineText": "96A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "497",
+    "lineText": "97A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "498",
+    "lineText": "98A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "499",
+    "lineText": "99A",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "205",
+    "lineText": "5B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "207",
+    "lineText": "7B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "211",
+    "lineText": "11B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "817",
+    "lineText": "N17R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "220",
+    "lineText": "20B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "824",
+    "lineText": "N24R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "227",
+    "lineText": "27B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "229",
+    "lineText": "29B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "830",
+    "lineText": "N30R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "835",
+    "lineText": "N35R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "236",
+    "lineText": "36B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "836",
+    "lineText": "N36R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "238",
+    "lineText": "38B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "243",
+    "lineText": "43B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "246",
+    "lineText": "46B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "247",
+    "lineText": "47B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "250",
+    "lineText": "50B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "252",
+    "lineText": "52B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "254",
+    "lineText": "54B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "854",
+    "lineText": "N54R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "256",
+    "lineText": "56B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "258",
+    "lineText": "58B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "261",
+    "lineText": "61B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "861",
+    "lineText": "N61R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "264",
+    "lineText": "64B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "864",
+    "lineText": "N64R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "267",
+    "lineText": "67B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "268",
+    "lineText": "68B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "868",
+    "lineText": "N68R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "271",
+    "lineText": "71B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "273",
+    "lineText": "73B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "276",
+    "lineText": "76B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "279",
+    "lineText": "79B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "881",
+    "lineText": "N81R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "884",
+    "lineText": "N84R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "288",
+    "lineText": "88B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "890",
+    "lineText": "N90R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "891",
+    "lineText": "N91R",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "292",
+    "lineText": "92B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "295",
+    "lineText": "95B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "299",
+    "lineText": "99B",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "616",
+    "lineText": "6E",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "619",
+    "lineText": "18E",
+    "type": "tram",
+    "color": "#dc3545",
+    "realtime": true
+  },
+  {
+    "lineId": "701",
+    "lineText": "S1",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "702",
+    "lineText": "S2",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "703",
+    "lineText": "S3",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "704",
+    "lineText": "S4",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "506",
+    "lineText": "N6",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "707",
+    "lineText": "S7",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "508",
+    "lineText": "N8",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "520",
+    "lineText": "N20",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "523",
+    "lineText": "N23",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "525",
+    "lineText": "N25",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "526",
+    "lineText": "N26",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "529",
+    "lineText": "N29",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "531",
+    "lineText": "N31",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "535",
+    "lineText": "N35",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "538",
+    "lineText": "N38",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "541",
+    "lineText": "N41",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "543",
+    "lineText": "N43",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "745",
+    "lineText": "S45",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "546",
+    "lineText": "N46",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "549",
+    "lineText": "N49",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "750",
+    "lineText": "S50",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "560",
+    "lineText": "N60",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "760",
+    "lineText": "S60",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "562",
+    "lineText": "N62",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "565",
+    "lineText": "N65",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "566",
+    "lineText": "N66",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "567",
+    "lineText": "N67",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "571",
+    "lineText": "N71",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "575",
+    "lineText": "N75",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": true
+  },
+  {
+    "lineId": "780",
+    "lineText": "S80",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  },
+  {
+    "lineId": "740",
+    "lineText": "S40",
+    "type": "bus",
+    "color": "#007bff",
+    "realtime": false
+  }
+]
