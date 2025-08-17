@@ -178,6 +178,26 @@
         </main>
     </div>
 
+    <!-- Station Info Modal -->
+    <div id="stationInfoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Live-Daten Status</h3>
+                <button class="modal-close" onclick="window.app.closeStationInfoModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content wird dynamisch geladen -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.app.closeStationInfoModal()">
+                    Schließen
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>

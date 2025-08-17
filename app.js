@@ -217,7 +217,12 @@ class WienOPNVApp {
 
         selectedStationContainer.innerHTML = `
             <div class="selected-station-card">
-                <h3>${this.selectedStation.name}</h3>
+                <div class="station-header">
+                    <h3>${this.selectedStation.name}</h3>
+                    <button class="info-icon" id="stationInfoIcon" onclick="window.app.showStationInfo()" title="Live-Daten Status anzeigen" style="display: none;">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
                 <div class="station-details">
                     <span class="detail-item">RBL-Nummern: ${this.currentRBLs.join(', ')}</span>
                     <span class="detail-item">Anzahl: ${this.currentRBLs.length}</span>
@@ -237,6 +242,162 @@ class WienOPNVApp {
         if (searchResults) searchResults.innerHTML = '';
     }
 
+    showStationInfo() {
+        if (!this.rblStats) {
+            alert('Keine Live-Daten Statistiken verfügbar. Bitte laden Sie zuerst Abfahrten.');
+            return;
+        }
+
+        this.openStationInfoModal();
+    }
+
+    openStationInfoModal() {
+        const modal = document.getElementById('stationInfoModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        
+        modalTitle.textContent = `Live-Daten Status: ${this.selectedStation.name}`;
+        
+        const stats = this.rblStats;
+        let content = '';
+        
+        // Übersichts-Header
+        content += `
+            <div class="modal-section">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                    <div style="text-align: center; padding: 16px; background: var(--success-color); color: white; border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: bold;">${stats.successful}</div>
+                        <div style="font-size: 0.9rem;">Erfolgreich</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px; background: var(--danger-color); color: white; border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: bold;">${stats.failed.length}</div>
+                        <div style="font-size: 0.9rem;">Fehler</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px; background: var(--warning-color); color: white; border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: bold;">${stats.invalid.length}</div>
+                        <div style="font-size: 0.9rem;">Ungültig</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // RBL Details
+        content += '<div class="modal-section">';
+        content += '<h4><i class="fas fa-list"></i> RBL Details</h4>';
+        
+        this.currentRBLs.forEach(rbl => {
+            const details = stats.rblDetails[rbl] || {
+                status: 'unknown',
+                lines: [],
+                expectedLines: ['Unbekannt'],
+                departureCount: 0
+            };
+            
+            let statusClass = 'error';
+            let statusIcon = 'fas fa-times-circle';
+            let statusText = 'Fehler';
+            let linesText = '';
+            
+            if (details.status === 'success') {
+                statusClass = 'success';
+                statusIcon = 'fas fa-check-circle';
+                statusText = `${details.departureCount} Abfahrten`;
+                linesText = details.lines.join(', ');
+            } else if (details.status === 'invalid') {
+                statusClass = 'warning';
+                statusIcon = 'fas fa-exclamation-triangle';
+                statusText = 'Ungültig';
+                linesText = (details.expectedLines || ['Unbekannt']).join(', ') + ' (erwartet)';
+            } else {
+                // Fehler oder no_data
+                linesText = (details.expectedLines || ['Unbekannt']).join(', ') + ' (erwartet)';
+            }
+            
+            content += `
+                <div class="rbl-item">
+                    <div class="rbl-info">
+                        <div class="rbl-number">RBL ${rbl}</div>
+                        <div class="rbl-lines">${linesText}</div>
+                    </div>
+                    <div class="rbl-status ${statusClass}">
+                        <i class="${statusIcon} status-icon"></i>
+                        <span>${statusText}</span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        content += '</div>';
+        
+        modalBody.innerHTML = content;
+        modal.classList.add('show');
+        
+        // ESC-Taste Listener
+        document.addEventListener('keydown', this.handleEscapeKey.bind(this));
+        
+        // Click außerhalb Modal schließen
+        modal.addEventListener('click', this.handleModalBackdropClick.bind(this));
+    }
+
+    closeStationInfoModal() {
+        const modal = document.getElementById('stationInfoModal');
+        modal.classList.remove('show');
+        document.removeEventListener('keydown', this.handleEscapeKey.bind(this));
+        modal.removeEventListener('click', this.handleModalBackdropClick.bind(this));
+    }
+
+    handleEscapeKey(event) {
+        if (event.key === 'Escape') {
+            this.closeStationInfoModal();
+        }
+    }
+
+    handleModalBackdropClick(event) {
+        const modalContent = event.target.closest('.modal-content');
+        if (!modalContent) {
+            this.closeStationInfoModal();
+        }
+    }
+
+    showInfoIcon() {
+        const infoIcon = document.getElementById('stationInfoIcon');
+        if (infoIcon && this.rblStats) {
+            infoIcon.style.display = 'flex';
+            
+            // Icon-Farbe basierend auf Status setzen
+            const stats = this.rblStats;
+            if (stats.successful === stats.total) {
+                infoIcon.style.color = 'var(--success-color)'; // Grün wenn alles OK
+            } else if (stats.successful > 0) {
+                infoIcon.style.color = 'var(--warning-color)'; // Orange wenn teilweise
+            } else {
+                infoIcon.style.color = 'var(--danger-color)'; // Rot wenn nichts funktioniert
+            }
+        }
+    }
+
+    getExpectedLinesForRBL(rbl) {
+        // Einfache Heuristik basierend auf Station-Namen und bekannten Mustern
+        if (this.selectedStation) {
+            const stationName = this.selectedStation.name.toLowerCase();
+            
+            // U-Bahn Stationen (häufige Namen)
+            if (stationName.includes('karlsplatz')) return ['U1', 'U2', 'U4'];
+            if (stationName.includes('stephansplatz')) return ['U1', 'U3'];
+            if (stationName.includes('westbahnhof')) return ['U3', 'U6'];
+            if (stationName.includes('schwedenplatz')) return ['U1', 'U4'];
+            if (stationName.includes('schottenring')) return ['U2', 'U4'];
+            
+            // Allgemeine Muster für Linientypen
+            if (stationName.includes('u-') || stationName.includes('metro')) {
+                return ['U-Bahn']; // Generisch für U-Bahn Stationen
+            }
+        }
+        
+        // Fallback: Keine spezifischen Linien bekannt
+        return ['Unbekannt'];
+    }
+
     async loadDepartures() {
         if (this.currentRBLs.length === 0) return;
 
@@ -254,6 +415,7 @@ class WienOPNVApp {
         } finally {
             this.hideLoading();
             this.updateLastRefreshTime();
+            this.showInfoIcon();
         }
     }
 
@@ -263,6 +425,25 @@ class WienOPNVApp {
         let errorMessage = '';
         let successfulRBLs = 0;
         let invalidRBLs = [];
+        
+        // Speichere Statistiken für Info-Icon
+        this.rblStats = {
+            total: rbls.length,
+            successful: 0,
+            failed: [],
+            invalid: [],
+            rblDetails: {} // Speichere RBL -> Linien Mapping
+        };
+        
+        // Initialisiere RBL-Details mit bekannten Informationen aus der Station
+        rbls.forEach(rbl => {
+            this.rblStats.rblDetails[rbl] = {
+                status: 'loading',
+                lines: [], // Wird bei erfolgreichen Anfragen gefüllt
+                expectedLines: this.getExpectedLinesForRBL(rbl), // Aus Station-Daten
+                departureCount: 0
+            };
+        });
         
         // Hole Daten sequenziell mit kleiner Pause zwischen Anfragen
         for (let i = 0; i < rbls.length; i++) {
@@ -275,6 +456,22 @@ class WienOPNVApp {
                 if (departures && departures.length > 0) {
                     allDepartures.push(...departures);
                     successfulRBLs++;
+                    this.rblStats.successful++;
+                    
+                    // Sammle Linien-Informationen für dieses RBL
+                    const lines = [...new Set(departures.map(dep => dep.line))].sort();
+                    this.rblStats.rblDetails[rbl] = {
+                        status: 'success',
+                        lines: lines,
+                        departureCount: departures.length
+                    };
+                } else {
+                    this.rblStats.failed.push(rbl);
+                    this.rblStats.rblDetails[rbl] = {
+                        status: 'no_data',
+                        lines: [],
+                        departureCount: 0
+                    };
                 }
                 
                 // Kleine Pause zwischen Anfragen um Rate Limit zu vermeiden
@@ -288,8 +485,22 @@ class WienOPNVApp {
                 // Unterscheide zwischen verschiedenen Fehlertypen
                 if (error.message.includes('Zugriff verweigert') || error.message.includes('403')) {
                     invalidRBLs.push(rbls[i]);
+                    this.rblStats.invalid.push(rbls[i]);
+                    this.rblStats.rblDetails[rbls[i]] = {
+                        status: 'invalid',
+                        lines: [],
+                        departureCount: 0,
+                        error: 'RBL ungültig oder veraltet'
+                    };
                     console.log(`⚠️ RBL ${rbls[i]} ist möglicherweise veraltet oder nicht verfügbar`);
                 } else {
+                    this.rblStats.failed.push(rbls[i]);
+                    this.rblStats.rblDetails[rbls[i]] = {
+                        status: 'error',
+                        lines: [],
+                        departureCount: 0,
+                        error: error.message
+                    };
                     hasErrors = true;
                     if (!errorMessage) {
                         errorMessage = error.message || 'Unbekannter Fehler';
@@ -577,7 +788,7 @@ class WienOPNVApp {
                                 <span class="scheduled-time">Geplant: ${dep.scheduledTime}</span>
                                 ${dep.realTime ? `
                                     <span class="real-time ${timeColorClass}">
-                                        Tatsächlich: ${dep.realTime}
+                                        Ankunft: ${dep.realTime}
                                         ${delayText ? `<span class="delay-info ${delayClass}">${delayText}</span>` : ''}
                                         ${dep.realtime ? '<span class="realtime-indicator"></span>' : ''}
                                     </span>
