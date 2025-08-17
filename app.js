@@ -795,6 +795,7 @@ class WienOPNVApp {
                                 ` : ''}
                             </div>
                         </div>
+                        <div class="countdown-badge ${dep.minutesUntil <= 2 ? 'urgent' : ''}">${this.formatCountdown(dep.minutesUntil)}</div>
                     </div>
                     <div class="departure-footer">
                         ${dep.platform ? `<span class="platform">Steig ${dep.platform}</span>` : ''}

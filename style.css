@@ -544,7 +544,7 @@ body {
 .departure-main {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     gap: 15px;
 }
 
@@ -552,7 +552,40 @@ body {
     font-weight: 500;
     color: var(--text-primary);
     flex: 1;
-    margin-top: 1px;
+    min-width: 0;
+}
+
+.countdown-badge {
+    background: var(--success-color);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    min-width: 60px;
+    text-align: center;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+}
+
+.countdown-badge.urgent {
+    background: var(--danger-color);
+    animation: pulse 1.5s infinite;
+    transform: scale(1.05);
+}
+
+.countdown-info {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-top: 2px;
+}
+
+.countdown-info.urgent {
+    color: var(--danger-color);
+    font-weight: 600;
+    animation: pulse 1s infinite;
 }
 
 .time-info {
@@ -561,6 +594,7 @@ body {
     align-items: flex-end;
     gap: 1px;
     min-width: 140px;
+    flex-shrink: 0;
 }
 
 .time-display {
@@ -787,7 +821,24 @@ body {
     .departure-main {
         flex-direction: column;
         align-items: stretch;
-        gap: 10px;
+        gap: 8px;
+    }
+    
+    .time-info {
+        align-items: flex-start;
+        text-align: left;
+        min-width: auto;
+    }
+    
+    .time-display {
+        text-align: left;
+    }
+    
+    .countdown-badge {
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        min-width: 50px;
+        align-self: center;
     }
     
     .time-info {
