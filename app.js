@@ -420,12 +420,28 @@ class WienOPNVApp {
 
                             // Geplante Zeit formatieren
                             let scheduledTime = 'N/A';
+                            let realTime = null;
+                            let delay = 0;
+                            
                             if (departure.departureTime && departure.departureTime.timePlanned) {
                                 try {
-                                    scheduledTime = new Date(departure.departureTime.timePlanned).toLocaleTimeString('de-AT', {
+                                    const planned = new Date(departure.departureTime.timePlanned);
+                                    scheduledTime = planned.toLocaleTimeString('de-AT', {
                                         hour: '2-digit',
                                         minute: '2-digit'
                                     });
+                                    
+                                    // Echtzeitdaten verarbeiten
+                                    if (departure.departureTime.timeReal) {
+                                        const real = new Date(departure.departureTime.timeReal);
+                                        realTime = real.toLocaleTimeString('de-AT', {
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                        
+                                        // Verspätung in Minuten berechnen
+                                        delay = Math.round((real - planned) / (1000 * 60));
+                                    }
                                 } catch (e) {
                                     console.warn('Fehler beim Parsen der Zeit:', e);
                                 }
@@ -437,6 +453,8 @@ class WienOPNVApp {
                                 direction: line.towards || departure.destination || 'Unbekannte Richtung',
                                 minutesUntil: minutesUntil,
                                 scheduledTime: scheduledTime,
+                                realTime: realTime,
+                                delay: delay,
                                 realtime: departure.departureTime && departure.departureTime.timeReal !== undefined,
                                 type: type,
                                 color: color,
@@ -522,20 +540,58 @@ class WienOPNVApp {
     renderDepartureItems(departures, visibility, lineId = '') {
         const visibilityClass = visibility === 'hidden' ? `hidden-departures ${lineId}-hidden` : '';
         
-        return departures.map(dep => `
-            <div class="departure-item ${visibilityClass}">
-                <div class="departure-main">
-                    <div class="direction">${dep.direction}</div>
-                    <div class="time-info">
-                        <span class="countdown ${dep.minutesUntil <= 2 ? 'urgent' : ''}">${this.formatCountdown(dep.minutesUntil)}</span>
-                        <span class="scheduled-time">${dep.scheduledTime}</span>
-                        ${dep.realtime ? '<span class="realtime-indicator">●</span>' : ''}
+        return departures.map(dep => {
+            // Verspätungstext formatieren
+            let delayText = '';
+            let delayClass = '';
+            
+            if (dep.realtime && dep.delay !== 0) {
+                if (dep.delay > 0) {
+                    delayText = ` (+${dep.delay})`;
+                    delayClass = 'delay-late';
+                } else {
+                    delayText = ` (${dep.delay})`;
+                    delayClass = 'delay-early';
+                }
+            } else if (dep.realtime) {
+                delayText = ' (pünktlich)';
+                delayClass = 'delay-ontime';
+            }
+            
+            // Zeitfarbe bestimmen
+            let timeColorClass = '';
+            if (dep.realtime) {
+                if (dep.delay <= 0) {
+                    timeColorClass = 'time-good'; // grün für pünktlich/früh
+                } else {
+                    timeColorClass = 'time-late'; // rot für verspätet
+                }
+            }
+            
+            return `
+                <div class="departure-item ${visibilityClass}">
+                    <div class="departure-main">
+                        <div class="direction">${dep.direction}</div>
+                        <div class="time-info">
+                            <div class="time-display">
+                                <span class="scheduled-time">Geplant: ${dep.scheduledTime}</span>
+                                ${dep.realTime ? `
+                                    <span class="real-time ${timeColorClass}">
+                                        Tatsächlich: ${dep.realTime}
+                                        ${delayText ? `<span class="delay-info ${delayClass}">${delayText}</span>` : ''}
+                                        ${dep.realtime ? '<span class="realtime-indicator"></span>' : ''}
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="departure-footer">
+                        ${dep.platform ? `<span class="platform">Steig ${dep.platform}</span>` : ''}
+                        <span class="rbl-info">RBL: ${dep.rbl}</span>
                     </div>
                 </div>
-                ${dep.platform ? `<div class="platform">Steig ${dep.platform}</div>` : ''}
-                <div class="rbl-info">RBL: ${dep.rbl}</div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     showMoreDepartures(lineId, buttonElement) {

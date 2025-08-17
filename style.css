@@ -501,7 +501,7 @@ body {
 }
 
 .departure-item {
-    padding: 15px 20px;
+    padding: 8px 20px;
     border-bottom: 1px solid var(--border-color);
     transition: var(--transition);
 }
@@ -517,20 +517,72 @@ body {
 .departure-main {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
+    align-items: flex-start;
+    gap: 15px;
 }
 
 .direction {
     font-weight: 500;
     color: var(--text-primary);
     flex: 1;
+    margin-top: 1px;
 }
 
 .time-info {
     display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+    min-width: 140px;
+}
+
+.time-display {
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
+    text-align: right;
+}
+
+.scheduled-time {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.1;
+}
+
+.real-time {
+    font-weight: 600;
+    font-size: 0.9rem;
+    line-height: 1.1;
+    display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+.real-time.time-good {
+    color: var(--success-color);
+}
+
+.real-time.time-late {
+    color: var(--danger-color);
+}
+
+.delay-info {
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.1;
+}
+
+.delay-info.delay-ontime {
+    color: var(--success-color);
+}
+
+.delay-info.delay-early {
+    color: var(--success-color);
+}
+
+.delay-info.delay-late {
+    color: var(--danger-color);
 }
 
 .countdown {
@@ -555,37 +607,44 @@ body {
     100% { opacity: 1; }
 }
 
-.scheduled-time {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
 .realtime-indicator {
-    color: var(--success-color);
-    font-size: 1.2rem;
-    animation: blink 2s infinite;
+    width: 8px;
+    height: 8px;
+    background: var(--success-color);
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse-dot 2s infinite;
+    margin-left: 4px;
 }
 
-@keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0.3; }
+@keyframes pulse-dot {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.2); }
+    100% { opacity: 1; transform: scale(1); }
 }
 
 .platform {
     display: inline-block;
     background: var(--bg-tertiary);
     color: var(--text-primary);
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.8rem;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.75rem;
     font-weight: 500;
-    margin-right: 10px;
+    margin-right: 8px;
     border: 1px solid var(--border-color);
 }
 
 .rbl-info {
     color: var(--text-secondary);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+}
+
+.departure-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
 }
 
 /* Show More Functionality */
@@ -705,7 +764,9 @@ body {
     }
     
     .time-info {
-        justify-content: space-between;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
     }
     
     .station-details {
