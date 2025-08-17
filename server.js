@@ -6,6 +6,13 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Rate limiting and caching
+const cache = new Map();
+const rateLimit = new Map();
+const RATE_LIMIT_WINDOW = 60000; // 1 Minute
+const MAX_REQUESTS_PER_WINDOW = 50; // Erhöht von 10 auf 50
+const CACHE_TTL = 60000; // Verlängert von 30s auf 60s
+
 // Enable CORS for all routes
 app.use(cors());
 
@@ -15,27 +22,179 @@ app.use(express.json());
 // Serve static files from the current directory
 app.use(express.static(path.join(__dirname)));
 
+// Rate limiting helper
+function isRateLimited(ip) {
+    const now = Date.now();
+    const windowStart = now - RATE_LIMIT_WINDOW;
+    
+    if (!rateLimit.has(ip)) {
+        rateLimit.set(ip, []);
+    }
+    
+    const requests = rateLimit.get(ip).filter(time => time > windowStart);
+    rateLimit.set(ip, requests);
+    
+    if (requests.length >= MAX_REQUESTS_PER_WINDOW) {
+        return true;
+    }
+    
+    requests.push(now);
+    return false;
+}
+
+// Cache helper
+function getCachedData(key) {
+    const cached = cache.get(key);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.data;
+    }
+    return null;
+}
+
+function setCachedData(key, data) {
+    cache.set(key, {
+        data: data,
+        timestamp: Date.now()
+    });
+}
+
 // API proxy for Wiener Linien
 app.get('/api/departures/:rbl', async (req, res) => {
     try {
         const rbl = req.params.rbl;
-        const apiUrl = `https://www.wienerlinien.at/ogd_realtime/monitor?rbl=${rbl}&sender=your-app-key`;
+        const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+        const cacheKey = `departures_${rbl}`;
         
-        console.log(`Fetching departures for RBL ${rbl}...`);
+        // Validierung der RBL
+        if (!rbl || isNaN(parseFloat(rbl))) {
+            return res.status(400).json({
+                error: 'Ungültige RBL-Nummer',
+                message: 'RBL muss eine gültige Zahl sein',
+                type: 'VALIDATION_ERROR'
+            });
+        }
         
+        // Check cache first
+        const cachedData = getCachedData(cacheKey);
+        if (cachedData) {
+            console.log(`✓ Cache hit for RBL ${rbl}`);
+            return res.json(cachedData);
+        }
+        
+        // Check rate limit
+        if (isRateLimited(clientIP)) {
+            console.log(`⚠️ Rate limit exceeded for IP ${clientIP}`);
+            return res.status(429).json({ 
+                error: 'Rate Limit erreicht',
+                message: 'Zu viele Anfragen. Bitte warten Sie einen Moment.',
+                type: 'RATE_LIMIT_ERROR',
+                retryAfter: 60 
+            });
+        }
+        
+        console.log(`🚇 Lade Abfahrten für RBL: ${rbl}`);
+        
+        // Wiener Linien OGD API
+        const apiUrl = `https://www.wienerlinien.at/ogd_realtime/monitor`;
         const response = await axios.get(apiUrl, {
-            timeout: 10000,
+            params: {
+                rbl: rbl,
+                sender: process.env.WL_API_KEY || 'wann-fahrma-oida'
+            },
+            timeout: 15000,
             headers: {
-                'User-Agent': 'WannFahrmaOIDA/1.0.0'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'application/json, text/plain, */*',
+                'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
+                'Referer': 'https://www.wienerlinien.at/'
             }
         });
+
+        // API-spezifische Fehlerbehandlung
+        if (response.data && response.data.message) {
+            const { messageCode, value } = response.data.message;
+            
+            // Rate Limit erreicht (Code 316)
+            if (messageCode === 316) {
+                return res.status(429).json({
+                    error: 'Rate Limit erreicht',
+                    message: 'Zu viele Anfragen an die Wiener Linien API. Bitte versuchen Sie es später erneut.',
+                    type: 'API_RATE_LIMIT',
+                    retryAfter: 60
+                });
+            }
+            
+            // Andere API-Fehler
+            if (messageCode !== 1) {
+                return res.status(400).json({
+                    error: 'API-Fehler',
+                    message: value || 'Unbekannter API-Fehler',
+                    type: 'API_ERROR',
+                    code: messageCode
+                });
+            }
+        }
+        
+        // Cache successful response
+        setCachedData(cacheKey, response.data);
+        console.log(`✅ Abfahrten geladen und gecacht für RBL: ${rbl}`);
         
         res.json(response.data);
+        
     } catch (error) {
-        console.error(`Error fetching data for RBL ${req.params.rbl}:`, error.message);
-        res.status(500).json({ 
-            error: 'Failed to fetch departure data',
-            message: error.message 
+        console.error(`❌ Fehler beim Laden der Abfahrten für RBL ${req.params.rbl}:`, error.message);
+        
+        // Verschiedene Fehlertypen unterscheiden
+        if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+            return res.status(503).json({
+                error: 'Service nicht verfügbar',
+                message: 'Die Wiener Linien API ist momentan nicht erreichbar. Bitte versuchen Sie es später erneut.',
+                type: 'CONNECTION_ERROR'
+            });
+        }
+        
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            return res.status(504).json({
+                error: 'Zeitüberschreitung',
+                message: 'Die Anfrage hat zu lange gedauert. Bitte versuchen Sie es erneut.',
+                type: 'TIMEOUT_ERROR'
+            });
+        }
+        
+        // HTTP-Fehler von der API
+        if (error.response) {
+            const status = error.response.status;
+            const apiData = error.response.data;
+            
+            if (status === 403) {
+                return res.status(403).json({
+                    error: 'Zugriff verweigert',
+                    message: 'Keine Berechtigung für die Wiener Linien API.',
+                    type: 'ACCESS_DENIED'
+                });
+            }
+            
+            if (status === 404) {
+                return res.status(404).json({
+                    error: 'RBL nicht gefunden',
+                    message: 'Die angegebene RBL-Nummer existiert nicht.',
+                    type: 'NOT_FOUND'
+                });
+            }
+            
+            return res.status(status).json({
+                error: 'API-Fehler',
+                message: `Die Wiener Linien API hat einen Fehler zurückgegeben (${status}).`,
+                type: 'API_ERROR',
+                details: apiData?.message?.value || error.message
+            });
+        }
+        
+        // Allgemeiner Fehler
+        res.status(500).json({
+            error: 'Serverfehler',
+            message: 'Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.',
+            type: 'UNKNOWN_ERROR'
         });
     }
 });

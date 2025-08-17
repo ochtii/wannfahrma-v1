@@ -242,6 +242,7 @@ class WienOPNVApp {
 
         this.showLoading();
         this.hideError();
+        this.updateLoadingProgress('Lade Abfahrten...', 0, this.currentRBLs.length);
 
         try {
             // Versuche echte Live-Daten von der Wiener Linien API zu holen
@@ -258,25 +259,48 @@ class WienOPNVApp {
 
     async fetchLiveDepartures(rbls) {
         const allDepartures = [];
+        let hasErrors = false;
+        let errorMessage = '';
         
-        // Hole Daten für alle RBL-Nummern parallel (max 5 gleichzeitig)
-        const batchSize = 5;
-        for (let i = 0; i < rbls.length; i += batchSize) {
-            const batch = rbls.slice(i, i + batchSize);
-            const promises = batch.map(rbl => this.fetchDeparturesForRBL(rbl));
-            const results = await Promise.allSettled(promises);
-            
-            results.forEach((result, index) => {
-                if (result.status === 'fulfilled' && result.value) {
-                    allDepartures.push(...result.value);
-                } else {
-                    console.warn(`Fehler bei RBL ${batch[index]}:`, result.reason);
+        // Hole Daten sequenziell mit kleiner Pause zwischen Anfragen
+        for (let i = 0; i < rbls.length; i++) {
+            try {
+                const rbl = rbls[i];
+                this.updateLoadingProgress(`Lade RBL ${rbl}...`, i + 1, rbls.length);
+                
+                const departures = await this.fetchDeparturesForRBL(rbl);
+                
+                if (departures && departures.length > 0) {
+                    allDepartures.push(...departures);
                 }
-            });
+                
+                // Kleine Pause zwischen Anfragen um Rate Limit zu vermeiden
+                if (i < rbls.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+            } catch (error) {
+                hasErrors = true;
+                if (!errorMessage) {
+                    errorMessage = error.message || 'Unbekannter Fehler';
+                }
+                console.warn(`Fehler bei RBL ${rbls[i]}:`, error.message);
+                
+                // Bei Rate Limit: Längere Pause
+                if (error.message.includes('Rate Limit') || error.message.includes('429')) {
+                    console.log('⏱️ Rate Limit erreicht - warte 2 Sekunden...');
+                    this.updateLoadingProgress('Rate Limit - warte...', i + 1, rbls.length);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            }
         }
 
         if (allDepartures.length === 0) {
-            throw new Error('Keine Live-Daten verfügbar für diese Station');
+            if (hasErrors) {
+                throw new Error(errorMessage || 'API nicht verfügbar');
+            } else {
+                throw new Error('Keine Abfahrten gefunden für diese Station');
+            }
         }
 
         // Sortiere nach Zeit und limitiere auf 20 Abfahrten
@@ -300,13 +324,26 @@ class WienOPNVApp {
             });
 
             if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                
+                if (errorData) {
+                    // Spezielle Behandlung für Rate Limit
+                    if (response.status === 429) {
+                        const error = new Error(`Rate Limit erreicht: ${errorData.message}`);
+                        error.status = 429;
+                        error.retryAfter = errorData.retryAfter || 60;
+                        throw error;
+                    }
+                    throw new Error(`${errorData.error}: ${errorData.message}`);
+                }
+                
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
             
             if (data.error) {
-                throw new Error(data.message);
+                throw new Error(`${data.error}: ${data.message}`);
             }
             
             console.log(`✓ Live-Daten für RBL ${rbl} erhalten`);
@@ -315,12 +352,10 @@ class WienOPNVApp {
         } catch (error) {
             console.error(`❌ API-Fehler für RBL ${rbl}:`, error.message);
             
-            // Bei API-Fehlern: Zeige Hinweis und verwende Fallback
-            if (error.message.includes('fetch')) {
-                console.warn('💡 Tipp: Starten Sie den API-Proxy mit: python api_proxy.py');
-            }
+            // Benutzerfreundliche Fehlermeldung anzeigen
+            this.showApiError(error.message);
             
-            return this.generateFallbackData(rbl);
+            return null;
         }
     }
 
@@ -432,7 +467,7 @@ class WienOPNVApp {
             return `
                 <div class="departure-line-group">
                     <div class="line-header">
-                        <span class="line-badge line-${firstDeparture.type}" style="background-color: ${firstDeparture.color}">
+                        <span class="line-badge line-${firstDeparture.type} ${this.getLineBadgeClass(firstDeparture.line, firstDeparture.type)}">
                             ${firstDeparture.line}
                         </span>
                         <span class="line-type">${this.getLineTypeText(firstDeparture.type)}</span>
@@ -488,6 +523,14 @@ class WienOPNVApp {
         return types[type] || 'ÖPNV';
     }
 
+    getLineBadgeClass(line, type) {
+        // Für U-Bahn: spezifische Linienklasse hinzufügen
+        if (type === 'metro') {
+            return `line-${line}`;
+        }
+        return '';
+    }
+
     formatCountdown(minutes) {
         if (minutes === 0) return 'Jetzt';
         if (minutes === 1) return '1 Min';
@@ -497,6 +540,20 @@ class WienOPNVApp {
     showLoading() {
         const loadingElement = document.getElementById('loading');
         if (loadingElement) loadingElement.style.display = 'block';
+    }
+
+    updateLoadingProgress(message, current, total) {
+        const loadingElement = document.getElementById('loading');
+        if (loadingElement) {
+            const percentage = Math.round((current / total) * 100);
+            loadingElement.innerHTML = `
+                <i class="fas fa-subway fa-spin"></i>
+                <div style="margin-top: 10px;">${message}</div>
+                <div style="margin-top: 5px; font-size: 0.9rem; color: var(--text-secondary);">
+                    ${current}/${total} (${percentage}%)
+                </div>
+            `;
+        }
     }
 
     hideLoading() {
@@ -510,6 +567,32 @@ class WienOPNVApp {
             errorElement.textContent = message;
             errorElement.style.display = 'block';
         }
+    }
+
+    showApiError(message) {
+        let userMessage = '';
+        
+        // Benutzerfreundliche Fehlermeldungen
+        if (message.includes('Rate Limit erreicht') || message.includes('Rate limit')) {
+            userMessage = '⚠️ Zu viele Anfragen. Bitte warten Sie einen Moment und versuchen Sie es erneut.';
+        } else if (message.includes('Service nicht verfügbar') || message.includes('nicht erreichbar')) {
+            userMessage = '🔌 Die Wiener Linien API ist momentan nicht verfügbar. Bitte versuchen Sie es später erneut.';
+        } else if (message.includes('Zeitüberschreitung') || message.includes('timeout')) {
+            userMessage = '⏱️ Die Anfrage hat zu lange gedauert. Bitte versuchen Sie es erneut.';
+        } else if (message.includes('Zugriff verweigert')) {
+            userMessage = '🚫 Zugriff auf die API wurde verweigert.';
+        } else if (message.includes('nicht gefunden')) {
+            userMessage = '🔍 Die angegebene Station wurde nicht gefunden.';
+        } else {
+            userMessage = `❌ ${message}`;
+        }
+        
+        this.showError(userMessage);
+        
+        // Automatisch nach 10 Sekunden ausblenden
+        setTimeout(() => {
+            this.hideError();
+        }, 10000);
     }
 
     hideError() {

@@ -442,26 +442,52 @@ body {
 }
 
 .line-badge {
-    background: var(--primary-color);
     color: white;
     padding: 8px 12px;
-    border-radius: var(--border-radius);
     font-weight: bold;
     font-size: 1rem;
     min-width: 50px;
     text-align: center;
+    border: 2px solid transparent;
 }
 
+/* U-Bahn Badges - Rund mit echten Farben */
 .line-badge.line-metro {
-    background: var(--primary-color);
+    border-radius: 50%;
+    background: var(--primary-color); /* Fallback für unbekannte U-Bahn-Linien */
 }
 
+/* Echte Wiener U-Bahn Farben */
+.line-badge.line-metro.line-U1 {
+    background: #E20A16;
+}
+
+.line-badge.line-metro.line-U2 {
+    background: #A05EB0;
+}
+
+.line-badge.line-metro.line-U3 {
+    background: #FF7F00;
+}
+
+.line-badge.line-metro.line-U4 {
+    background: #109240;
+}
+
+.line-badge.line-metro.line-U6 {
+    background: #B5622D;
+}
+
+/* Straßenbahn Badges - Rund */
 .line-badge.line-tram {
     background: #fd7e14;
+    border-radius: 50%;
 }
 
+/* Bus Badges - Eckig */
 .line-badge.line-bus {
     background: var(--secondary-color);
+    border-radius: 4px;
 }
 
 .line-type {
