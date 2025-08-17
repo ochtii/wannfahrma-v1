@@ -239,95 +239,136 @@
 
     <!-- Dashboard Card Configuration Modal -->
     <div id="cardConfigModal" class="modal">
-        <div class="modal-content large">
+        <div class="modal-content extra-large">
             <div class="modal-header">
-                <h3 id="cardConfigTitle">Neue Dashboard-Karte</h3>
+                <h3 id="cardConfigTitle">
+                    <i class="fas fa-plus-circle"></i>
+                    Neue Dashboard-Karte
+                </h3>
                 <button class="modal-close" onclick="app.closeCardConfig()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
-                <form id="cardConfigForm">
-                    <!-- Station Selection -->
-                    <div class="form-group">
-                        <label for="cardStation">Station auswählen</label>
-                        <div class="station-search-container">
-                            <input type="text" id="cardStation" class="form-control" placeholder="Station suchen..." autocomplete="off">
-                            <div id="cardStationResults" class="station-results"></div>
-                        </div>
-                        <input type="hidden" id="cardStationData">
+                <div class="card-config-container">
+                    <!-- Configuration Panel -->
+                    <div class="config-panel-full">
+                        <form id="cardConfigForm">
+                            <!-- Station Selection -->
+                            <div class="config-section">
+                                <h4><i class="fas fa-map-marker-alt"></i> Station auswählen</h4>
+                                <div class="form-group">
+                                    <div class="station-search-container">
+                                        <input type="text" id="cardStation" class="form-control" placeholder="Station suchen..." autocomplete="off">
+                                        <div id="cardStationResults" class="station-results"></div>
+                                    </div>
+                                    <input type="hidden" id="cardStationData">
+                                </div>
+                            </div>
+
+                            <!-- Card Settings -->
+                            <div class="config-section">
+                                <h4><i class="fas fa-cog"></i> Karten-Einstellungen</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="cardTitle">Karten-Titel</label>
+                                        <input type="text" id="cardTitle" class="form-control" placeholder="Meine Station">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cardSize">Kartengröße</label>
+                                        <select id="cardSize" class="form-control">
+                                            <option value="small">Klein (1x1)</option>
+                                            <option value="medium" selected>Mittel (2x1)</option>
+                                            <option value="large">Groß (2x2)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cardRefreshInterval">Auto-Refresh</label>
+                                        <select id="cardRefreshInterval" class="form-control">
+                                            <option value="30" selected>30 Sekunden</option>
+                                            <option value="60">1 Minute</option>
+                                            <option value="120">2 Minuten</option>
+                                            <option value="0">Aus</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Departure Lines Configuration -->
+                            <div class="config-section" id="departuresConfig" style="display: none;">
+                                <div class="section-header">
+                                    <h4><i class="fas fa-route"></i> Abfahrtszeilen konfigurieren</h4>
+                                    <button type="button" class="btn btn-sm btn-primary" id="addDepartureLineBtn">
+                                        <i class="fas fa-plus"></i> Zeile hinzufügen
+                                    </button>
+                                </div>
+                                
+                                <div class="departure-lines-list" id="departureLinesList">
+                                    <!-- Departure lines will be added here dynamically -->
+                                </div>
+                                
+                                <div class="departure-lines-empty" id="departureLinesEmpty">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>Fügen Sie Abfahrtszeilen hinzu, um Live-Daten anzuzeigen</p>
+                                </div>
+                            </div>
+
+                            <div class="modal-actions">
+                                <button type="button" class="btn btn-secondary" onclick="app.closeCardConfig()">
+                                    <i class="fas fa-times"></i> Abbrechen
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="saveCardBtn" disabled>
+                                    <i class="fas fa-save"></i> Karte speichern
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
-                    <!-- Line and Direction Selection -->
-                    <div id="lineDirectionSection" style="display: none;">
-                        <div class="form-group">
-                            <label for="cardRblSelect">RBL-Nummer / Steig auswählen</label>
-                            <select id="cardRblSelect" class="form-control">
-                                <option value="">Bitte Station zuerst auswählen</option>
-                            </select>
+                    <!-- Live Preview Panel (Bottom) -->
+                    <div class="preview-panel-bottom">
+                        <div class="preview-header">
+                            <h4><i class="fas fa-eye"></i> Live-Vorschau</h4>
+                            <div class="preview-info">
+                                <span class="info-badge">
+                                    <i class="fas fa-arrows-alt-v"></i>
+                                    Zeilen verschiebbar
+                                </span>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="cardLineSelect">Linie auswählen</label>
-                            <select id="cardLineSelect" class="form-control">
-                                <option value="">Bitte RBL zuerst auswählen</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="cardDirectionSelect">Richtung auswählen</label>
-                            <select id="cardDirectionSelect" class="form-control">
-                                <option value="">Bitte Linie zuerst auswählen</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Card Settings -->
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="cardTitle">Karten-Titel</label>
-                            <input type="text" id="cardTitle" class="form-control" placeholder="Meine Station">
-                        </div>
-                        <div class="form-group">
-                            <label for="cardSize">Kartengröße</label>
-                            <select id="cardSize" class="form-control">
-                                <option value="small">Klein (1x1)</option>
-                                <option value="medium" selected>Mittel (2x1)</option>
-                                <option value="large">Groß (2x2)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Display Settings -->
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="cardDepartureCount">Anzahl Abfahrten pro Linie</label>
-                            <select id="cardDepartureCount" class="form-control">
-                                <option value="1">1 Abfahrt</option>
-                                <option value="2" selected>2 Abfahrten</option>
-                                <option value="3">3 Abfahrten</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="cardRefreshInterval">Auto-Refresh (Sekunden)</label>
-                            <select id="cardRefreshInterval" class="form-control">
-                                <option value="30" selected>30 Sekunden</option>
-                                <option value="60">1 Minute</option>
-                                <option value="120">2 Minuten</option>
-                                <option value="0">Aus</option>
-                            </select>
+                        
+                        <div class="card-preview-container-realistic">
+                            <div class="dashboard-card preview-card-realistic" id="cardPreview">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <i class="fas fa-train"></i>
+                                        <span id="previewTitle">Neue Karte</span>
+                                    </div>
+                                    <div class="card-controls">
+                                        <button class="card-control-btn" disabled>
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-content" id="previewContent">
+                                    <div class="card-empty">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <h4>Station auswählen</h4>
+                                        <p>Wählen Sie zuerst eine Station aus</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer" id="previewFooter" style="display: none;">
+                                    <small id="previewFooterInfo">Station info</small>
+                                    <small id="previewFooterUpdate">Vorschau</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-secondary" onclick="app.closeCardConfig()">Abbrechen</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Karte speichern
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

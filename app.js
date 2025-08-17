@@ -1610,12 +1610,26 @@ class WienOPNVApp {
         const form = document.getElementById('cardConfigForm');
         const stationInput = document.getElementById('cardStation');
         const stationResults = document.getElementById('cardStationResults');
+        const addDepartureLineBtn = document.getElementById('addDepartureLineBtn');
+        
+        // Initialize empty departure lines array
+        this.currentCardConfig = {
+            station: null,
+            departureLines: [],
+            title: '',
+            size: 'medium',
+            refreshInterval: 30
+        };
+        
+        // Initialize station lines map
+        this.currentStationLines = new Map();
         
         // Station search
         stationInput.oninput = (e) => {
             const query = e.target.value.trim();
             if (query.length < 2) {
                 if (stationResults) stationResults.style.display = 'none';
+                this.updateCardPreview();
                 return;
             }
             
@@ -1642,11 +1656,37 @@ class WienOPNVApp {
             }
         };
         
+        // Add departure line button
+        if (addDepartureLineBtn) {
+            addDepartureLineBtn.onclick = () => {
+                this.addDepartureLineConfig();
+            };
+        }
+        
+        // Card settings change handlers
+        document.getElementById('cardTitle').oninput = (e) => {
+            this.currentCardConfig.title = e.target.value;
+            this.updateCardPreview();
+        };
+        
+        document.getElementById('cardSize').onchange = (e) => {
+            this.currentCardConfig.size = e.target.value;
+            this.updateCardPreview();
+        };
+        
+        document.getElementById('cardRefreshInterval').onchange = (e) => {
+            this.currentCardConfig.refreshInterval = parseInt(e.target.value);
+            this.updateCardPreview();
+        };
+        
         // Form submission
         form.onsubmit = (e) => {
             e.preventDefault();
-            this.saveCardConfig();
+            this.saveNewCardConfig();
         };
+        
+        // Initialize preview
+        this.updateCardPreview();
     }
 
     searchStations(query) {
@@ -1695,17 +1735,27 @@ class WienOPNVApp {
         if (cardStationData) cardStationData.value = JSON.stringify(station);
         if (cardStationResults) cardStationResults.style.display = 'none';
         
-        // Store selected station
+        // Store selected station in config
+        this.currentCardConfig.station = station;
         this.selectedStation = station;
         
         // Auto-fill title if empty
         const titleInput = document.getElementById('cardTitle');
         if (titleInput && !titleInput.value) {
             titleInput.value = station.name || station.title;
+            this.currentCardConfig.title = station.name || station.title;
         }
         
-        // Show line selection for all RBLs at this station
-        this.showLinesForStation(station);
+        // Show departure configuration section
+        this.showDepartureConfigSection(station);
+        
+        // Add default departure line
+        if (this.currentCardConfig.departureLines.length === 0) {
+            this.addDepartureLineConfig();
+        }
+        
+        // Update preview
+        this.updateCardPreview();
     }
 
     selectManualRBL(rblNumber) {
@@ -1991,6 +2041,412 @@ class WienOPNVApp {
         document.getElementById('cardDirectionSelect').innerHTML = '<option value="">Bitte Linie zuerst auswählen</option>';
     }
 
+    // New methods for modernized card config modal
+
+    showDepartureConfigSection(station) {
+        const departuresConfig = document.getElementById('departuresConfig');
+        if (departuresConfig) {
+            departuresConfig.style.display = 'block';
+        }
+        
+        // Load available lines for this station
+        this.loadStationLines(station);
+    }
+
+    async loadStationLines(station) {
+        try {
+            console.log(`🚉 Loading lines for station: ${station.name}`);
+            
+            // Get all RBLs for this station
+            const allRBLs = station.rbls || [];
+            this.currentStationLines = new Map();
+            
+            // Load lines for each RBL
+            for (const rbl of allRBLs) {
+                try {
+                    // Convert RBL to integer (remove decimal places)
+                    const rblNumber = Math.floor(parseFloat(rbl));
+                    const response = await fetch(`/api/departures/${rblNumber}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.data && data.data.monitors) {
+                            data.data.monitors.forEach(monitor => {
+                                const lineKey = `${monitor.locationStop.properties.attributes.rbl}_${monitor.lines[0]?.name}_${monitor.lines[0]?.towards}`;
+                                this.currentStationLines.set(lineKey, {
+                                    rbl: rblNumber,
+                                    line: monitor.lines[0]?.name || 'Unknown',
+                                    direction: monitor.lines[0]?.towards || 'Unknown',
+                                    lineData: monitor.lines[0]
+                                });
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`Failed to load RBL ${rbl}:`, error);
+                }
+            }
+            
+            console.log(`📊 Loaded ${this.currentStationLines.size} unique line-direction combinations`);
+            
+            // Re-render departure lines list to update dropdowns
+            this.renderDepartureLinesList();
+        } catch (error) {
+            console.error('Error loading station lines:', error);
+        }
+    }
+
+    addDepartureLineConfig() {
+        if (!this.currentCardConfig.station) {
+            alert('Bitte wählen Sie zuerst eine Station aus.');
+            return;
+        }
+        
+        const departureLineId = `departure_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const departureLineConfig = {
+            id: departureLineId,
+            line: '',
+            direction: '',
+            rbl: '',
+            departureCount: 2
+        };
+        
+        this.currentCardConfig.departureLines.push(departureLineConfig);
+        this.renderDepartureLinesList();
+        this.updateCardPreview();
+        this.updateSaveButton();
+    }
+
+    renderDepartureLinesList() {
+        const departureLinesList = document.getElementById('departureLinesList');
+        const departureLinesEmpty = document.getElementById('departureLinesEmpty');
+        
+        if (!departureLinesList) return;
+        
+        if (this.currentCardConfig.departureLines.length === 0) {
+            departureLinesList.innerHTML = '';
+            if (departureLinesEmpty) departureLinesEmpty.style.display = 'block';
+            return;
+        }
+        
+        if (departureLinesEmpty) departureLinesEmpty.style.display = 'none';
+        
+        departureLinesList.innerHTML = this.currentCardConfig.departureLines.map((config, index) => `
+            <div class="departure-line-config" data-id="${config.id}" draggable="true">
+                <div class="departure-line-header">
+                    <div class="departure-line-title">
+                        <i class="fas fa-grip-vertical drag-handle"></i>
+                        <span>Abfahrtslinie ${index + 1}</span>
+                    </div>
+                    <div class="departure-line-controls">
+                        <button type="button" class="remove-line-btn" onclick="app.removeDepartureLineConfig('${config.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="line-direction-selector">
+                    <div class="form-group">
+                        <label>Linie</label>
+                        <select class="form-control line-selector" data-id="${config.id}">
+                            <option value="">Linie wählen...</option>
+                            ${this.getAvailableLines().map(line => `
+                                <option value="${line}" ${config.line === line ? 'selected' : ''}>${line}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Richtung</label>
+                        <select class="form-control direction-selector" data-id="${config.id}">
+                            <option value="">Richtung wählen...</option>
+                            ${config.line ? this.getAvailableDirections(config.line).map(direction => `
+                                <option value="${direction}" ${config.direction === direction ? 'selected' : ''}>${direction}</option>
+                            `).join('') : ''}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="departure-count-selector">
+                    <label>Anzahl Abfahrten:</label>
+                    <div class="departure-count-buttons">
+                        ${[1, 2, 3].map(count => `
+                            <button type="button" class="count-btn ${config.departureCount === count ? 'active' : ''}" 
+                                    onclick="app.updateDepartureCount('${config.id}', ${count})">${count}</button>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Setup event listeners for selectors
+        this.setupDepartureLineEventListeners();
+        this.setupDragAndDrop();
+    }
+
+    getAvailableLines() {
+        if (!this.currentStationLines) return [];
+        const lines = new Set();
+        this.currentStationLines.forEach(lineData => {
+            lines.add(lineData.line);
+        });
+        return Array.from(lines).sort();
+    }
+
+    getAvailableDirections(selectedLine) {
+        if (!this.currentStationLines || !selectedLine) return [];
+        const directions = new Set();
+        this.currentStationLines.forEach(lineData => {
+            if (lineData.line === selectedLine) {
+                directions.add(lineData.direction);
+            }
+        });
+        return Array.from(directions).sort();
+    }
+
+    setupDepartureLineEventListeners() {
+        // Line selectors
+        document.querySelectorAll('.line-selector').forEach(select => {
+            select.onchange = (e) => {
+                const configId = e.target.dataset.id;
+                const selectedLine = e.target.value;
+                this.updateDepartureLineConfig(configId, 'line', selectedLine);
+                
+                // Update direction selector
+                const directionSelect = document.querySelector(`.direction-selector[data-id="${configId}"]`);
+                if (directionSelect) {
+                    directionSelect.innerHTML = `
+                        <option value="">Richtung wählen...</option>
+                        ${this.getAvailableDirections(selectedLine).map(direction => `
+                            <option value="${direction}">${direction}</option>
+                        `).join('')}
+                    `;
+                }
+            };
+        });
+        
+        // Direction selectors
+        document.querySelectorAll('.direction-selector').forEach(select => {
+            select.onchange = (e) => {
+                const configId = e.target.dataset.id;
+                const selectedDirection = e.target.value;
+                this.updateDepartureLineConfig(configId, 'direction', selectedDirection);
+            };
+        });
+    }
+
+    updateDepartureLineConfig(configId, field, value) {
+        const config = this.currentCardConfig.departureLines.find(c => c.id === configId);
+        if (config) {
+            config[field] = value;
+            
+            // Find matching RBL for line+direction combination
+            if (field === 'direction' && config.line && config.direction) {
+                for (const [key, lineData] of this.currentStationLines) {
+                    if (lineData.line === config.line && lineData.direction === config.direction) {
+                        config.rbl = lineData.rbl;
+                        break;
+                    }
+                }
+            }
+            
+            this.updateCardPreview();
+            this.updateSaveButton();
+        }
+    }
+
+    updateDepartureCount(configId, count) {
+        const config = this.currentCardConfig.departureLines.find(c => c.id === configId);
+        if (config) {
+            config.departureCount = count;
+            this.renderDepartureLinesList();
+            this.updateCardPreview();
+        }
+    }
+
+    removeDepartureLineConfig(configId) {
+        this.currentCardConfig.departureLines = this.currentCardConfig.departureLines.filter(c => c.id !== configId);
+        this.renderDepartureLinesList();
+        this.updateCardPreview();
+        this.updateSaveButton();
+    }
+
+    setupDragAndDrop() {
+        const departureLinesList = document.getElementById('departureLinesList');
+        if (!departureLinesList) return;
+        
+        new Sortable(departureLinesList, {
+            handle: '.drag-handle',
+            animation: 150,
+            ghostClass: 'dragging',
+            onEnd: (evt) => {
+                // Reorder the departureLines array
+                const movedItem = this.currentCardConfig.departureLines.splice(evt.oldIndex, 1)[0];
+                this.currentCardConfig.departureLines.splice(evt.newIndex, 0, movedItem);
+                this.renderDepartureLinesList();
+                this.updateCardPreview();
+            }
+        });
+    }
+
+    updateCardPreview() {
+        const previewTitle = document.getElementById('previewTitle');
+        const previewContent = document.getElementById('previewContent');
+        const previewFooter = document.getElementById('previewFooter');
+        const previewFooterInfo = document.getElementById('previewFooterInfo');
+        const cardPreview = document.getElementById('cardPreview');
+        
+        if (!previewTitle || !previewContent) return;
+        
+        // Update title
+        previewTitle.textContent = this.currentCardConfig.title || 'Neue Karte';
+        
+        // Update card size class
+        if (cardPreview) {
+            cardPreview.className = `dashboard-card preview-card ${this.currentCardConfig.size}`;
+        }
+        
+        // Update content
+        if (!this.currentCardConfig.station) {
+            previewContent.innerHTML = `
+                <div class="card-empty">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h4>Station auswählen</h4>
+                    <p>Wählen Sie zuerst eine Station aus</p>
+                </div>
+            `;
+            if (previewFooter) previewFooter.style.display = 'none';
+            return;
+        }
+        
+        if (this.currentCardConfig.departureLines.length === 0) {
+            previewContent.innerHTML = `
+                <div class="card-empty">
+                    <i class="fas fa-route"></i>
+                    <h4>Abfahrtszeilen hinzufügen</h4>
+                    <p>Fügen Sie Linien und Richtungen hinzu</p>
+                </div>
+            `;
+            if (previewFooter) previewFooter.style.display = 'none';
+            return;
+        }
+        
+        // Show configured departure lines
+        const validLines = this.currentCardConfig.departureLines.filter(line => line.line && line.direction);
+        
+        if (validLines.length === 0) {
+            previewContent.innerHTML = `
+                <div class="card-empty">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h4>Konfiguration unvollständig</h4>
+                    <p>Wählen Sie Linien und Richtungen aus</p>
+                </div>
+            `;
+            if (previewFooter) previewFooter.style.display = 'none';
+            return;
+        }
+        
+        previewContent.innerHTML = `
+            <div class="departures-list">
+                ${validLines.map((line, index) => `
+                    <div class="departure-item preview-departure-item" data-line-id="${line.id}">
+                        <div class="line-info">
+                            <span class="line-number" style="background-color: ${this.getLineColor(line.line)}">${line.line}</span>
+                            <span class="direction">${line.direction}</span>
+                        </div>
+                        <div class="departure-time">
+                            <span class="countdown">-- Min</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        // Show footer
+        if (previewFooter && previewFooterInfo) {
+            previewFooter.style.display = 'flex';
+            previewFooterInfo.textContent = `${this.currentCardConfig.station.name} • ${validLines.length} Linie${validLines.length !== 1 ? 'n' : ''}`;
+        }
+    }
+
+    updateSaveButton() {
+        const saveBtn = document.getElementById('saveCardBtn');
+        if (!saveBtn) return;
+        
+        const hasStation = !!this.currentCardConfig.station;
+        const hasValidLines = this.currentCardConfig.departureLines.some(line => line.line && line.direction);
+        const canSave = hasStation && hasValidLines;
+        
+        saveBtn.disabled = !canSave;
+        saveBtn.innerHTML = canSave 
+            ? '<i class="fas fa-save"></i> Karte speichern'
+            : '<i class="fas fa-exclamation-triangle"></i> Konfiguration unvollständig';
+    }
+
+    saveNewCardConfig() {
+        if (!this.currentCardConfig.station) {
+            alert('Bitte wählen Sie eine Station aus.');
+            return;
+        }
+        
+        const validLines = this.currentCardConfig.departureLines.filter(line => line.line && line.direction && line.rbl);
+        
+        if (validLines.length === 0) {
+            alert('Bitte konfigurieren Sie mindestens eine Abfahrtslinie.');
+            return;
+        }
+        
+        // Create card data object
+        const cardData = {
+            id: Date.now().toString(),
+            title: this.currentCardConfig.title || this.currentCardConfig.station.name,
+            station: this.currentCardConfig.station,
+            departureLines: validLines,
+            size: this.currentCardConfig.size,
+            refreshInterval: this.currentCardConfig.refreshInterval,
+            position: this.getNextCardPosition()
+        };
+        
+        // Save card to dashboard
+        this.dashboardCards = this.dashboardCards || [];
+        this.dashboardCards.push(cardData);
+        this.saveDashboardCards();
+        
+        // Render new card
+        this.renderDashboardCard(cardData);
+        
+        // Close modal and show success
+        this.closeCardConfig();
+        alert('✅ Dashboard-Karte wurde erfolgreich erstellt!');
+    }
+
+    getNextCardPosition() {
+        const grid = document.querySelector('.dashboard-grid');
+        if (!grid) return { x: 0, y: 0 };
+        
+        const existingCards = Array.from(grid.children);
+        return {
+            x: 0,
+            y: existingCards.length
+        };
+    }
+
+    saveDashboardCards() {
+        try {
+            localStorage.setItem('dashboard_cards', JSON.stringify(this.dashboardCards));
+        } catch (error) {
+            console.error('Error saving dashboard cards:', error);
+        }
+    }
+
+    loadDashboardCards() {
+        try {
+            const saved = localStorage.getItem('dashboard_cards');
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            console.error('Error loading dashboard cards:', error);
+            return [];
+        }
+    }
+
     saveCardConfig() {
         const stationData = document.getElementById('cardStationData').value;
         const selectedLine = document.getElementById('cardLineSelect').value;
@@ -2124,15 +2580,16 @@ class WienOPNVApp {
         
         const contentElement = card.querySelector('.card-content');
         
-        // Check if card has required data
-        const rbls = cardData.lineRbls || cardData.stationRbls || (cardData.rblNumber ? [cardData.rblNumber] : []);
+        // Check if card has required data - support both old and new format
+        const hasOldFormat = cardData.rblNumber && cardData.line && cardData.direction;
+        const hasNewFormat = cardData.departureLines && cardData.departureLines.length > 0;
         
-        if (rbls.length === 0 || !cardData.line || !cardData.direction) {
+        if (!hasOldFormat && !hasNewFormat) {
             console.warn(`❌ Incomplete card configuration: ${cardData.title}`);
             contentElement.innerHTML = `
                 <div class="error">
                     <div>Unvollständige Kartenkonfiguration</div>
-                    <small>RBLs: ${rbls.length || 'fehlt'}, Linie: ${cardData.line || 'fehlt'}, Richtung: ${cardData.direction || 'fehlt'}</small>
+                    <small>Keine Abfahrtszeilen konfiguriert</small>
                     <button onclick="app.addDashboardCard(app.getDashboardCard('${cardData.id}'))" style="margin-top: 10px; padding: 5px 10px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
                         Karte neu konfigurieren
                     </button>
@@ -2142,6 +2599,47 @@ class WienOPNVApp {
         }
         
         try {
+            // Handle new format with departureLines
+            if (cardData.departureLines && cardData.departureLines.length > 0) {
+                const allDepartures = [];
+                
+                for (const departureLine of cardData.departureLines) {
+                    try {
+                        const rblDepartures = await this.fetchDeparturesForRBL(departureLine.rbl);
+                        if (rblDepartures && rblDepartures.length > 0) {
+                            // Filter for specific line and direction
+                            const filteredDepartures = rblDepartures.filter(dep => 
+                                dep.line === departureLine.line && dep.towards === departureLine.direction
+                            );
+                            
+                            // Take only the requested number of departures for this line
+                            const limitedDepartures = filteredDepartures
+                                .sort((a, b) => (a.minutesUntil || 0) - (b.minutesUntil || 0))
+                                .slice(0, departureLine.departureCount);
+                            
+                            allDepartures.push(...limitedDepartures);
+                        }
+                    } catch (error) {
+                        console.warn(`Failed to load departures for ${departureLine.line}:`, error);
+                    }
+                }
+                
+                if (allDepartures.length > 0) {
+                    console.log(`✅ Loaded ${allDepartures.length} departures for ${cardData.title}`);
+                    contentElement.innerHTML = this.renderCardDepartures(allDepartures, cardData);
+                } else {
+                    contentElement.innerHTML = `
+                        <div class="error">
+                            <div>Keine Abfahrten gefunden</div>
+                            <small>Möglicherweise fahren gerade keine Fahrzeuge</small>
+                        </div>
+                    `;
+                }
+                return;
+            }
+            
+            // Handle old format (fallback)
+            const rbls = cardData.lineRbls || cardData.stationRbls || (cardData.rblNumber ? [cardData.rblNumber] : []);
             console.log(`📡 Fetching departures for ${rbls.length} RBLs: ${rbls.join(', ')}`);
             
             // Get departures from all relevant RBLs
@@ -2211,6 +2709,23 @@ class WienOPNVApp {
             })
             .slice(0, cardData.departureCount);
         
+        // Generate footer based on card format
+        let footerInfo = '';
+        if (cardData.departureLines && cardData.departureLines.length > 0) {
+            // New format - show station and line count
+            const lineCount = cardData.departureLines.length;
+            footerInfo = `
+                <small>${cardData.stationName} (${lineCount} ${lineCount === 1 ? 'Linie' : 'Linien'})</small>
+                <small>Update: ${new Date().toLocaleTimeString()}</small>
+            `;
+        } else {
+            // Old format - show specific line and direction
+            footerInfo = `
+                <small>Linie ${cardData.line} → ${cardData.direction}</small>
+                <small>RBL: ${cardData.rblNumber} | Update: ${new Date().toLocaleTimeString()}</small>
+            `;
+        }
+        
         return `
             <div class="departures-list">
                 ${sortedDepartures.map(dep => `
@@ -2226,8 +2741,7 @@ class WienOPNVApp {
                 `).join('')}
             </div>
             <div class="card-footer">
-                <small>Linie ${cardData.line} → ${cardData.direction}</small>
-                <small>RBL: ${cardData.rblNumber} | Update: ${new Date().toLocaleTimeString()}</small>
+                ${footerInfo}
             </div>
         `;
     }
