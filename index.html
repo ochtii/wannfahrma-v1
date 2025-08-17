@@ -12,8 +12,8 @@
         <!-- Navigation -->
         <nav class="navigation">
             <button class="nav-btn" data-page="start">
-                <i class="fas fa-home"></i>
-                <span>Start</span>
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
             </button>
             <button class="nav-btn active" data-page="search">
                 <i class="fas fa-search"></i>
@@ -35,23 +35,35 @@
             <div id="startPage" class="page">
                 <div class="header">
                     <h1><i class="fas fa-subway"></i> wann fahrma OIDA</h1>
-                    <p>Live Abfahrtszeiten für Wiener Linien</p>
+                    <p>Ihr persönliches Abfahrten-Dashboard</p>
                 </div>
                 
-                <div class="quick-actions">
-                    <button class="action-btn" id="nearbyStations">
-                        <i class="fas fa-location-dot"></i>
-                        <span>Stationen in der Nähe</span>
+                <!-- Dashboard Controls -->
+                <div class="dashboard-controls">
+                    <button class="btn btn-primary" id="addDashboardCard">
+                        <i class="fas fa-plus"></i>
+                        <span>Neue Karte hinzufügen</span>
                     </button>
-                    <button class="action-btn" id="recentStations">
-                        <i class="fas fa-clock"></i>
-                        <span>Zuletzt gesucht</span>
+                    <button class="btn btn-secondary" id="editDashboard">
+                        <i class="fas fa-edit"></i>
+                        <span>Dashboard bearbeiten</span>
                     </button>
                 </div>
 
-                <div class="favorite-stations" id="startFavorites">
-                    <h3>Ihre Favoriten</h3>
-                    <div id="favoritesPreview"></div>
+                <!-- Dashboard Grid -->
+                <div id="dashboardGrid" class="dashboard-grid">
+                    <!-- Dashboard cards will be inserted here -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="dashboardEmpty" class="dashboard-empty" style="display: none;">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <h3>Erstellen Sie Ihr Dashboard</h3>
+                    <p>Fügen Sie Karten mit Live-Abfahrten Ihrer Lieblingsstationen hinzu</p>
+                    <button class="btn btn-primary" onclick="app.addDashboardCard()">
+                        <i class="fas fa-plus"></i>
+                        Erste Karte hinzufügen
+                    </button>
                 </div>
             </div>
 
@@ -146,6 +158,18 @@
                 <div class="settings-list">
                     <div class="setting-item">
                         <div class="setting-info">
+                            <h4>Standard-Startseite</h4>
+                            <p>Welche Seite beim App-Start geöffnet werden soll</p>
+                        </div>
+                        <select id="defaultStartPage" class="setting-select">
+                            <option value="start">Dashboard</option>
+                            <option value="search">Suche</option>
+                            <option value="favorites">Favoriten</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
                             <h4>Dark Mode</h4>
                             <p>Dunkles Design verwenden</p>
                         </div>
@@ -209,6 +233,97 @@
                 <button class="btn btn-secondary" onclick="window.app.closeStationInfoModal()">
                     Schließen
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Card Configuration Modal -->
+    <div id="cardConfigModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="cardConfigTitle">Neue Dashboard-Karte</h3>
+                <button class="modal-close" onclick="app.closeCardConfig()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="cardConfigForm">
+                    <!-- Station Selection -->
+                    <div class="form-group">
+                        <label for="cardStation">Station auswählen</label>
+                        <div class="station-search-container">
+                            <input type="text" id="cardStation" class="form-control" placeholder="Station suchen..." autocomplete="off">
+                            <div id="cardStationResults" class="station-results"></div>
+                        </div>
+                        <input type="hidden" id="cardStationData">
+                    </div>
+
+                    <!-- Line and Direction Selection -->
+                    <div id="lineDirectionSection" style="display: none;">
+                        <div class="form-group">
+                            <label for="cardRblSelect">RBL-Nummer / Steig auswählen</label>
+                            <select id="cardRblSelect" class="form-control">
+                                <option value="">Bitte Station zuerst auswählen</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cardLineSelect">Linie auswählen</label>
+                            <select id="cardLineSelect" class="form-control">
+                                <option value="">Bitte RBL zuerst auswählen</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cardDirectionSelect">Richtung auswählen</label>
+                            <select id="cardDirectionSelect" class="form-control">
+                                <option value="">Bitte Linie zuerst auswählen</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Card Settings -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cardTitle">Karten-Titel</label>
+                            <input type="text" id="cardTitle" class="form-control" placeholder="Meine Station">
+                        </div>
+                        <div class="form-group">
+                            <label for="cardSize">Kartengröße</label>
+                            <select id="cardSize" class="form-control">
+                                <option value="small">Klein (1x1)</option>
+                                <option value="medium" selected>Mittel (2x1)</option>
+                                <option value="large">Groß (2x2)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Display Settings -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cardDepartureCount">Anzahl Abfahrten pro Linie</label>
+                            <select id="cardDepartureCount" class="form-control">
+                                <option value="1">1 Abfahrt</option>
+                                <option value="2" selected>2 Abfahrten</option>
+                                <option value="3">3 Abfahrten</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cardRefreshInterval">Auto-Refresh (Sekunden)</label>
+                            <select id="cardRefreshInterval" class="form-control">
+                                <option value="30" selected>30 Sekunden</option>
+                                <option value="60">1 Minute</option>
+                                <option value="120">2 Minuten</option>
+                                <option value="0">Aus</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="app.closeCardConfig()">Abbrechen</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Karte speichern
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
