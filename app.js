@@ -218,12 +218,12 @@ class WienOPNVApp {
 
     async fetchDeparturesForRBL(rbl) {
         try {
-            // Verwende lokalen Proxy-Server um CORS-Probleme zu umgehen
-            const proxyUrl = `http://localhost:3001/monitor?rbl=${rbl}`;
+            // Verwende lokalen npm-Server für API-Aufrufe
+            const apiUrl = `/api/departures/${rbl}`;
             
             console.log(`🔄 Hole Live-Daten für RBL ${rbl}...`);
             
-            const response = await fetch(proxyUrl, {
+            const response = await fetch(apiUrl, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json'

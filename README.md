@@ -1,140 +1,119 @@
-# WannFahrMa-V1 🚇
+# 🚇 wann fahrma OIDA
 
-Eine moderne Web-Anwendung für Live-Abfahrtsdaten der öffentlichen Verkehrsmittel in Wien.
+Eine moderne Web-App für Live-Abfahrtszeiten der Wiener Linien.
 
-## 🚀 Features
+## 🚀 Schnellstart
 
-- **Live-Abfahrtsdaten** von der offiziellen Wiener Linien API
-- **1980 Stationen** mit über 4000 RBL-Nummern
-- **Echtzeitsuche** mit dynamischer Filterung
-- **Responsive Design** für alle Geräte
-- **CORS-Proxy** für API-Zugriff ohne Browser-Einschränkungen
-
-## 📋 Verkehrsmittel
-
-- 🚇 **U-Bahn** (U1, U2, U3, U4, U6)
-- 🚋 **Straßenbahn** (alle Linien)
-- 🚌 **Bus** (Stadt- und Regionalbusse)
-
-## 🛠️ Installation
-
-### Voraussetzungen
-- Python 3.x
-- Moderne Browser (Chrome, Firefox, Safari, Edge)
-
-### Setup
-1. Repository klonen:
+### 1. Abhängigkeiten installieren
 ```bash
-git clone https://github.com/ochtii/wannfahrma-v1.git
-cd wannfahrma-v1
+npm install
 ```
 
-2. Daten verarbeiten:
+### 2. Daten verarbeiten (einmalig)
 ```bash
 python process_data.py
 ```
 
-3. API-Proxy starten:
+### 3. Server starten
 ```bash
-python api_proxy.py
+npm start
 ```
 
-4. Web-Server starten:
+Die App ist dann verfügbar unter: **http://localhost:3000**
+
+## 📝 Verfügbare Scripts
+
+- `npm start` - Startet den Produktionsserver
+- `npm run dev` - Startet den Entwicklungsserver mit Auto-Reload
+- `npm run proxy` - Startet nur den API-Proxy (falls benötigt)
+
+## 🛠️ Entwicklung
+
+### Server mit Auto-Reload starten:
 ```bash
-python -m http.server 8001
+npm run dev
 ```
 
-5. Browser öffnen: `http://localhost:8001`
+### Nur den API-Proxy starten:
+```bash
+npm run proxy
+```
 
-## 🏗️ Architektur
+## 📂 Projektstruktur
 
 ```
-├── index.html          # Hauptanwendung
-├── app.js              # JavaScript-Logik
+wannfahrma-v1/
+├── index.html          # Haupt-HTML-Datei
+├── app.js              # Frontend JavaScript
 ├── style.css           # Styling
-├── api_proxy.py        # CORS-Proxy für Wiener Linien API
-├── process_data.py     # CSV-Datenverarbeitung
-├── wien_opnv_data.json # Verarbeitete Stationsdaten
-└── data/               # Rohdaten (CSV, GTFS, etc.)
+├── server.js           # Express Server + API Proxy
+├── api_proxy.js        # Standalone API Proxy
+├── process_data.py     # Datenverarbeitung
+├── package.json        # npm Konfiguration
+└── data/               # Rohdaten von Wiener Linien
 ```
 
-## 📊 Datenquellen
+## 🔧 Features
 
-- **Wiener Linien Open Data** (Stationen, Linien, Haltestellen)
-- **Wiener Linien Real-Time API** (Live-Abfahrtsdaten)
-- **ÖBB Open Data** (Erweiterte Verkehrsdaten)
+- **Live-Abfahrten** von 1980+ Wiener Linien Stationen
+- **Responsive Design** für Desktop und Mobile
+- **Echte Daten** von der Wiener Linien API
+- **CORS-Proxy** für API-Zugriffe
+- **Moderne UI** mit Bootstrap-ähnlichem Design
 
-## 🔧 Technische Details
+## 🌐 API Endpoints
 
-### Frontend
-- Vanilla JavaScript (ES6+)
-- CSS3 mit Flexbox/Grid
-- Responsive Design
-- FontAwesome Icons
+- `GET /` - Haupt-App
+- `GET /api/departures/:rbl` - Live-Abfahrten für RBL-Nummer
+- `GET /health` - Server Health Check
 
-### Backend
-- Python HTTP Server
-- CORS-Proxy für API-Zugriff
-- pandas für Datenverarbeitung
+## 📋 Voraussetzungen
 
-### API Integration
-- Wiener Linien Real-Time Monitor API
-- Automatische RBL-Gruppierung pro Station
-- Fehlerbehandlung und Fallback-Daten
+- **Node.js** 16+ 
+- **Python** 3.x (für Datenverarbeitung)
+- **Internet** (für Live-Daten)
 
-## 🎨 Benutzeroberfläche
+## 🔄 Datenaktualisierung
 
-- **Suchfeld**: Live-Filterung aller Stationen
-- **Stationsliste**: Klickbare Stationen mit RBL-Anzahl
-- **Abfahrtstafel**: Live-Daten im Wiener Linien Design
-- **Zeit-Badges**: Countdown in Minuten oder "Jetzt"
+Die Wiener Linien Rohdaten können mit folgendem Befehl neu verarbeitet werden:
 
-## 🚦 API-Endpunkte
-
-### Lokaler CORS-Proxy
-```
-GET http://localhost:3001/monitor?rbl=<RBL_NUMMER>
+```bash
+python process_data.py
 ```
 
-### Originale Wiener Linien API
+Dies erstellt die `wien_opnv_data.json` Datei mit allen Stationen und RBL-Nummern.
+
+## 🐛 Troubleshooting
+
+### Port bereits verwendet?
+```bash
+# Anderen Port verwenden:
+PORT=3001 npm start
 ```
-https://www.wienerlinien.at/ogd_realtime/monitor?rbl=<RBL_NUMMER>
+
+### Keine Live-Daten?
+1. Prüfen Sie Ihre Internetverbindung
+2. Health Check aufrufen: http://localhost:3000/health
+3. Browser-Konsole auf Fehler prüfen
+
+### Stationen nicht gefunden?
+```bash
+# Daten neu verarbeiten:
+python process_data.py
 ```
-
-## 📱 Browser-Support
-
-- ✅ Chrome 80+
-- ✅ Firefox 75+
-- ✅ Safari 13+
-- ✅ Edge 80+
-
-## 🔍 Debugging
-
-### Häufige Probleme
-1. **CORS-Fehler**: API-Proxy muss laufen (`python api_proxy.py`)
-2. **Keine Stationen**: Daten verarbeiten (`python process_data.py`)
-3. **Server-Fehler**: Port 8001 und 3001 müssen frei sein
-
-### Logs
-- API-Proxy: Konsolen-Output
-- Browser: Developer Tools → Console
-- Server: Terminal-Output
 
 ## 📄 Lizenz
 
-Dieses Projekt verwendet Open Data der Wiener Linien und ÖBB.
+MIT License - Siehe LICENSE Datei für Details.
 
 ## 🤝 Beitragen
 
-1. Fork des Repositories
-2. Feature-Branch erstellen
-3. Änderungen committen
-4. Pull Request stellen
-
-## 📞 Support
-
-Bei Fragen oder Problemen bitte ein Issue erstellen.
+1. Fork erstellen
+2. Feature Branch: `git checkout -b feature/amazing-feature`
+3. Commit: `git commit -m 'Add amazing feature'`
+4. Push: `git push origin feature/amazing-feature`
+5. Pull Request erstellen
 
 ---
 
-**Entwickelt für Wien** 🇦🇹
+**Made with ❤️ in Vienna**
