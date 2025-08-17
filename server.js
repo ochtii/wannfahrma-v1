@@ -94,52 +94,73 @@ app.get('/api/departures/:rbl', async (req, res) => {
         
         console.log(`🚇 Lade Abfahrten für RBL: ${rbl}`);
         
-        // Wiener Linien OGD API
-        const apiUrl = `https://www.wienerlinien.at/ogd_realtime/monitor`;
-        const response = await axios.get(apiUrl, {
-            params: {
-                rbl: rbl,
-                sender: process.env.WL_API_KEY || 'wann-fahrma-oida'
-            },
-            timeout: 15000,
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'application/json, text/plain, */*',
-                'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
-                'Referer': 'https://www.wienerlinien.at/'
-            }
-        });
+        // Retry-Mechanismus für temporäre Fehler
+        let retryCount = 0;
+        const maxRetries = 2;
+        
+        while (retryCount <= maxRetries) {
+            try {
+                // Wiener Linien OGD API
+                const apiUrl = `https://www.wienerlinien.at/ogd_realtime/monitor`;
+                const response = await axios.get(apiUrl, {
+                    params: {
+                        rbl: rbl,
+                        sender: process.env.WL_API_KEY || 'wann-fahrma-oida'
+                    },
+                    timeout: 15000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                        'Accept': 'application/json, text/plain, */*',
+                        'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
+                        'Referer': 'https://www.wienerlinien.at/'
+                    }
+                });
 
-        // API-spezifische Fehlerbehandlung
-        if (response.data && response.data.message) {
-            const { messageCode, value } = response.data.message;
-            
-            // Rate Limit erreicht (Code 316)
-            if (messageCode === 316) {
-                return res.status(429).json({
-                    error: 'Rate Limit erreicht',
-                    message: 'Zu viele Anfragen an die Wiener Linien API. Bitte versuchen Sie es später erneut.',
-                    type: 'API_RATE_LIMIT',
-                    retryAfter: 60
-                });
-            }
-            
-            // Andere API-Fehler
-            if (messageCode !== 1) {
-                return res.status(400).json({
-                    error: 'API-Fehler',
-                    message: value || 'Unbekannter API-Fehler',
-                    type: 'API_ERROR',
-                    code: messageCode
-                });
+                // API-spezifische Fehlerbehandlung
+                if (response.data && response.data.message) {
+                    const { messageCode, value } = response.data.message;
+                    
+                    // Rate Limit erreicht (Code 316)
+                    if (messageCode === 316) {
+                        return res.status(429).json({
+                            error: 'Rate Limit erreicht',
+                            message: 'Zu viele Anfragen an die Wiener Linien API. Bitte versuchen Sie es später erneut.',
+                            type: 'API_RATE_LIMIT',
+                            retryAfter: 60
+                        });
+                    }
+                    
+                    // Andere API-Fehler
+                    if (messageCode !== 1) {
+                        return res.status(400).json({
+                            error: 'API-Fehler',
+                            message: value || 'Unbekannter API-Fehler',
+                            type: 'API_ERROR',
+                            code: messageCode
+                        });
+                    }
+                }
+                
+                // Cache successful response
+                setCachedData(cacheKey, response.data);
+                console.log(`✅ Abfahrten geladen und gecacht für RBL: ${rbl}`);
+                
+                return res.json(response.data);
+                
+            } catch (error) {
+                retryCount++;
+                
+                // Bei 403-Fehlern: Kurze Pause und Retry
+                if (error.response?.status === 403 && retryCount <= maxRetries) {
+                    console.log(`⚠️ 403-Fehler bei RBL ${rbl}, Retry ${retryCount}/${maxRetries}`);
+                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+                    continue;
+                }
+                
+                // Wenn alle Retries fehlgeschlagen sind, werfe den Fehler weiter
+                throw error;
             }
         }
-        
-        // Cache successful response
-        setCachedData(cacheKey, response.data);
-        console.log(`✅ Abfahrten geladen und gecacht für RBL: ${rbl}`);
-        
-        res.json(response.data);
         
     } catch (error) {
         console.error(`❌ Fehler beim Laden der Abfahrten für RBL ${req.params.rbl}:`, error.message);
@@ -201,21 +222,7 @@ app.get('/api/departures/:rbl', async (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
-        timestamp: new Date().toISOString(),
-        app: 'wann fahrma OIDA'
-    });
-});
-
-// Serve the main app
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Handle 404s
-app.use((req, res) => {
-    res.status(404).json({ error: 'Route not found' });
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Error handling middleware

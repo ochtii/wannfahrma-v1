@@ -261,6 +261,8 @@ class WienOPNVApp {
         const allDepartures = [];
         let hasErrors = false;
         let errorMessage = '';
+        let successfulRBLs = 0;
+        let invalidRBLs = [];
         
         // Hole Daten sequenziell mit kleiner Pause zwischen Anfragen
         for (let i = 0; i < rbls.length; i++) {
@@ -272,6 +274,7 @@ class WienOPNVApp {
                 
                 if (departures && departures.length > 0) {
                     allDepartures.push(...departures);
+                    successfulRBLs++;
                 }
                 
                 // Kleine Pause zwischen Anfragen um Rate Limit zu vermeiden
@@ -280,27 +283,47 @@ class WienOPNVApp {
                 }
                 
             } catch (error) {
-                hasErrors = true;
-                if (!errorMessage) {
-                    errorMessage = error.message || 'Unbekannter Fehler';
-                }
                 console.warn(`Fehler bei RBL ${rbls[i]}:`, error.message);
                 
-                // Bei Rate Limit: Längere Pause
-                if (error.message.includes('Rate Limit') || error.message.includes('429')) {
-                    console.log('⏱️ Rate Limit erreicht - warte 2 Sekunden...');
-                    this.updateLoadingProgress('Rate Limit - warte...', i + 1, rbls.length);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                // Unterscheide zwischen verschiedenen Fehlertypen
+                if (error.message.includes('Zugriff verweigert') || error.message.includes('403')) {
+                    invalidRBLs.push(rbls[i]);
+                    console.log(`⚠️ RBL ${rbls[i]} ist möglicherweise veraltet oder nicht verfügbar`);
+                } else {
+                    hasErrors = true;
+                    if (!errorMessage) {
+                        errorMessage = error.message || 'Unbekannter Fehler';
+                    }
+                    
+                    // Bei Rate Limit: Längere Pause
+                    if (error.message.includes('Rate Limit') || error.message.includes('429')) {
+                        console.log('⏱️ Rate Limit erreicht - warte 2 Sekunden...');
+                        this.updateLoadingProgress('Rate Limit - warte...', i + 1, rbls.length);
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    }
                 }
             }
         }
 
-        if (allDepartures.length === 0) {
-            if (hasErrors) {
-                throw new Error(errorMessage || 'API nicht verfügbar');
-            } else {
-                throw new Error('Keine Abfahrten gefunden für diese Station');
-            }
+        // Zeige Warnung für ungültige RBLs
+        if (invalidRBLs.length > 0) {
+            console.log(`⚠️ ${invalidRBLs.length} von ${rbls.length} RBLs sind nicht verfügbar:`, invalidRBLs);
+            this.showWarning(`${invalidRBLs.length} Haltestellen-IDs sind veraltet und konnten nicht geladen werden.`);
+        }
+
+        // Wenn wir zumindest einige Daten haben, zeige sie an
+        if (allDepartures.length > 0) {
+            console.log(`✅ ${successfulRBLs} von ${rbls.length} RBLs erfolgreich geladen`);
+            return allDepartures;
+        }
+
+        // Nur wenn alle RBLs fehlschlagen UND es ein echter Fehler ist
+        if (hasErrors) {
+            throw new Error(errorMessage || 'API nicht verfügbar');
+        } else if (invalidRBLs.length === rbls.length) {
+            throw new Error('Alle Haltestellen-IDs sind veraltet oder nicht verfügbar');
+        } else {
+            throw new Error('Keine Abfahrten gefunden für diese Station');
         }
 
         // Sortiere nach Zeit und limitiere auf 20 Abfahrten
@@ -566,6 +589,23 @@ class WienOPNVApp {
         if (errorElement) {
             errorElement.textContent = message;
             errorElement.style.display = 'block';
+        }
+    }
+
+    showWarning(message) {
+        const errorElement = document.getElementById('error');
+        if (errorElement) {
+            errorElement.innerHTML = `
+                <div style="background: var(--warning-color, #ff9800); color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                    <i class="fas fa-exclamation-triangle"></i> ${message}
+                </div>
+            `;
+            errorElement.style.display = 'block';
+            
+            // Automatisch nach 8 Sekunden ausblenden
+            setTimeout(() => {
+                this.hideError();
+            }, 8000);
         }
     }
 
