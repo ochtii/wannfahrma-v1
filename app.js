@@ -486,6 +486,11 @@ class WienOPNVApp {
         const html = Object.keys(groupedDepartures).map(lineKey => {
             const lineDepartures = groupedDepartures[lineKey];
             const firstDeparture = lineDepartures[0];
+            const lineId = `line-${lineKey.replace(/[^a-zA-Z0-9]/g, '')}`;
+            
+            // Zeige initial nur die ersten 2 Abfahrten
+            const initialDepartures = lineDepartures.slice(0, 2);
+            const hiddenDepartures = lineDepartures.slice(2);
             
             return `
                 <div class="departure-line-group">
@@ -496,26 +501,73 @@ class WienOPNVApp {
                         <span class="line-type">${this.getLineTypeText(firstDeparture.type)}</span>
                     </div>
                     <div class="departures-list">
-                        ${lineDepartures.map(dep => `
-                            <div class="departure-item">
-                                <div class="departure-main">
-                                    <div class="direction">${dep.direction}</div>
-                                    <div class="time-info">
-                                        <span class="countdown ${dep.minutesUntil <= 2 ? 'urgent' : ''}">${this.formatCountdown(dep.minutesUntil)}</span>
-                                        <span class="scheduled-time">${dep.scheduledTime}</span>
-                                        ${dep.realtime ? '<span class="realtime-indicator">●</span>' : ''}
-                                    </div>
-                                </div>
-                                ${dep.platform ? `<div class="platform">Steig ${dep.platform}</div>` : ''}
-                                <div class="rbl-info">RBL: ${dep.rbl}</div>
+                        ${this.renderDepartureItems(initialDepartures, 'visible')}
+                        ${hiddenDepartures.length > 0 ? this.renderDepartureItems(hiddenDepartures, 'hidden', lineId) : ''}
+                        ${hiddenDepartures.length > 0 ? `
+                            <div class="show-more-container">
+                                <button class="show-more-btn" onclick="window.app.showMoreDepartures('${lineId}', this)">
+                                    <i class="fas fa-chevron-down"></i>
+                                    <span>+${hiddenDepartures.length} weitere anzeigen</span>
+                                </button>
                             </div>
-                        `).join('')}
+                        ` : ''}
                     </div>
                 </div>
             `;
         }).join('');
 
         departuresContainer.innerHTML = html;
+    }
+
+    renderDepartureItems(departures, visibility, lineId = '') {
+        const visibilityClass = visibility === 'hidden' ? `hidden-departures ${lineId}-hidden` : '';
+        
+        return departures.map(dep => `
+            <div class="departure-item ${visibilityClass}">
+                <div class="departure-main">
+                    <div class="direction">${dep.direction}</div>
+                    <div class="time-info">
+                        <span class="countdown ${dep.minutesUntil <= 2 ? 'urgent' : ''}">${this.formatCountdown(dep.minutesUntil)}</span>
+                        <span class="scheduled-time">${dep.scheduledTime}</span>
+                        ${dep.realtime ? '<span class="realtime-indicator">●</span>' : ''}
+                    </div>
+                </div>
+                ${dep.platform ? `<div class="platform">Steig ${dep.platform}</div>` : ''}
+                <div class="rbl-info">RBL: ${dep.rbl}</div>
+            </div>
+        `).join('');
+    }
+
+    showMoreDepartures(lineId, buttonElement) {
+        const hiddenDepartures = document.querySelectorAll(`.${lineId}-hidden`);
+        const button = buttonElement;
+        
+        // Zeige die nächsten 2 versteckten Abfahrten
+        let shownCount = 0;
+        const maxShow = 2;
+        
+        for (let i = 0; i < hiddenDepartures.length && shownCount < maxShow; i++) {
+            const departure = hiddenDepartures[i];
+            if (departure.style.display === 'none' || departure.classList.contains('hidden-departures')) {
+                departure.style.display = 'block';
+                departure.classList.remove('hidden-departures');
+                shownCount++;
+            }
+        }
+        
+        // Prüfe ob noch weitere Abfahrten versteckt sind
+        const remainingHidden = Array.from(hiddenDepartures).filter(dep => 
+            dep.style.display === 'none' || dep.classList.contains('hidden-departures')
+        );
+        
+        if (remainingHidden.length === 0) {
+            // Alle angezeigt - Button ausblenden
+            button.closest('.show-more-container').style.display = 'none';
+        } else {
+            // Aktualisiere die Anzahl im Button
+            const span = button.querySelector('span');
+            span.textContent = `+${remainingHidden.length} weitere anzeigen`;
+        }
     }
 
     groupDeparturesByLine(departures) {
@@ -917,3 +969,4 @@ class WienOPNVApp {
 
 // App initialisieren
 const app = new WienOPNVApp();
+window.app = app;

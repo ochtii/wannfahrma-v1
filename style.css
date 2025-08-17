@@ -588,6 +588,48 @@ body {
     font-size: 0.8rem;
 }
 
+/* Show More Functionality */
+.hidden-departures {
+    display: none;
+}
+
+.show-more-container {
+    padding: 10px 20px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+}
+
+.show-more-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: var(--transition);
+    width: 100%;
+    justify-content: center;
+}
+
+.show-more-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--primary-color);
+}
+
+.show-more-btn i {
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.show-more-btn:hover i {
+    transform: translateY(2px);
+}
+
 /* Status Elements */
 .loading {
     display: none;
