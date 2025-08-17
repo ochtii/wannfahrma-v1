@@ -580,6 +580,89 @@ class WienOPNVApp {
             .slice(0, 20);
     }
 
+    async fetchLiveDeparturesWithProgress(rbls, context = 'search') {
+        const allDepartures = [];
+        let hasErrors = false;
+        let errorMessage = '';
+        let successfulRBLs = 0;
+        let invalidRBLs = [];
+        
+        // Hole Daten sequenziell mit Fortschrittsanzeige
+        for (let i = 0; i < rbls.length; i++) {
+            try {
+                const rbl = rbls[i];
+                
+                // Update progress für Favoriten-Seite
+                if (context === 'favorite') {
+                    this.updateFavoriteProgress(i + 1, rbls.length);
+                } else {
+                    this.updateLoadingProgress(`Lade RBL ${rbl}...`, i + 1, rbls.length);
+                }
+                
+                const departures = await this.fetchDeparturesForRBL(rbl);
+                
+                if (departures && departures.length > 0) {
+                    allDepartures.push(...departures);
+                    successfulRBLs++;
+                }
+                
+                // Kleine Pause zwischen Anfragen
+                if (i < rbls.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+            } catch (error) {
+                console.error(`Fehler bei RBL ${rbls[i]}:`, error);
+                
+                // RBL als ungültig markieren wenn 404
+                if (error.message.includes('404') || error.message.includes('not found')) {
+                    invalidRBLs.push(rbls[i]);
+                } else {
+                    hasErrors = true;
+                    if (!errorMessage) {
+                        errorMessage = error.message || 'Unbekannter Fehler';
+                    }
+                    
+                    // Bei Rate Limit: Längere Pause
+                    if (error.message.includes('Rate Limit') || error.message.includes('429')) {
+                        console.log('⏱️ Rate Limit erreicht - warte 2 Sekunden...');
+                        if (context === 'favorite') {
+                            this.updateFavoriteProgress(i + 1, rbls.length, 'Rate Limit - warte...');
+                        } else {
+                            this.updateLoadingProgress('Rate Limit - warte...', i + 1, rbls.length);
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    }
+                }
+            }
+        }
+
+        // Zeige Warnung für ungültige RBLs
+        if (invalidRBLs.length > 0) {
+            console.log(`⚠️ ${invalidRBLs.length} von ${rbls.length} RBLs sind nicht verfügbar:`, invalidRBLs);
+        }
+
+        // Wenn wir zumindest einige Daten haben, zeige sie an
+        if (allDepartures.length > 0) {
+            console.log(`✅ ${successfulRBLs} von ${rbls.length} RBLs erfolgreich geladen`);
+            return allDepartures;
+        }
+
+        // Nur wenn alle RBLs fehlschlagen UND es ein echter Fehler ist
+        if (hasErrors) {
+            throw new Error(errorMessage || 'API nicht verfügbar');
+        } else if (invalidRBLs.length === rbls.length) {
+            throw new Error('Alle Haltestellen-IDs sind veraltet oder nicht verfügbar');
+        } else {
+            throw new Error('Keine Abfahrten gefunden für diese Station');
+        }
+
+        // Sortiere nach Zeit und limitiere auf 20 Abfahrten
+        return allDepartures
+            .sort((a, b) => a.minutesUntil - b.minutesUntil)
+            .slice(0, 20);
+    }
+
     async fetchDeparturesForRBL(rbl) {
         try {
             // Verwende lokalen npm-Server für API-Aufrufe
@@ -943,6 +1026,30 @@ class WienOPNVApp {
         }
     }
 
+    updateFavoriteProgress(current, total, customText = null) {
+        const currentEl = document.getElementById('favoriteProgressCurrent');
+        const totalEl = document.getElementById('favoriteProgressTotal');
+        const percentEl = document.getElementById('favoriteProgressPercent');
+        const progressBar = document.getElementById('favoriteProgressBar');
+        const loadingText = document.querySelector('.loading-text');
+        
+        if (currentEl) currentEl.textContent = current;
+        if (totalEl) totalEl.textContent = total;
+        
+        const percent = Math.round((current / total) * 100);
+        if (percentEl) percentEl.textContent = percent;
+        
+        if (progressBar) {
+            progressBar.style.width = `${percent}%`;
+        }
+        
+        if (loadingText && customText) {
+            loadingText.textContent = customText;
+        } else if (loadingText) {
+            loadingText.textContent = `Lade Abfahrten... (${current}/${total})`;
+        }
+    }
+
     hideLoading() {
         const loadingElement = document.getElementById('loading');
         if (loadingElement) loadingElement.style.display = 'none';
@@ -1046,6 +1153,9 @@ class WienOPNVApp {
 
     // Navigation Functions
     showPage(pageId) {
+        // Reset previous page state before switching
+        this.resetPageState();
+        
         // Update navigation
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -1077,6 +1187,43 @@ class WienOPNVApp {
                 this.loadSettingsPage();
                 break;
         }
+    }
+
+    resetPageState() {
+        // Reset search state when leaving search page
+        if (this.currentPage === 'search') {
+            const searchInput = document.getElementById('stationSearch');
+            const searchResults = document.getElementById('searchResults');
+            const selectedStation = document.getElementById('selectedStation');
+            const departuresSection = document.getElementById('departures');
+            
+            if (searchInput) {
+                searchInput.value = '';
+                // Trigger input event to clear search results
+                searchInput.dispatchEvent(new Event('input'));
+            }
+            if (searchResults) searchResults.innerHTML = '';
+            if (selectedStation) selectedStation.style.display = 'none';
+            if (departuresSection) departuresSection.style.display = 'none';
+            
+            console.log('🔄 Search page reset');
+        }
+        
+        // Reset favorites page state when leaving favorites page
+        if (this.currentPage === 'favorites') {
+            const favoriteDepartures = document.getElementById('favoriteDepartures');
+            
+            if (favoriteDepartures) favoriteDepartures.style.display = 'none';
+            
+            // Always reload favorites list to reset to default state
+            this.loadFavoritesPage();
+            
+            console.log('🔄 Favorites page reset');
+        }
+        
+        // Reset selected station and RBLs regardless of page
+        this.selectedStation = null;
+        this.currentRBLs = [];
     }
 
     loadStartPage() {
@@ -1172,12 +1319,11 @@ class WienOPNVApp {
         this.saveFavorites();
         
         if (this.currentPage === 'favorites') {
-            this.loadFavoritesPage();
-            // If the removed station was currently selected on favorites page, hide it
+            // If the removed station was currently selected on favorites page, go back to list
             if (this.selectedStation && this.selectedStation.diva === diva) {
-                document.getElementById('selectedFavoriteStation').style.display = 'none';
-                document.getElementById('favoriteDepartures').style.display = 'none';
-                this.selectedStation = null;
+                this.backToFavoritesList();
+            } else {
+                this.loadFavoritesPage();
             }
         }
         if (this.selectedStation && this.selectedStation.diva === diva) {
@@ -1252,53 +1398,86 @@ class WienOPNVApp {
         this.selectedStation = station;
         this.currentRBLs = station.rbls || [];
         
-        // Show selected station info on favorites page
-        this.showSelectedFavoriteStation();
+        // Favoritenliste ausblenden und "Zurück" Button anzeigen
+        this.showBackToFavoritesButton();
+        
+        // Update section header with station name
+        this.updateFavoriteSectionHeader(station.name);
+        
+        // Load departures directly
         this.loadFavoriteDepartures();
     }
 
-    showSelectedFavoriteStation() {
-        const selectedStationContainer = document.getElementById('selectedFavoriteStation');
-        if (!selectedStationContainer || !this.selectedStation) return;
-
-        selectedStationContainer.innerHTML = `
-            <div class="selected-station-card">
-                <div class="station-header">
-                    <h3>${this.selectedStation.name}</h3>
-                    <button class="info-icon" onclick="window.app.showStationInfo()" title="Live-Daten Status anzeigen">
-                        <i class="fas fa-info-circle"></i>
+    showBackToFavoritesButton() {
+        const favoritesList = document.getElementById('favoritesList');
+        if (favoritesList) {
+            favoritesList.innerHTML = `
+                <div class="back-to-favorites">
+                    <button class="back-btn" onclick="app.backToFavoritesList()">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Zurück zu Favoriten</span>
                     </button>
                 </div>
-                <div class="station-details">
-                    <span class="detail-item">RBL-Nummern: ${this.currentRBLs.join(', ')}</span>
-                    <span class="detail-item">Anzahl: ${this.currentRBLs.length}</span>
-                </div>
-            </div>
-        `;
+            `;
+        }
+    }
+
+    backToFavoritesList() {
+        // Station-Details ausblenden
+        const departuresSection = document.getElementById('favoriteDepartures');
         
-        selectedStationContainer.style.display = 'block';
+        if (departuresSection) departuresSection.style.display = 'none';
+        
+        // Ausgewählte Station zurücksetzen
+        this.selectedStation = null;
+        this.currentRBLs = [];
+        
+        // Favoritenliste wieder anzeigen
+        this.loadFavoritesPage();
+    }
+
+    updateFavoriteSectionHeader(stationName) {
+        const sectionTitle = document.getElementById('favoriteStationName');
+        if (sectionTitle) {
+            sectionTitle.innerHTML = `
+                <i class="fas fa-subway"></i>
+                <span class="station-name">${stationName}</span>
+                <span class="section-subtitle">Live Abfahrten</span>
+            `;
+        }
     }
 
     async loadFavoriteDepartures() {
         const departuresContainer = document.getElementById('favoriteDeparturesContainer');
         const departuresSection = document.getElementById('favoriteDepartures');
-        const apiStatus = document.getElementById('favoriteApiStatus');
         const lastUpdate = document.getElementById('favoriteLastUpdate');
         
         if (!departuresContainer || !this.currentRBLs || this.currentRBLs.length === 0) return;
 
         departuresSection.style.display = 'block';
-        departuresContainer.innerHTML = '<div class="loading">Lade Abfahrten...</div>';
+        
+        // Ladeanimation mit Fortschritt anzeigen
+        departuresContainer.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Lade Abfahrten...</div>
+                <div class="loading-progress">
+                    <div class="progress-text">
+                        <span id="favoriteProgressCurrent">0</span>/<span id="favoriteProgressTotal">${this.currentRBLs.length}</span>
+                        (<span id="favoriteProgressPercent">0</span>%)
+                    </div>
+                    <div class="progress-bar">
+                        <div id="favoriteProgressBar" class="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+        `;
 
         try {
-            const departures = await this.fetchLiveDepartures(this.currentRBLs);
+            const departures = await this.fetchLiveDeparturesWithProgress(this.currentRBLs, 'favorite');
             
             if (departures && departures.length > 0) {
                 this.displayFavoriteDepartures(departures);
-                if (apiStatus) {
-                    apiStatus.className = 'api-status online';
-                    apiStatus.title = 'API Verbindung aktiv';
-                }
             } else {
                 departuresContainer.innerHTML = '<div class="no-data">Keine Abfahrten verfügbar</div>';
             }
@@ -1310,10 +1489,6 @@ class WienOPNVApp {
         } catch (error) {
             console.error('Fehler beim Laden der Abfahrten:', error);
             departuresContainer.innerHTML = '<div class="error">Fehler beim Laden der Abfahrten</div>';
-            if (apiStatus) {
-                apiStatus.className = 'api-status offline';
-                apiStatus.title = 'API Verbindung fehlgeschlagen';
-            }
         }
     }
 
