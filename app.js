@@ -484,7 +484,7 @@ class WienOPNVApp {
         if (selectedStationContainer) {
             selectedStationContainer.innerHTML = `
                 <div class="welcome-message">
-                    <h3>🚇 Wien ÖPNV Live-Abfahrten</h3>
+                    <h3>🚇 wann fahrma OIDA</h3>
                     <p>Willkommen! Geben Sie eine Station in das Suchfeld ein, um Live-Abfahrtszeiten anzuzeigen.</p>
                     <div class="info-cards">
                         <div class="info-card">
