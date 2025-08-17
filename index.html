@@ -9,58 +9,166 @@
 </head>
 <body>
     <div id="app">
-        <div class="container">
-            <!-- Header -->
-            <div class="header">
-                <h1><i class="fas fa-subway"></i> wann fahrma OIDA</h1>
-                <p>Live Abfahrtszeiten für Wiener Linien - Echte Daten aus 1980 Stationen</p>
-            </div>
+        <!-- Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-btn" data-page="start">
+                <i class="fas fa-home"></i>
+                <span>Start</span>
+            </button>
+            <button class="nav-btn active" data-page="search">
+                <i class="fas fa-search"></i>
+                <span>Suche</span>
+            </button>
+            <button class="nav-btn" data-page="favorites">
+                <i class="fas fa-star"></i>
+                <span>Favoriten</span>
+            </button>
+            <button class="nav-btn" data-page="settings">
+                <i class="fas fa-cog"></i>
+                <span>Einstellungen</span>
+            </button>
+        </nav>
 
-            <!-- Search Section -->
-            <div class="search-section">
-                <div class="search-container">
-                    <input type="text" id="stationSearch" class="search-input" placeholder="Station suchen (z.B. Stephansplatz, Hauptbahnhof, Schwedenplatz...)">
-                    <button id="clearSearch" class="clear-btn" title="Suche löschen">
-                        <i class="fas fa-times"></i>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Start Page -->
+            <div id="startPage" class="page">
+                <div class="header">
+                    <h1><i class="fas fa-subway"></i> wann fahrma OIDA</h1>
+                    <p>Live Abfahrtszeiten für Wiener Linien</p>
+                </div>
+                
+                <div class="quick-actions">
+                    <button class="action-btn" id="nearbyStations">
+                        <i class="fas fa-location-dot"></i>
+                        <span>Stationen in der Nähe</span>
+                    </button>
+                    <button class="action-btn" id="recentStations">
+                        <i class="fas fa-clock"></i>
+                        <span>Zuletzt gesucht</span>
                     </button>
                 </div>
-                <div id="searchResults" class="search-results"></div>
+
+                <div class="favorite-stations" id="startFavorites">
+                    <h3>Ihre Favoriten</h3>
+                    <div id="favoritesPreview"></div>
+                </div>
             </div>
 
-            <!-- Selected Station -->
-            <div id="selectedStation" class="station-section"></div>
-
-            <!-- Departures Section -->
-            <div id="departures-section" class="departures-section">
-                <div class="section-header">
-                    <h2 class="section-title">Live Abfahrten</h2>
-                    <div class="controls">
-                        <button id="refreshBtn" class="btn btn-primary">
-                            <i class="fas fa-sync-alt"></i> Aktualisieren
+            <!-- Search Page -->
+            <div id="searchPage" class="page active">
+                <div class="header">
+                    <h2>Station suchen</h2>
+                </div>
+                
+                <div class="search-section">
+                    <div class="search-container">
+                        <input type="text" id="stationSearch" class="search-input" placeholder="Station suchen (z.B. Stephansplatz, Hauptbahnhof...)">
+                        <button id="clearSearch" class="clear-btn" title="Suche löschen">
+                            <i class="fas fa-times"></i>
                         </button>
-                        <div class="auto-refresh-container">
-                            <input type="checkbox" id="autoRefresh" class="checkbox">
-                            <label for="autoRefresh">Auto-Refresh (30s)</label>
+                    </div>
+                    <div id="searchResults" class="search-results"></div>
+                </div>
+
+                <!-- Selected Station -->
+                <div id="selectedStation" class="station-section"></div>
+
+                <!-- Departures Section -->
+                <div id="departures-section" class="departures-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Live Abfahrten</h3>
+                        <div class="controls">
+                            <button id="refreshBtn" class="btn btn-primary">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button id="addToFavorites" class="btn btn-secondary" style="display: none;">
+                                <i class="fas fa-star"></i>
+                            </button>
+                            <div class="auto-refresh-container">
+                                <input type="checkbox" id="autoRefresh" class="checkbox">
+                                <label for="autoRefresh">Auto-Refresh (30s)</label>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Loading Indicator -->
+                    <div id="loading" class="loading">
+                        <div class="spinner"></div>
+                        <p>Lade Abfahrtsdaten...</p>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div id="error" class="error"></div>
+
+                    <!-- Departures Container -->
+                    <div id="departuresContainer"></div>
+
+                    <!-- Last Refresh Time -->
+                    <div id="lastRefresh" class="last-refresh"></div>
                 </div>
-
-                <!-- Loading Indicator -->
-                <div id="loading" class="loading">
-                    <div class="spinner"></div>
-                    <p>Lade Abfahrtsdaten...</p>
-                </div>
-
-                <!-- Error Message -->
-                <div id="error" class="error"></div>
-
-                <!-- Departures Container -->
-                <div id="departuresContainer"></div>
-
-                <!-- Last Refresh Time -->
-                <div id="lastRefresh" class="last-refresh"></div>
             </div>
-        </div>
+
+            <!-- Favorites Page -->
+            <div id="favoritesPage" class="page">
+                <div class="header">
+                    <h2>Favoriten</h2>
+                    <p>Ihre gespeicherten Stationen</p>
+                </div>
+                
+                <div id="favoritesList" class="favorites-list">
+                    <div class="empty-state">
+                        <i class="fas fa-star"></i>
+                        <h3>Keine Favoriten</h3>
+                        <p>Fügen Sie Stationen zu Ihren Favoriten hinzu, um sie hier zu sehen.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settingsPage" class="page">
+                <div class="header">
+                    <h2>Einstellungen</h2>
+                    <p>App-Einstellungen anpassen</p>
+                </div>
+
+                <div class="settings-list">
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Dark Mode</h4>
+                            <p>Dunkles Design verwenden</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="darkModeToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Auto-Refresh Intervall</h4>
+                            <p>Zeit zwischen automatischen Updates</p>
+                        </div>
+                        <select id="refreshInterval" class="setting-select">
+                            <option value="15">15 Sekunden</option>
+                            <option value="30" selected>30 Sekunden</option>
+                            <option value="60">1 Minute</option>
+                            <option value="120">2 Minuten</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Favoriten löschen</h4>
+                            <p>Alle gespeicherten Favoriten entfernen</p>
+                        </div>
+                        <button id="clearFavorites" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Löschen
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script src="app.js"></script>

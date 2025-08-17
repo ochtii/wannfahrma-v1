@@ -5,6 +5,12 @@ class WienOPNVApp {
         this.selectedStation = null;
         this.autoRefreshInterval = null;
         this.currentRBLs = [];
+        this.favorites = [];
+        this.currentPage = 'search';
+        this.settings = {
+            darkMode: true,
+            refreshInterval: 30
+        };
         
         this.initializeApp();
     }
@@ -61,6 +67,14 @@ class WienOPNVApp {
     }
 
     setupEventListeners() {
+        // Navigation
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const page = btn.dataset.page;
+                this.showPage(page);
+            });
+        });
+
         const searchInput = document.getElementById('stationSearch');
         const clearBtn = document.getElementById('clearSearch');
         const refreshBtn = document.getElementById('refreshBtn');
@@ -89,6 +103,55 @@ class WienOPNVApp {
                 this.toggleAutoRefresh(e.target.checked);
             });
         }
+
+        // Settings
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        if (darkModeToggle) {
+            darkModeToggle.addEventListener('change', () => {
+                this.toggleDarkMode();
+            });
+        }
+
+        const refreshInterval = document.getElementById('refreshInterval');
+        if (refreshInterval) {
+            refreshInterval.addEventListener('change', (e) => {
+                this.setRefreshInterval(parseInt(e.target.value));
+            });
+        }
+
+        const clearFavorites = document.getElementById('clearFavorites');
+        if (clearFavorites) {
+            clearFavorites.addEventListener('click', () => {
+                this.clearAllFavorites();
+            });
+        }
+
+        // Quick actions
+        const nearbyBtn = document.getElementById('nearbyStations');
+        if (nearbyBtn) {
+            nearbyBtn.addEventListener('click', () => {
+                this.showNearbyStations();
+            });
+        }
+
+        const recentBtn = document.getElementById('recentStations');
+        if (recentBtn) {
+            recentBtn.addEventListener('click', () => {
+                this.showRecentStations();
+            });
+        }
+
+        // Add to favorites
+        const addToFavorites = document.getElementById('addToFavorites');
+        if (addToFavorites) {
+            addToFavorites.addEventListener('click', () => {
+                this.addToFavorites();
+            });
+        }
+
+        // Initialize favorites and settings
+        this.loadFavorites();
+        this.loadSettings();
     }
 
     handleStationSearch(query) {
@@ -501,6 +564,206 @@ class WienOPNVApp {
         if (departuresContainer) {
             departuresContainer.innerHTML = '';
         }
+    }
+
+    // Navigation Functions
+    showPage(pageId) {
+        // Update navigation
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.page === pageId) {
+                btn.classList.add('active');
+            }
+        });
+
+        // Update pages
+        document.querySelectorAll('.page').forEach(page => {
+            page.classList.remove('active');
+        });
+
+        const targetPage = document.getElementById(pageId + 'Page');
+        if (targetPage) {
+            targetPage.classList.add('active');
+            this.currentPage = pageId;
+        }
+
+        // Load page specific content
+        switch (pageId) {
+            case 'start':
+                this.loadStartPage();
+                break;
+            case 'favorites':
+                this.loadFavoritesPage();
+                break;
+            case 'settings':
+                this.loadSettingsPage();
+                break;
+        }
+    }
+
+    loadStartPage() {
+        const favoritesPreview = document.getElementById('favoritesPreview');
+        if (favoritesPreview) {
+            if (this.favorites && this.favorites.length === 0) {
+                favoritesPreview.innerHTML = '<p class="text-secondary">Noch keine Favoriten hinzugefügt</p>';
+            } else if (this.favorites) {
+                const previewCount = Math.min(3, this.favorites.length);
+                const preview = this.favorites.slice(0, previewCount);
+                favoritesPreview.innerHTML = preview.map(fav => `
+                    <div class="station-item" onclick="app.selectStationFromFavorite('${fav.diva}')">
+                        <span class="station-name">${fav.name}</span>
+                        <span class="station-rbl">${fav.rbl_count} RBL</span>
+                    </div>
+                `).join('');
+            }
+        }
+    }
+
+    loadFavoritesPage() {
+        const favoritesList = document.getElementById('favoritesList');
+        if (favoritesList) {
+            if (!this.favorites || this.favorites.length === 0) {
+                favoritesList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-star"></i>
+                        <h3>Keine Favoriten</h3>
+                        <p>Fügen Sie Stationen zu Ihren Favoriten hinzu, um sie hier zu sehen.</p>
+                    </div>
+                `;
+            } else {
+                favoritesList.innerHTML = this.favorites.map(fav => `
+                    <div class="station-item" onclick="app.selectStationFromFavorite('${fav.diva}')">
+                        <div>
+                            <span class="station-name">${fav.name}</span>
+                            <div class="station-rbl">${fav.rbl_count} RBL-Nummern</div>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); app.removeFromFavorites('${fav.diva}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+    }
+
+    loadSettingsPage() {
+        // Load current settings into UI
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const refreshInterval = document.getElementById('refreshInterval');
+
+        if (darkModeToggle && this.settings) {
+            darkModeToggle.checked = this.settings.darkMode || false;
+        }
+        
+        if (refreshInterval && this.settings) {
+            refreshInterval.value = this.settings.refreshInterval || 30;
+        }
+    }
+
+    // Favorites Management
+    loadFavorites() {
+        const saved = localStorage.getItem('wien_opnv_favorites');
+        this.favorites = saved ? JSON.parse(saved) : [];
+    }
+
+    saveFavorites() {
+        localStorage.setItem('wien_opnv_favorites', JSON.stringify(this.favorites));
+    }
+
+    addToFavorites() {
+        if (!this.selectedStation) return;
+        
+        const exists = this.favorites.some(fav => fav.diva === this.selectedStation.diva);
+        if (exists) {
+            this.removeFromFavorites(this.selectedStation.diva);
+        } else {
+            this.favorites.push(this.selectedStation);
+            this.saveFavorites();
+            this.updateFavoriteButton();
+        }
+    }
+
+    removeFromFavorites(diva) {
+        this.favorites = this.favorites.filter(fav => fav.diva !== diva);
+        this.saveFavorites();
+        
+        if (this.currentPage === 'favorites') {
+            this.loadFavoritesPage();
+        }
+        if (this.selectedStation && this.selectedStation.diva === diva) {
+            this.updateFavoriteButton();
+        }
+    }
+
+    clearAllFavorites() {
+        if (confirm('Alle Favoriten löschen?')) {
+            this.favorites = [];
+            this.saveFavorites();
+            this.loadFavoritesPage();
+        }
+    }
+
+    selectStationFromFavorite(diva) {
+        this.selectStation(diva);
+        this.showPage('search');
+    }
+
+    updateFavoriteButton() {
+        const addBtn = document.getElementById('addToFavorites');
+        if (addBtn && this.selectedStation) {
+            const isFavorite = this.favorites.some(fav => fav.diva === this.selectedStation.diva);
+            addBtn.innerHTML = isFavorite ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
+        }
+    }
+
+    // Settings Management
+    loadSettings() {
+        const saved = localStorage.getItem('wien_opnv_settings');
+        this.settings = saved ? JSON.parse(saved) : {
+            darkMode: false,
+            refreshInterval: 30
+        };
+        this.applySettings();
+    }
+
+    saveSettings() {
+        localStorage.setItem('wien_opnv_settings', JSON.stringify(this.settings));
+    }
+
+    applySettings() {
+        if (this.settings.darkMode) {
+            document.body.classList.add('dark-mode');
+        } else {
+            document.body.classList.remove('dark-mode');
+        }
+    }
+
+    toggleDarkMode() {
+        this.settings.darkMode = !this.settings.darkMode;
+        this.saveSettings();
+        this.applySettings();
+    }
+
+    setRefreshInterval(seconds) {
+        this.settings.refreshInterval = seconds;
+        this.saveSettings();
+        
+        // Restart auto-refresh if it's enabled
+        const autoRefreshCheckbox = document.getElementById('autoRefresh');
+        if (autoRefreshCheckbox && autoRefreshCheckbox.checked) {
+            this.toggleAutoRefresh(false);
+            this.toggleAutoRefresh(true);
+        }
+    }
+
+    // Quick Actions
+    showNearbyStations() {
+        alert('Standortbestimmung wird in einer zukünftigen Version verfügbar sein.');
+    }
+
+    showRecentStations() {
+        this.showPage('search');
+        // Here you could implement recent stations from localStorage
     }
 }
 
