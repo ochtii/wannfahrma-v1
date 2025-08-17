@@ -119,6 +119,27 @@
                         <p>Fügen Sie Stationen zu Ihren Favoriten hinzu, um sie hier zu sehen.</p>
                     </div>
                 </div>
+
+                <!-- Selected Favorite Station -->
+                <div id="selectedFavoriteStation" class="station-section" style="display: none;">
+                    <!-- Selected station info will be inserted here -->
+                </div>
+
+                <!-- Departures for selected favorite -->
+                <div id="favoriteDepartures" class="departures-section" style="display: none;">
+                    <div class="section-header">
+                        <h3>Live Abfahrten</h3>
+                        <div class="status-indicators">
+                            <div id="favoriteLastUpdate" class="last-update"></div>
+                            <div id="favoriteApiStatus" class="api-status" title="API Verbindungsstatus">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="favoriteDeparturesContainer" class="departures-container">
+                        <!-- Departures will be loaded here -->
+                    </div>
+                </div>
             </div>
 
             <!-- Settings Page -->

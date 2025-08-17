@@ -166,7 +166,8 @@ class WienOPNVApp {
         if (!searchResults) return;
         
         if (query.length < 2) {
-            searchResults.innerHTML = '';
+            // Zeige Favoriten wenn Suchfeld leer/kurz ist
+            this.displayFavoriteQuickSelect();
             return;
         }
 
@@ -175,6 +176,33 @@ class WienOPNVApp {
         );
 
         this.displaySearchResults(filteredStations);
+    }
+
+    displayFavoriteQuickSelect() {
+        const searchResults = document.getElementById('searchResults');
+        if (!searchResults || !this.favorites || this.favorites.length === 0) {
+            searchResults.innerHTML = '';
+            return;
+        }
+
+        const html = `
+            <div class="favorites-quick-select">
+                <h4><i class="fas fa-star"></i> Favoriten</h4>
+                <div class="favorites-list">
+                    ${this.favorites.map(station => `
+                        <div class="search-result favorite-item" onclick="app.selectStation('${station.diva}')">
+                            <div class="station-info">
+                                <span class="station-name">${station.name}</span>
+                                <span class="station-details">${station.rbls?.length || 0} RBLs</span>
+                            </div>
+                            <i class="fas fa-star favorite-star active"></i>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        searchResults.innerHTML = html;
     }
 
     displaySearchResults(stations) {
@@ -187,15 +215,24 @@ class WienOPNVApp {
             return;
         }
 
-        const html = stations.map(station => `
-            <div class="search-result-item" onclick="app.selectStation('${station.diva}')">
-                <div class="station-name">${station.name}</div>
-                <div class="station-info">
-                    <span class="rbl-count">${station.rbl_count} RBL-Nummern</span>
-                    <span class="municipality">${station.municipality}</span>
+        this.loadFavorites();
+        const html = stations.map(station => {
+            const isFavorite = this.favorites.some(fav => fav.diva === station.diva);
+            return `
+                <div class="search-result-item" onclick="app.selectStation('${station.diva}')">
+                    <div class="station-name">${station.name}</div>
+                    <div class="station-info">
+                        <span class="rbl-count">${station.rbl_count} RBL-Nummern</span>
+                        <span class="municipality">${station.municipality}</span>
+                    </div>
+                    <button class="favorite-star ${isFavorite ? 'favorited' : ''}" 
+                            onclick="event.stopPropagation(); app.toggleFavorite('${station.diva}', this)"
+                            title="${isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">
+                        <i class="fas fa-star"></i>
+                    </button>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         searchResults.innerHTML = html;
     }
@@ -724,10 +761,17 @@ class WienOPNVApp {
             return `
                 <div class="departure-line-group">
                     <div class="line-header">
-                        <span class="line-badge line-${firstDeparture.type} ${this.getLineBadgeClass(firstDeparture.line, firstDeparture.type)}">
-                            ${firstDeparture.line}
-                        </span>
-                        <span class="line-type">${this.getLineTypeText(firstDeparture.type)}</span>
+                        <div class="line-info">
+                            <span class="line-badge line-${firstDeparture.type} ${this.getLineBadgeClass(firstDeparture.line, firstDeparture.type)}">
+                                ${firstDeparture.line}
+                            </span>
+                            <span class="line-type">${this.getLineTypeText(firstDeparture.type)}</span>
+                        </div>
+                        <button class="favorite-star line-favorite ${this.isFavoriteStation() ? 'favorited' : ''}" 
+                                onclick="event.stopPropagation(); app.toggleCurrentStationFavorite(this)"
+                                title="${this.isFavoriteStation() ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">
+                            <i class="fas fa-star"></i>
+                        </button>
                     </div>
                     <div class="departures-list">
                         ${this.renderDepartureItems(initialDepartures, 'visible')}
@@ -1067,11 +1111,14 @@ class WienOPNVApp {
             } else {
                 favoritesList.innerHTML = this.favorites.map(fav => `
                     <div class="station-item" onclick="app.selectStationFromFavorite('${fav.diva}')">
-                        <div>
-                            <span class="station-name">${fav.name}</span>
-                            <div class="station-rbl">${fav.rbl_count} RBL-Nummern</div>
+                        <div class="station-info">
+                            <div class="station-name">
+                                <i class="fas fa-subway" style="color: var(--primary-color); margin-right: 8px;"></i>
+                                ${fav.name}
+                            </div>
+                            <div class="station-rbl">${fav.rbl_count} RBL-Nummern • ${fav.municipality || 'Wien'}</div>
                         </div>
-                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); app.removeFromFavorites('${fav.diva}')">
+                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); app.removeFromFavorites('${fav.diva}')" title="Aus Favoriten entfernen">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -1104,16 +1151,19 @@ class WienOPNVApp {
         localStorage.setItem('wien_opnv_favorites', JSON.stringify(this.favorites));
     }
 
-    addToFavorites() {
-        if (!this.selectedStation) return;
+    addToFavorites(station = null) {
+        const targetStation = station || this.selectedStation;
+        if (!targetStation) return;
         
-        const exists = this.favorites.some(fav => fav.diva === this.selectedStation.diva);
+        const exists = this.favorites.some(fav => fav.diva === targetStation.diva);
         if (exists) {
-            this.removeFromFavorites(this.selectedStation.diva);
+            this.removeFromFavorites(targetStation.diva);
         } else {
-            this.favorites.push(this.selectedStation);
+            this.favorites.push(targetStation);
             this.saveFavorites();
-            this.updateFavoriteButton();
+            if (!station && this.selectedStation) {
+                this.updateFavoriteButton();
+            }
         }
     }
 
@@ -1123,9 +1173,67 @@ class WienOPNVApp {
         
         if (this.currentPage === 'favorites') {
             this.loadFavoritesPage();
+            // If the removed station was currently selected on favorites page, hide it
+            if (this.selectedStation && this.selectedStation.diva === diva) {
+                document.getElementById('selectedFavoriteStation').style.display = 'none';
+                document.getElementById('favoriteDepartures').style.display = 'none';
+                this.selectedStation = null;
+            }
         }
         if (this.selectedStation && this.selectedStation.diva === diva) {
             this.updateFavoriteButton();
+        }
+    }
+
+    toggleFavorite(diva, buttonElement) {
+        const station = this.stations.find(s => s.diva === diva);
+        if (!station) return;
+
+        this.loadFavorites();
+        const isFavorite = this.favorites.some(fav => fav.diva === diva);
+
+        if (isFavorite) {
+            this.removeFromFavorites(diva);
+            buttonElement.classList.remove('favorited');
+            buttonElement.title = 'Zu Favoriten hinzufügen';
+        } else {
+            this.addToFavorites(station);
+            buttonElement.classList.add('favorited');
+            buttonElement.title = 'Aus Favoriten entfernen';
+        }
+
+        // Refresh favorites quick-select if showing
+        const searchInput = document.getElementById('stationSearch');
+        if (searchInput && searchInput.value.length < 2) {
+            this.displayFavoriteQuickSelect();
+        }
+    }
+
+    isFavoriteStation() {
+        if (!this.selectedStation) return false;
+        this.loadFavorites();
+        return this.favorites.some(fav => fav.diva === this.selectedStation.diva);
+    }
+
+    toggleCurrentStationFavorite(buttonElement) {
+        if (!this.selectedStation) return;
+
+        const isFavorite = this.isFavoriteStation();
+
+        if (isFavorite) {
+            this.removeFromFavorites(this.selectedStation.diva);
+            // Update all line header stars
+            document.querySelectorAll('.line-favorite').forEach(btn => {
+                btn.classList.remove('favorited');
+                btn.title = 'Zu Favoriten hinzufügen';
+            });
+        } else {
+            this.addToFavorites(this.selectedStation);
+            // Update all line header stars
+            document.querySelectorAll('.line-favorite').forEach(btn => {
+                btn.classList.add('favorited');
+                btn.title = 'Aus Favoriten entfernen';
+            });
         }
     }
 
@@ -1138,8 +1246,121 @@ class WienOPNVApp {
     }
 
     selectStationFromFavorite(diva) {
-        this.selectStation(diva);
-        this.showPage('search');
+        const station = this.stations.find(s => s.diva === diva);
+        if (!station) return;
+
+        this.selectedStation = station;
+        this.currentRBLs = station.rbls || [];
+        
+        // Show selected station info on favorites page
+        this.showSelectedFavoriteStation();
+        this.loadFavoriteDepartures();
+    }
+
+    showSelectedFavoriteStation() {
+        const selectedStationContainer = document.getElementById('selectedFavoriteStation');
+        if (!selectedStationContainer || !this.selectedStation) return;
+
+        selectedStationContainer.innerHTML = `
+            <div class="selected-station-card">
+                <div class="station-header">
+                    <h3>${this.selectedStation.name}</h3>
+                    <button class="info-icon" onclick="window.app.showStationInfo()" title="Live-Daten Status anzeigen">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+                <div class="station-details">
+                    <span class="detail-item">RBL-Nummern: ${this.currentRBLs.join(', ')}</span>
+                    <span class="detail-item">Anzahl: ${this.currentRBLs.length}</span>
+                </div>
+            </div>
+        `;
+        
+        selectedStationContainer.style.display = 'block';
+    }
+
+    async loadFavoriteDepartures() {
+        const departuresContainer = document.getElementById('favoriteDeparturesContainer');
+        const departuresSection = document.getElementById('favoriteDepartures');
+        const apiStatus = document.getElementById('favoriteApiStatus');
+        const lastUpdate = document.getElementById('favoriteLastUpdate');
+        
+        if (!departuresContainer || !this.currentRBLs || this.currentRBLs.length === 0) return;
+
+        departuresSection.style.display = 'block';
+        departuresContainer.innerHTML = '<div class="loading">Lade Abfahrten...</div>';
+
+        try {
+            const departures = await this.fetchLiveDepartures(this.currentRBLs);
+            
+            if (departures && departures.length > 0) {
+                this.displayFavoriteDepartures(departures);
+                if (apiStatus) {
+                    apiStatus.className = 'api-status online';
+                    apiStatus.title = 'API Verbindung aktiv';
+                }
+            } else {
+                departuresContainer.innerHTML = '<div class="no-data">Keine Abfahrten verfügbar</div>';
+            }
+            
+            if (lastUpdate) {
+                lastUpdate.textContent = `Aktualisiert: ${new Date().toLocaleTimeString()}`;
+            }
+            
+        } catch (error) {
+            console.error('Fehler beim Laden der Abfahrten:', error);
+            departuresContainer.innerHTML = '<div class="error">Fehler beim Laden der Abfahrten</div>';
+            if (apiStatus) {
+                apiStatus.className = 'api-status offline';
+                apiStatus.title = 'API Verbindung fehlgeschlagen';
+            }
+        }
+    }
+
+    displayFavoriteDepartures(departures) {
+        const departuresContainer = document.getElementById('favoriteDeparturesContainer');
+        if (!departuresContainer) return;
+
+        // Group departures by line
+        const groupedDepartures = this.groupDeparturesByLine(departures);
+        
+        const html = Object.entries(groupedDepartures).map(([lineId, lineDepartures]) => {
+            const firstDeparture = lineDepartures[0];
+            const initialDepartures = lineDepartures.slice(0, 2);
+            const hiddenDepartures = lineDepartures.slice(2);
+            
+            return `
+                <div class="departure-line-group">
+                    <div class="line-header">
+                        <div class="line-info">
+                            <span class="line-badge line-${firstDeparture.type} ${this.getLineBadgeClass(firstDeparture.line, firstDeparture.type)}">
+                                ${firstDeparture.line}
+                            </span>
+                            <span class="line-type">${this.getLineTypeText(firstDeparture.type)}</span>
+                        </div>
+                        <button class="favorite-star line-favorite favorited" 
+                                onclick="event.stopPropagation(); app.toggleCurrentStationFavorite(this)"
+                                title="Aus Favoriten entfernen">
+                            <i class="fas fa-star"></i>
+                        </button>
+                    </div>
+                    <div class="departures-list">
+                        ${this.renderDepartureItems(initialDepartures, 'visible')}
+                        ${hiddenDepartures.length > 0 ? this.renderDepartureItems(hiddenDepartures, 'hidden', lineId) : ''}
+                        ${hiddenDepartures.length > 0 ? `
+                            <div class="show-more-container">
+                                <button class="show-more-btn" onclick="window.app.showMoreDepartures('${lineId}', this)">
+                                    <i class="fas fa-chevron-down"></i>
+                                    <span>+${hiddenDepartures.length} weitere anzeigen</span>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        departuresContainer.innerHTML = html;
     }
 
     updateFavoriteButton() {
