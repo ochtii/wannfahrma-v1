@@ -393,6 +393,8 @@ class WienOPNVApp {
     closeStationInfoModal() {
         const modal = document.getElementById('stationInfoModal');
         modal.classList.remove('show');
+        modal.classList.remove('open');
+        modal.style.display = 'none';
         document.removeEventListener('keydown', this.handleEscapeKey.bind(this));
         modal.removeEventListener('click', this.handleModalBackdropClick.bind(this));
     }
@@ -1605,6 +1607,11 @@ class WienOPNVApp {
         card.innerHTML = `
             <div class="card-header">
                 <h3 class="card-title">${cardData.title}</h3>
+                <div class="card-info">
+                    <button class="info-btn" title="Stationsinfo" onclick="app.openStationInfoFromCard('${cardData.id}')">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
                 <div class="card-controls" style="display: none;">
                     <button onclick="app.addDashboardCard(app.getDashboardCard('${cardData.id}'))" class="edit-card-btn" title="Bearbeiten">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2086,14 +2093,66 @@ class WienOPNVApp {
         };
         
         // Form submission
-        form.onsubmit = (e) => {
-            e.preventDefault();
-            this.saveNewCardConfig();
+        if (form) {
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                this.saveMultiLineCardConfig();
+            };
+        }
+    }
+
+    saveMultiLineCardConfig() {
+        if (!this.currentCardConfig.station) {
+            alert('Bitte wählen Sie eine Station aus.');
+            return;
+        }
+        
+        if (this.currentCardConfig.departureLines.length === 0) {
+            alert('Bitte fügen Sie mindestens eine Abfahrtslinie hinzu.');
+            return;
+        }
+        
+        // Build complete cardData
+        const cardData = {
+            id: this.currentEditingCard ? this.currentEditingCard.id : Date.now().toString(),
+            title: this.currentCardConfig.title || this.currentCardConfig.station.name,
+            stationName: this.currentCardConfig.station.name,
+            station: this.currentCardConfig.station,
+            departureLines: this.currentCardConfig.departureLines,
+            refreshInterval: this.currentCardConfig.refreshInterval,
+            autoSort: this.currentCardConfig.autoSort,
+            maxDepartureRows: this.currentCardConfig.maxDepartureRows,
+            // RBL mapping for live API
+            rblNumbers: this.currentCardConfig.station.rbls?.map(r => r.stopId || r.rbl).filter(Boolean) || [],
+            // Legacy fields for compatibility
+            rblNumber: this.currentCardConfig.station.rbls?.[0]?.stopId || this.currentCardConfig.station.rbls?.[0]?.rbl,
+            latitude: this.currentCardConfig.station.latitude,
+            longitude: this.currentCardConfig.station.longitude
         };
         
-        // Initialize preview
-        this.updateCardPreview();
-        this.updateSaveButton();
+        console.log(`💾 Saving multi-line card:`, cardData);
+        
+        let cards = this.loadDashboardCards();
+        
+        if (this.currentEditingCard) {
+            // Update existing card
+            const index = cards.findIndex(c => c.id === this.currentEditingCard.id);
+            if (index !== -1) {
+                cards[index] = cardData;
+                console.log(`✏️ Updated existing card at index ${index}`);
+            } else {
+                console.warn('⚠️ Card to update not found, adding as new');
+                cards.push(cardData);
+            }
+        } else {
+            // Add new card
+            cards.push(cardData);
+            console.log(`➕ Added new card`);
+        }
+        
+        this.saveDashboardCards(cards);
+        this.closeCardConfig();
+        this.loadDashboard();
     }
 
     setFormValues() {
@@ -2583,7 +2642,7 @@ class WienOPNVApp {
                 </div>
                 
                 <div class="departure-count-selector">
-                    <label>Anzahl Abfahrten:</label>
+                    <label>${config.enableCycling ? 'Anzahl durchgeschaltete Abfahrten:' : 'Anzahl Abfahrten:'}</label>
                     <div class="departure-count-buttons">
                         ${[1, 2, 3].map(count => `
                             <button type="button" class="count-btn ${config.departureCount === count ? 'active' : ''}" 
@@ -2591,6 +2650,15 @@ class WienOPNVApp {
                         `).join('')}
                     </div>
                 </div>
+                
+                ${config.enableCycling ? `
+                <div class="cycling-interval-selector">
+                    <label for="cyclingInterval_${config.id}">Durchschalt-Intervall: <span id="intervalValue_${config.id}">${config.cyclingInterval || 5}</span>s</label>
+                    <input type="range" id="cyclingInterval_${config.id}" class="form-range" 
+                           min="1" max="30" value="${config.cyclingInterval || 5}"
+                           oninput="app.updateCyclingInterval('${config.id}', this.value)">
+                </div>
+                ` : ''}
                 
                 <div class="departure-line-options">
                     <div class="form-check">
@@ -2696,7 +2764,20 @@ class WienOPNVApp {
         const config = this.currentCardConfig.departureLines.find(c => c.id === configId);
         if (config) {
             config.enableCycling = enabled;
+            if (enabled && !config.cyclingInterval) {
+                config.cyclingInterval = 5; // Default interval
+            }
+            this.renderDepartureLinesList(); // Re-render to show/hide interval slider
             this.updateCardPreview();
+            this.updateSaveButton();
+        }
+    }
+
+    updateCyclingInterval(configId, interval) {
+        const config = this.currentCardConfig.departureLines.find(c => c.id === configId);
+        if (config) {
+            config.cyclingInterval = parseInt(interval);
+            document.getElementById(`intervalValue_${configId}`).textContent = interval;
             this.updateSaveButton();
         }
     }
@@ -3178,6 +3259,11 @@ class WienOPNVApp {
                 
                 if (allDepartures.length > 0) {
                     console.log(`✅ Loaded ${allDepartures.length} departures for ${cardData.title}`);
+                    
+                    // Cache departure data for cycling timer
+                    if (!this.lastDepartureData) this.lastDepartureData = new Map();
+                    this.lastDepartureData.set(cardData.id, allDepartures);
+                    
                     contentElement.innerHTML = this.renderCardDepartures(allDepartures, cardData);
                     this.showCard(card);
                 } else {
@@ -3270,7 +3356,54 @@ class WienOPNVApp {
         } finally {
             // Update timestamp after loading (success or failure)
             this.updateCardTimestamp(cardData.id);
+            
+            // Setup cycling timer for cards with cycling lines
+            this.setupCardCyclingTimer(cardData);
         }
+    }
+
+    setupCardCyclingTimer(cardData) {
+        if (!cardData.departureLines) return;
+        
+        const cyclingLines = cardData.departureLines.filter(line => line.enableCycling);
+        if (cyclingLines.length === 0) return;
+        
+        // Clear existing timer for this card
+        if (this.cyclingTimers && this.cyclingTimers.has(cardData.id)) {
+            clearInterval(this.cyclingTimers.get(cardData.id));
+        }
+        
+        if (!this.cyclingTimers) this.cyclingTimers = new Map();
+        
+        // Find the shortest interval among all cycling lines for this card
+        const shortestInterval = Math.min(...cyclingLines.map(line => (line.cyclingInterval || 5) * 1000));
+        
+        // Set up timer to re-render card more frequently for smooth progress
+        // Update every 200ms for smooth progress bar animation
+        const updateInterval = Math.min(200, shortestInterval / 10);
+        
+        const timer = setInterval(() => {
+            const card = document.getElementById(`card-${cardData.id}`);
+            const contentElement = card?.querySelector('.card-content');
+            if (!card || !contentElement) {
+                clearInterval(timer);
+                this.cyclingTimers.delete(cardData.id);
+                return;
+            }
+            
+            // Re-render without fetching new data (just cycle through existing)
+            const existingDepartures = this.lastDepartureData?.get(cardData.id);
+            if (existingDepartures && existingDepartures.length > 0) {
+                contentElement.innerHTML = this.renderCardDepartures(existingDepartures, cardData);
+            }
+        }, updateInterval);
+        
+        this.cyclingTimers.set(cardData.id, timer);
+    }
+
+    getNextDepartureLabel(currentIndex, total) {
+        const labels = ['nächste', 'übernächste', 'dritte', 'vierte', 'fünfte'];
+        return labels[currentIndex] || `${currentIndex + 1}.`;
     }
 
     showCard(card) {
@@ -3284,6 +3417,112 @@ class WienOPNVApp {
         if (card) {
             card.style.display = 'none';
             card.classList.add('hidden-card');
+        }
+    }
+
+    async openStationInfoFromCard(cardId) {
+        const cardData = this.getDashboardCard(cardId);
+        if (!cardData) return;
+        const modal = document.getElementById('stationInfoModal');
+        const titleEl = document.getElementById('modalTitle');
+        const bodyEl = document.getElementById('modalBody');
+        if (!modal || !titleEl || !bodyEl) return;
+
+        titleEl.textContent = `Station: ${cardData.stationName || cardData.title}`;
+        bodyEl.innerHTML = `<div class="loading"><div class="spinner"></div><p>Lade Stationsdetails...</p></div>`;
+        // Show modal (support both existing show mechanism and fallback)
+        modal.classList.add('open');
+        if (modal.style.display === 'none' || getComputedStyle(modal).display === 'none') {
+            modal.style.display = 'block';
+        }
+
+        try {
+            // Collect meta
+            const rbls = (cardData.rblNumbers || cardData.rblList || (cardData.rblNumber ? [cardData.rblNumber] : [])).filter(Boolean);
+            const departuresData = [];
+            for (const r of rbls.slice(0, 8)) { // limit to avoid overload
+                try {
+                    const resp = await fetch(`/api/departures/${r}`);
+                    if (resp.ok) {
+                        const json = await resp.json();
+                        departuresData.push({ rbl: r, raw: json });
+                    }
+                } catch (e) {
+                    console.warn('RBL fetch failed', r, e);
+                }
+            }
+
+            // Extract lines & departures
+            const lineMap = new Map();
+            departuresData.forEach(entry => {
+                const monitors = entry.raw?.data?.monitors || [];
+                monitors.forEach(m => {
+                    (m.lines || []).forEach(line => {
+                        if (!line?.name) return;
+                        if (!lineMap.has(line.name)) {
+                            lineMap.set(line.name, { name: line.name, departures: [] });
+                        }
+                        const depList = lineMap.get(line.name).departures;
+                        (line.departures || []).forEach(d => depList.push({
+                            countdown: d?.departureTime?.countdown,
+                            timePlanned: d?.plannedTime?.timePlanned,
+                            timeReal: d?.departureTime?.timeReal,
+                            direction: line?.towards,
+                            platform: m?.locationStop?.properties?.title,
+                            rbl: entry.rbl
+                        }));
+                    });
+                });
+            });
+
+            const linesArray = Array.from(lineMap.values()).sort((a,b)=>a.name.localeCompare(b.name,'de-AT'));
+
+            // Build HTML
+            let html = `<div class="station-meta">`;
+            html += `<p><strong>RBLs:</strong> ${rbls.join(', ') || '–'}</p>`;
+            if (cardData.latitude && cardData.longitude) {
+                html += `<p><strong>Position:</strong> ${cardData.latitude.toFixed(5)}, ${cardData.longitude.toFixed(5)} <button class="mini-map-btn" data-lat="${cardData.latitude}" data-lng="${cardData.longitude}"><i class="fas fa-map-marker-alt"></i> Karte</button></p>`;
+            }
+            html += `<p><strong>Linien (live gefunden):</strong> ${linesArray.map(l=>l.name).join(', ') || '–'}</p>`;
+            html += `</div>`;
+
+            if (linesArray.length) {
+                html += `<div class="lines-section">`;
+                linesArray.forEach(line => {
+                    const deps = line.departures
+                        .filter(d=>d.countdown!=null)
+                        .sort((a,b)=>a.countdown-b.countdown)
+                        .slice(0,10);
+                    html += `<div class="line-block">`;
+                    html += `<h4>Linie ${line.name}</h4>`;
+                    if (deps.length) {
+                        html += `<table class="departures-table"><thead><tr><th>in</th><th>Richtung</th><th>Gleis/Steig</th><th>RBL</th></tr></thead><tbody>`;
+                        deps.forEach(d => {
+                            html += `<tr><td>${d.countdown} min</td><td>${d.direction||''}</td><td>${d.platform||''}</td><td>${d.rbl}</td></tr>`;
+                        });
+                        html += `</tbody></table>`;
+                    } else {
+                        html += `<p class="no-data">Keine Abfahrten</p>`;
+                    }
+                    html += `</div>`;
+                });
+                html += `</div>`;
+            } else {
+                html += `<p>Keine Live-Linien gefunden.</p>`;
+            }
+
+            bodyEl.innerHTML = html;
+
+            // Mini map open handler (placeholder: open new window / map provider)
+            bodyEl.querySelectorAll('.mini-map-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const lat = e.currentTarget.getAttribute('data-lat');
+                    const lng = e.currentTarget.getAttribute('data-lng');
+                    window.open(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=18/${lat}/${lng}`, '_blank');
+                });
+            });
+        } catch (err) {
+            bodyEl.innerHTML = `<div class="error">Fehler beim Laden: ${err.message}</div>`;
         }
     }
 
@@ -3353,11 +3592,15 @@ class WienOPNVApp {
         staticLines.forEach(lineConfig => {
             const key = `${lineConfig.line}_${lineConfig.direction}`;
             const lineDepartures = departuresByLine.get(key) || [];
-            const limitedDepartures = lineDepartures
-                .sort((a, b) => this.parseCountdown(a.countdown) - this.parseCountdown(b.countdown))
-                .slice(0, lineConfig.departureCount || 3);
+            const sortedDepartures = lineDepartures
+                .sort((a, b) => this.parseCountdown(a.countdown) - this.parseCountdown(b.countdown));
             
-            limitedDepartures.forEach(dep => {
+            // Apply autoSort if enabled
+            const finalDepartures = cardData.autoSort !== false ? 
+                sortedDepartures.slice(0, lineConfig.departureCount || 3) :
+                lineDepartures.slice(0, lineConfig.departureCount || 3);
+            
+            finalDepartures.forEach(dep => {
                 if (usedRows < maxRows) {
                     renderResult.push({
                         departure: dep,
@@ -3368,31 +3611,56 @@ class WienOPNVApp {
             });
         });
         
-        // Then, render cycling lines
+        // Then, render cycling lines - only show current cycling departure per line
         if (cyclingLines.length > 0 && usedRows < maxRows) {
-            const remainingRows = maxRows - usedRows;
-            const cyclingDepartures = [];
-            
             cyclingLines.forEach(lineConfig => {
+                if (usedRows >= maxRows) return;
+                
                 const key = `${lineConfig.line}_${lineConfig.direction}`;
                 const lineDepartures = departuresByLine.get(key) || [];
-                const limitedDepartures = lineDepartures
-                    .sort((a, b) => this.parseCountdown(a.countdown) - this.parseCountdown(b.countdown))
-                    .slice(0, lineConfig.departureCount || 3);
                 
-                cyclingDepartures.push(...limitedDepartures);
-            });
-            
-            // Sort all cycling departures and take what fits
-            const sortedCyclingDepartures = cyclingDepartures
-                .sort((a, b) => this.parseCountdown(a.countdown) - this.parseCountdown(b.countdown))
-                .slice(0, remainingRows);
-            
-            sortedCyclingDepartures.forEach(dep => {
-                renderResult.push({
-                    departure: dep,
-                    isStatic: false
-                });
+                if (lineDepartures.length === 0) return;
+                
+                const sortedDepartures = lineDepartures
+                    .sort((a, b) => this.parseCountdown(a.countdown) - this.parseCountdown(b.countdown));
+                
+                // Get current cycling index for this line
+                const cyclingKey = `${cardData.id}_${lineConfig.id}`;
+                if (!this.cyclingState) this.cyclingState = new Map();
+                if (!this.cyclingState.has(cyclingKey)) {
+                    this.cyclingState.set(cyclingKey, { index: 0, lastUpdate: Date.now() });
+                }
+                
+                const state = this.cyclingState.get(cyclingKey);
+                const interval = (lineConfig.cyclingInterval || 5) * 1000;
+                const maxDepartures = Math.min(lineConfig.departureCount || 3, sortedDepartures.length);
+                
+                // Check if we need to advance to next departure
+                if (Date.now() - state.lastUpdate >= interval) {
+                    state.index = (state.index + 1) % maxDepartures;
+                    state.lastUpdate = Date.now();
+                }
+                
+                // Show only the current departure for this cycling line
+                const currentDeparture = sortedDepartures[state.index];
+                if (currentDeparture) {
+                    // Calculate progress within current interval
+                    const timeSinceUpdate = Date.now() - state.lastUpdate;
+                    const progressPercent = Math.min((timeSinceUpdate / interval) * 100, 100);
+                    
+                    renderResult.push({
+                        departure: currentDeparture,
+                        isStatic: false,
+                        cyclingInfo: {
+                            current: state.index + 1,
+                            total: maxDepartures,
+                            lineId: lineConfig.id,
+                            progress: progressPercent,
+                            nextLabel: this.getNextDepartureLabel(state.index, maxDepartures)
+                        }
+                    });
+                    usedRows++;
+                }
             });
         }
         
@@ -3406,6 +3674,15 @@ class WienOPNVApp {
                 <div class="departure-time">
                     ${this.formatDepartureTime(item.departure)}
                 </div>
+                ${item.cyclingInfo ? `
+                    <div class="cycling-status">
+                        <span class="cycling-label">${item.cyclingInfo.nextLabel} Abfahrt</span>
+                        <span class="cycling-position">${item.cyclingInfo.current}/${item.cyclingInfo.total}</span>
+                        <div class="cycling-progress-bar">
+                            <div class="cycling-progress-fill" style="width: ${item.cyclingInfo.progress}%"></div>
+                        </div>
+                    </div>
+                ` : ''}
             </div>
         `).join('');
         
@@ -3589,6 +3866,33 @@ class WienOPNVApp {
                 clearInterval(this.cardRefreshIntervals[cardId]);
                 delete this.cardRefreshIntervals[cardId];
                 console.log(`✅ Cleared refresh interval for card: ${cardId}`);
+            }
+            
+            // Clear cycling timer
+            if (this.cyclingTimers && this.cyclingTimers.has(cardId)) {
+                clearInterval(this.cyclingTimers.get(cardId));
+                this.cyclingTimers.delete(cardId);
+                console.log(`✅ Cleared cycling timer for card: ${cardId}`);
+            }
+            
+            // Clean up cycling state for this card
+            if (this.cyclingState) {
+                const keysToDelete = [];
+                for (const key of this.cyclingState.keys()) {
+                    if (key.startsWith(`${cardId}_`)) {
+                        keysToDelete.push(key);
+                    }
+                }
+                keysToDelete.forEach(key => this.cyclingState.delete(key));
+                if (keysToDelete.length > 0) {
+                    console.log(`✅ Cleared cycling state for card: ${cardId} (${keysToDelete.length} entries)`);
+                }
+            }
+            
+            // Clean up departure data cache
+            if (this.lastDepartureData && this.lastDepartureData.has(cardId)) {
+                this.lastDepartureData.delete(cardId);
+                console.log(`✅ Cleared departure data cache for card: ${cardId}`);
             }
             
             // Remove from storage and update instance variable
