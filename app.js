@@ -874,8 +874,8 @@ class WienOPNVApp {
                         </button>
                     </div>
                     <div class="departures-list">
-                        ${this.renderDepartureItems(initialDepartures, 'visible')}
-                        ${hiddenDepartures.length > 0 ? this.renderDepartureItems(hiddenDepartures, 'hidden', lineId) : ''}
+                        ${this.renderSearchDepartureItems(initialDepartures, 'visible')}
+                        ${hiddenDepartures.length > 0 ? this.renderSearchDepartureItems(hiddenDepartures, 'hidden', lineId) : ''}
                         ${hiddenDepartures.length > 0 ? `
                             <div class="show-more-container">
                                 <button class="show-more-btn" onclick="window.app.showMoreDepartures('${lineId}', this)">
@@ -950,6 +950,59 @@ class WienOPNVApp {
         }).join('');
     }
 
+    renderSearchDepartureItems(departures, visibility, lineId = '') {
+        const visibilityClass = visibility === 'hidden' ? `hidden-departures ${lineId}-hidden` : '';
+        
+        return departures.map(dep => {
+            // Determine delay status for coloring
+            const delay = dep.delay || 0;
+            const isRealtime = dep.realtime;
+            let timeClass = '';
+            let delayIndicator = '';
+            
+            if (isRealtime) {
+                if (delay >= -1 && delay <= 2) {
+                    timeClass = 'on-time';
+                    delayIndicator = delay > 0 ? `+${delay}` : delay < 0 ? `${delay}` : '';
+                } else {
+                    timeClass = 'delayed';
+                    delayIndicator = delay > 0 ? `+${delay}` : `${delay}`;
+                }
+            }
+
+            const actualTime = dep.realTime || dep.scheduledTime;
+            const scheduledTime = dep.scheduledTime;
+            
+            return `
+                <div class="search-departure-item ${visibilityClass}">
+                    <div class="search-departure-main">
+                        <div class="search-line-info">
+                            <span class="search-line-number" style="background-color: ${this.getLineColor(dep.line)}">${dep.line}</span>
+                            <span class="search-direction">${dep.direction}</span>
+                        </div>
+                        <div class="search-time-section">
+                            <div class="search-time-info">
+                                <div class="search-actual-time ${timeClass}">
+                                    ${actualTime}
+                                    ${delayIndicator && isRealtime ? ` (${delayIndicator})` : ''}
+                                </div>
+                                ${dep.realTime && dep.realTime !== scheduledTime ? `
+                                    <div class="search-scheduled-time">Plan: ${scheduledTime}</div>
+                                ` : ''}
+                            </div>
+                            <div class="search-countdown ${dep.minutesUntil <= 2 ? 'urgent' : ''}">${this.formatCountdown(dep.minutesUntil)}</div>
+                            <button class="search-info-icon" 
+                                    onclick="app.showDepartureDetails('${dep.rbl}', '${dep.line}', '${dep.direction}', ${dep.platform ? `'${dep.platform}'` : 'null'})"
+                                    title="Details anzeigen">
+                                <i class="fas fa-info"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
     showMoreDepartures(lineId, buttonElement) {
         const hiddenDepartures = document.querySelectorAll(`.${lineId}-hidden`);
         const button = buttonElement;
@@ -982,6 +1035,29 @@ class WienOPNVApp {
         }
     }
 
+    showDepartureDetails(rbl, line, direction, platform) {
+        const title = `Details: Linie ${line}`;
+        const details = `
+            <div class="departure-details">
+                <h4>${line} → ${direction}</h4>
+                <div class="detail-item">
+                    <strong>RBL:</strong> ${rbl}
+                </div>
+                ${platform ? `
+                <div class="detail-item">
+                    <strong>Steig:</strong> ${platform}
+                </div>
+                ` : ''}
+                <div class="detail-item">
+                    <strong>Station:</strong> ${this.selectedStation?.name || 'Unbekannt'}
+                </div>
+            </div>
+        `;
+        
+        // Show in a simple alert for now - could be enhanced with a modal later
+        alert(`${title}\n\nLinie: ${line}\nRichtung: ${direction}\nRBL: ${rbl}${platform ? `\nSteig: ${platform}` : ''}\nStation: ${this.selectedStation?.name || 'Unbekannt'}`);
+    }
+
     groupDeparturesByLine(departures) {
         const grouped = {};
         
@@ -995,7 +1071,11 @@ class WienOPNVApp {
 
         // Sortiere jede Gruppe nach Zeit
         Object.keys(grouped).forEach(key => {
-            grouped[key].sort((a, b) => a.minutesUntil - b.minutesUntil);
+            grouped[key].sort((a, b) => {
+                const timeA = this.parseCountdown(a.countdown) || a.minutesUntil || 0;
+                const timeB = this.parseCountdown(b.countdown) || b.minutesUntil || 0;
+                return timeA - timeB;
+            });
         });
 
         return grouped;
@@ -1454,6 +1534,7 @@ class WienOPNVApp {
 
     loadDashboard() {
         const dashboardCards = this.loadDashboardCards();
+        this.dashboardCards = dashboardCards; // Initialize the instance property
         const dashboardGrid = document.getElementById('dashboardGrid');
         const dashboardEmpty = document.getElementById('dashboardEmpty');
         
@@ -1512,6 +1593,220 @@ class WienOPNVApp {
         if (editDashboardBtn) {
             editDashboardBtn.onclick = () => this.toggleEditMode();
         }
+
+        // Setup view toggle
+        this.setupViewToggle();
+        
+        // Setup display options
+        this.setupDisplayOptions();
+    }
+
+    setupDisplayOptions() {
+        // Initialize display settings
+        this.displaySettings = {
+            timeDisplayOptions: JSON.parse(localStorage.getItem('wien_opnv_time_display_options')) || ['countdown'],
+            viewMode: localStorage.getItem('wien_opnv_dashboard_view') || 'list',
+            autoRefresh: localStorage.getItem('wien_opnv_auto_refresh') !== 'false',
+            refreshInterval: parseInt(localStorage.getItem('wien_opnv_refresh_interval')) || 30,
+            hideEmptyCards: localStorage.getItem('wien_opnv_hide_empty_cards') === 'true'
+        };
+
+        // Setup options toggle
+        const optionsToggle = document.getElementById('optionsToggle');
+        const optionsContent = document.getElementById('optionsContent');
+        
+        if (optionsToggle && optionsContent) {
+            optionsToggle.addEventListener('click', () => {
+                const isExpanded = optionsContent.classList.contains('expanded');
+                optionsContent.classList.toggle('expanded');
+                optionsToggle.classList.toggle('expanded');
+            });
+        }
+
+        // Setup option change handlers
+        this.setupTimeDisplayOptions();
+        this.setupViewModeOptions();
+        this.setupAutoRefreshOptions();
+        
+        // Apply initial settings
+        this.applyDisplaySettings();
+    }
+
+    setupTimeDisplayOptions() {
+        const timeDisplayCheckboxes = document.querySelectorAll('input[name="timeDisplay"]');
+        timeDisplayCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.displaySettings.timeDisplayOptions.includes(checkbox.value);
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    // Add to selected options
+                    if (!this.displaySettings.timeDisplayOptions.includes(checkbox.value)) {
+                        this.displaySettings.timeDisplayOptions.push(checkbox.value);
+                    }
+                } else {
+                    // Remove from selected options
+                    this.displaySettings.timeDisplayOptions = this.displaySettings.timeDisplayOptions.filter(
+                        option => option !== checkbox.value
+                    );
+                }
+                
+                // Ensure at least one option is always selected
+                if (this.displaySettings.timeDisplayOptions.length === 0) {
+                    this.displaySettings.timeDisplayOptions = ['countdown'];
+                    checkbox.checked = checkbox.value === 'countdown';
+                }
+                
+                localStorage.setItem('wien_opnv_time_display_options', JSON.stringify(this.displaySettings.timeDisplayOptions));
+                this.refreshAllCards();
+            });
+        });
+    }
+
+    setupViewModeOptions() {
+        const viewModeRadios = document.querySelectorAll('input[name="viewMode"]');
+        viewModeRadios.forEach(radio => {
+            radio.checked = radio.value === this.displaySettings.viewMode;
+            radio.addEventListener('change', () => {
+                if (radio.checked) {
+                    this.displaySettings.viewMode = radio.value;
+                    this.setDashboardView(radio.value);
+                }
+            });
+        });
+    }
+
+    setupAutoRefreshOptions() {
+        const autoRefreshCheckbox = document.getElementById('autoRefreshEnabled');
+        const refreshOptions = document.getElementById('refreshOptions');
+        const refreshRadios = document.querySelectorAll('input[name="refreshInterval"]');
+
+        // Setup checkbox
+        if (autoRefreshCheckbox) {
+            autoRefreshCheckbox.checked = this.displaySettings.autoRefresh;
+            autoRefreshCheckbox.addEventListener('change', () => {
+                this.displaySettings.autoRefresh = autoRefreshCheckbox.checked;
+                localStorage.setItem('wien_opnv_auto_refresh', autoRefreshCheckbox.checked);
+                
+                if (refreshOptions) {
+                    refreshOptions.classList.toggle('disabled', !autoRefreshCheckbox.checked);
+                }
+                
+                this.updateAutoRefresh();
+            });
+        }
+
+        // Setup refresh interval radios
+        refreshRadios.forEach(radio => {
+            radio.checked = parseInt(radio.value) === this.displaySettings.refreshInterval;
+            radio.addEventListener('change', () => {
+                if (radio.checked) {
+                    this.displaySettings.refreshInterval = parseInt(radio.value);
+                    localStorage.setItem('wien_opnv_refresh_interval', radio.value);
+                    this.updateAutoRefresh();
+                }
+            });
+        });
+
+        // Setup hide empty cards option
+        const hideEmptyCardsCheckbox = document.getElementById('hideEmptyCards');
+        if (hideEmptyCardsCheckbox) {
+            hideEmptyCardsCheckbox.checked = this.displaySettings.hideEmptyCards;
+            hideEmptyCardsCheckbox.addEventListener('change', () => {
+                this.displaySettings.hideEmptyCards = hideEmptyCardsCheckbox.checked;
+                localStorage.setItem('wien_opnv_hide_empty_cards', hideEmptyCardsCheckbox.checked);
+                this.refreshAllCards();
+            });
+        }
+
+        // Initial state
+        if (refreshOptions) {
+            refreshOptions.classList.toggle('disabled', !this.displaySettings.autoRefresh);
+        }
+    }
+
+    applyDisplaySettings() {
+        // Apply view mode
+        this.setDashboardView(this.displaySettings.viewMode);
+        
+        // Update view mode radio buttons
+        const viewModeRadios = document.querySelectorAll('input[name="viewMode"]');
+        viewModeRadios.forEach(radio => {
+            radio.checked = radio.value === this.displaySettings.viewMode;
+        });
+
+        // Update hide empty cards checkbox
+        const hideEmptyCardsCheckbox = document.getElementById('hideEmptyCards');
+        if (hideEmptyCardsCheckbox) {
+            hideEmptyCardsCheckbox.checked = this.displaySettings.hideEmptyCards;
+        }
+
+        // Update time display checkboxes
+        const timeDisplayCheckboxes = document.querySelectorAll('input[name="timeDisplay"]');
+        timeDisplayCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.displaySettings.timeDisplayOptions.includes(checkbox.value);
+        });
+    }
+
+    refreshAllCards() {
+        const cards = this.loadDashboardCards();
+        cards.forEach(card => {
+            this.loadCardDepartures(card);
+        });
+    }
+
+    updateAutoRefresh() {
+        // Clear existing intervals
+        if (this.globalRefreshInterval) {
+            clearInterval(this.globalRefreshInterval);
+            this.globalRefreshInterval = null;
+        }
+
+        // Setup new interval if enabled
+        if (this.displaySettings.autoRefresh) {
+            this.globalRefreshInterval = setInterval(() => {
+                this.refreshAllCards();
+                console.log(`🔄 Auto-refresh: Updated all cards (${this.displaySettings.refreshInterval}s interval)`);
+            }, this.displaySettings.refreshInterval * 1000);
+            
+            console.log(`✅ Auto-refresh enabled: ${this.displaySettings.refreshInterval}s interval`);
+        } else {
+            console.log(`❌ Auto-refresh disabled`);
+        }
+    }
+
+    setupViewToggle() {
+        const viewButtons = document.querySelectorAll('.view-btn');
+        const dashboardGrid = document.getElementById('dashboardGrid');
+        
+        // Load saved view preference
+        const savedView = localStorage.getItem('wien_opnv_dashboard_view') || 'list';
+        this.setDashboardView(savedView);
+        
+        viewButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const view = btn.dataset.view;
+                this.setDashboardView(view);
+                
+                // Save preference
+                localStorage.setItem('wien_opnv_dashboard_view', view);
+            });
+        });
+    }
+
+    setDashboardView(view) {
+        const dashboardGrid = document.getElementById('dashboardGrid');
+        const viewButtons = document.querySelectorAll('.view-btn');
+        
+        if (!dashboardGrid) return;
+        
+        // Update grid classes
+        dashboardGrid.className = `dashboard-grid ${view}-view`;
+        
+        // Update button states
+        viewButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.view === view);
+        });
+        
+        console.log(`🎯 Dashboard view changed to: ${view}`);
     }
 
     loadDashboardCards() {
@@ -2396,9 +2691,10 @@ class WienOPNVApp {
         
         // Create card data object
         const cardData = {
-            id: Date.now().toString(),
+            id: this.generateUniqueCardId(),
             title: this.currentCardConfig.title || this.currentCardConfig.station.name,
             station: this.currentCardConfig.station,
+            stationName: this.currentCardConfig.station.name, // Add explicit stationName
             departureLines: validLines,
             size: this.currentCardConfig.size,
             refreshInterval: this.currentCardConfig.refreshInterval,
@@ -2406,16 +2702,49 @@ class WienOPNVApp {
         };
         
         // Save card to dashboard
-        this.dashboardCards = this.dashboardCards || [];
+        this.dashboardCards = this.loadDashboardCards(); // Load existing cards first
+        console.log(`📋 Loaded ${this.dashboardCards.length} existing cards before adding new one`);
         this.dashboardCards.push(cardData);
+        console.log(`📋 Total cards after adding new one: ${this.dashboardCards.length}`);
         this.saveDashboardCards();
         
-        // Render new card
-        this.renderDashboardCard(cardData);
+        // Reload the entire dashboard to show all cards
+        this.loadDashboard();
         
         // Close modal and show success
         this.closeCardConfig();
         alert('✅ Dashboard-Karte wurde erfolgreich erstellt!');
+    }
+
+    editDashboardCard(cardId) {
+        const cards = this.loadDashboardCards();
+        const card = cards.find(c => c.id === cardId);
+        
+        if (!card) {
+            console.error(`Card not found: ${cardId}`);
+            return;
+        }
+        
+        // Load the card configuration into the modal for editing
+        this.addDashboardCard(card);
+    }
+
+    generateUniqueCardId() {
+        // Generate a unique ID using timestamp and random number
+        const timestamp = Date.now();
+        const random = Math.floor(Math.random() * 10000);
+        const id = `${timestamp}-${random}`;
+        
+        // Ensure the ID is unique by checking existing cards
+        const existingCards = this.loadDashboardCards();
+        const existingIds = existingCards.map(card => card.id);
+        
+        if (existingIds.includes(id)) {
+            // If by some chance there's a collision, recursively try again
+            return this.generateUniqueCardId();
+        }
+        
+        return id;
     }
 
     getNextCardPosition() {
@@ -2431,7 +2760,9 @@ class WienOPNVApp {
 
     saveDashboardCards() {
         try {
-            localStorage.setItem('dashboard_cards', JSON.stringify(this.dashboardCards));
+            console.log(`💾 Saving ${this.dashboardCards.length} dashboard cards:`, this.dashboardCards);
+            localStorage.setItem('wien_opnv_dashboard_cards', JSON.stringify(this.dashboardCards));
+            console.log(`✅ Successfully saved dashboard cards to localStorage`);
         } catch (error) {
             console.error('Error saving dashboard cards:', error);
         }
@@ -2439,8 +2770,29 @@ class WienOPNVApp {
 
     loadDashboardCards() {
         try {
-            const saved = localStorage.getItem('dashboard_cards');
-            return saved ? JSON.parse(saved) : [];
+            const saved = localStorage.getItem('wien_opnv_dashboard_cards');
+            const cards = saved ? JSON.parse(saved) : [];
+            
+            // Clean up invalid cards
+            const validCards = cards.filter(card => {
+                const hasOldFormat = card.rblNumber && card.line && card.direction;
+                const hasValidNewFormat = card.departureLines && 
+                    card.departureLines.some(line => line.rbl && line.line && line.direction);
+                
+                if (!hasOldFormat && !hasValidNewFormat) {
+                    console.warn(`🧹 Removing invalid card: ${card.title}`, card);
+                    return false;
+                }
+                return true;
+            });
+            
+            // Save cleaned cards if any were removed
+            if (validCards.length !== cards.length) {
+                console.log(`🧹 Cleaned up ${cards.length - validCards.length} invalid cards`);
+                localStorage.setItem('wien_opnv_dashboard_cards', JSON.stringify(validCards));
+            }
+            
+            return validCards;
         } catch (error) {
             console.error('Error loading dashboard cards:', error);
             return [];
@@ -2584,13 +2936,26 @@ class WienOPNVApp {
         const hasOldFormat = cardData.rblNumber && cardData.line && cardData.direction;
         const hasNewFormat = cardData.departureLines && cardData.departureLines.length > 0;
         
-        if (!hasOldFormat && !hasNewFormat) {
+        // Additional validation for new format
+        let hasValidNewFormat = false;
+        if (hasNewFormat) {
+            hasValidNewFormat = cardData.departureLines.some(line => 
+                line.rbl && line.line && line.direction
+            );
+            
+            if (!hasValidNewFormat) {
+                console.warn(`❌ Invalid departure lines in card: ${cardData.title}`, cardData.departureLines);
+            }
+        }
+        
+        if (!hasOldFormat && !hasValidNewFormat) {
             console.warn(`❌ Incomplete card configuration: ${cardData.title}`);
+            console.log('Card data:', cardData);
             contentElement.innerHTML = `
                 <div class="error">
                     <div>Unvollständige Kartenkonfiguration</div>
-                    <small>Keine Abfahrtszeilen konfiguriert</small>
-                    <button onclick="app.addDashboardCard(app.getDashboardCard('${cardData.id}'))" style="margin-top: 10px; padding: 5px 10px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    <small>Keine gültigen Abfahrtszeilen konfiguriert</small>
+                    <button onclick="app.editDashboardCard('${cardData.id}')" style="margin-top: 10px; padding: 5px 10px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
                         Karte neu konfigurieren
                     </button>
                 </div>
@@ -2605,6 +2970,12 @@ class WienOPNVApp {
                 
                 for (const departureLine of cardData.departureLines) {
                     try {
+                        // Validate departure line data
+                        if (!departureLine.rbl || !departureLine.line || !departureLine.direction) {
+                            console.warn(`⚠️ Skipping invalid departure line:`, departureLine);
+                            continue;
+                        }
+                        
                         const rblDepartures = await this.fetchDeparturesForRBL(departureLine.rbl);
                         if (rblDepartures && rblDepartures.length > 0) {
                             // Filter for specific line and direction
@@ -2615,7 +2986,7 @@ class WienOPNVApp {
                             // Take only the requested number of departures for this line
                             const limitedDepartures = filteredDepartures
                                 .sort((a, b) => (a.minutesUntil || 0) - (b.minutesUntil || 0))
-                                .slice(0, departureLine.departureCount);
+                                .slice(0, departureLine.departureCount || 3);
                             
                             allDepartures.push(...limitedDepartures);
                         }
@@ -2627,13 +2998,20 @@ class WienOPNVApp {
                 if (allDepartures.length > 0) {
                     console.log(`✅ Loaded ${allDepartures.length} departures for ${cardData.title}`);
                     contentElement.innerHTML = this.renderCardDepartures(allDepartures, cardData);
+                    this.showCard(card);
                 } else {
-                    contentElement.innerHTML = `
-                        <div class="error">
-                            <div>Keine Abfahrten gefunden</div>
-                            <small>Möglicherweise fahren gerade keine Fahrzeuge</small>
-                        </div>
-                    `;
+                    console.warn(`⚠️ No live data available for ${cardData.title}`);
+                    if (this.displaySettings.hideEmptyCards) {
+                        this.hideCard(card);
+                    } else {
+                        contentElement.innerHTML = `
+                            <div class="no-live-data">
+                                <div>Im Moment keine Live-Daten verfügbar</div>
+                                <small>Möglicherweise fahren gerade keine Fahrzeuge oder der Service ist temporär nicht verfügbar</small>
+                            </div>
+                        `;
+                        this.showCard(card);
+                    }
                 }
                 return;
             }
@@ -2670,24 +3048,35 @@ class WienOPNVApp {
                     
                     console.log(`✅ Loaded ${sortedDepartures.length} departures for ${cardData.title} (Line ${cardData.line} → ${cardData.direction})`);
                     contentElement.innerHTML = this.renderCardDepartures(sortedDepartures, cardData);
+                    this.showCard(card);
                 } else {
                     console.warn(`⚠️ No departures found for line ${cardData.line} direction ${cardData.direction}`);
-                    contentElement.innerHTML = `
-                        <div class="no-departures">
-                            <div>Keine Abfahrten verfügbar</div>
-                            <small>Linie ${cardData.line} → ${cardData.direction}</small>
-                            <small>Station: ${cardData.stationName}</small>
-                        </div>
-                    `;
+                    if (this.displaySettings.hideEmptyCards) {
+                        this.hideCard(card);
+                    } else {
+                        contentElement.innerHTML = `
+                            <div class="no-live-data">
+                                <div>Im Moment keine Live-Daten verfügbar</div>
+                                <small>Linie ${cardData.line} → ${cardData.direction}</small>
+                                <small>Station: ${cardData.stationName}</small>
+                            </div>
+                        `;
+                        this.showCard(card);
+                    }
                 }
             } else {
                 console.warn(`⚠️ No departures received from any RBL`);
-                contentElement.innerHTML = `
-                    <div class="no-departures">
-                        <div>Keine Abfahrten verfügbar</div>
-                        <small>Station: ${cardData.stationName}</small>
-                    </div>
-                `;
+                if (this.displaySettings.hideEmptyCards) {
+                    this.hideCard(card);
+                } else {
+                    contentElement.innerHTML = `
+                        <div class="no-live-data">
+                            <div>Im Moment keine Live-Daten verfügbar</div>
+                            <small>Station: ${cardData.stationName}</small>
+                        </div>
+                    `;
+                    this.showCard(card);
+                }
             }
         } catch (error) {
             console.error(`❌ Error loading departures for ${cardData.title}:`, error);
@@ -2697,6 +3086,20 @@ class WienOPNVApp {
                     <small>${error.message}</small>
                 </div>
             `;
+        }
+    }
+
+    showCard(card) {
+        if (card) {
+            card.style.display = '';
+            card.classList.remove('hidden-card');
+        }
+    }
+
+    hideCard(card) {
+        if (card) {
+            card.style.display = 'none';
+            card.classList.add('hidden-card');
         }
     }
 
@@ -2714,8 +3117,9 @@ class WienOPNVApp {
         if (cardData.departureLines && cardData.departureLines.length > 0) {
             // New format - show station and line count
             const lineCount = cardData.departureLines.length;
+            const stationName = cardData.stationName || cardData.station?.name || cardData.title || 'Station';
             footerInfo = `
-                <small>${cardData.stationName} (${lineCount} ${lineCount === 1 ? 'Linie' : 'Linien'})</small>
+                <small>${stationName} (${lineCount} ${lineCount === 1 ? 'Linie' : 'Linien'})</small>
                 <small>Update: ${new Date().toLocaleTimeString()}</small>
             `;
         } else {
@@ -2735,7 +3139,7 @@ class WienOPNVApp {
                             <span class="direction">${dep.towards}</span>
                         </div>
                         <div class="departure-time">
-                            <span class="countdown">${dep.countdown}</span>
+                            ${this.formatDepartureTime(dep)}
                         </div>
                     </div>
                 `).join('')}
@@ -2744,6 +3148,68 @@ class WienOPNVApp {
                 ${footerInfo}
             </div>
         `;
+    }
+
+    formatDepartureTime(departure) {
+        if (!this.displaySettings || !this.displaySettings.timeDisplayOptions) {
+            return `<span class="countdown-text">${departure.countdown}</span>`;
+        }
+
+        const selectedOptions = this.displaySettings.timeDisplayOptions;
+        
+        // Calculate times
+        const now = new Date();
+        const minutes = this.parseCountdown(departure.countdown);
+        const arrivalTime = new Date(now.getTime() + minutes * 60000);
+        const actualTimeString = arrivalTime.toLocaleTimeString('de-DE', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+
+        // Calculate delay and expected time
+        const delay = departure.delay || 0;
+        const isRealtime = departure.realtime;
+        const expectedArrival = new Date(arrivalTime.getTime() - delay * 60000);
+        const expectedTimeString = expectedArrival.toLocaleTimeString('de-DE', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+
+        // Build time display elements - separate left and right elements
+        const leftElements = [];
+        let countdownElement = '';
+
+        if (selectedOptions.includes('expected')) {
+            if (isRealtime && delay !== 0) {
+                leftElements.push(`<span class="expected-text">${expectedTimeString}</span>`);
+            } else {
+                leftElements.push(`<span class="expected-text">${actualTimeString}</span>`);
+            }
+        }
+
+        if (selectedOptions.includes('actual')) {
+            leftElements.push(`<span class="actual-text">${actualTimeString}</span>`);
+        }
+
+        if (selectedOptions.includes('difference')) {
+            if (isRealtime && delay !== 0) {
+                const diffText = delay > 0 ? `+${delay} min` : `${delay} min`;
+                const diffClass = delay > 2 ? 'diff-delayed' : delay < -1 ? 'diff-early' : 'diff-ontime';
+                leftElements.push(`<span class="difference-text ${diffClass}">${diffText}</span>`);
+            } else {
+                leftElements.push(`<span class="difference-text diff-ontime">pünktlich</span>`);
+            }
+        }
+
+        if (selectedOptions.includes('countdown')) {
+            countdownElement = `<span class="countdown-text">${departure.countdown}</span>`;
+        }
+
+        // Create layout with left elements and countdown on the right
+        const leftContent = leftElements.length > 0 ? `<div class="time-left-elements">${leftElements.join('')}</div>` : '';
+        const rightContent = countdownElement ? `<div class="time-right-element">${countdownElement}</div>` : '';
+
+        return `<div class="time-display-split">${leftContent}${rightContent}</div>`;
     }
 
     setupCardAutoRefresh(cardData) {
@@ -3100,8 +3566,8 @@ class WienOPNVApp {
                         </button>
                     </div>
                     <div class="departures-list">
-                        ${this.renderDepartureItems(initialDepartures, 'visible')}
-                        ${hiddenDepartures.length > 0 ? this.renderDepartureItems(hiddenDepartures, 'hidden', lineId) : ''}
+                        ${this.renderSearchDepartureItems(initialDepartures, 'visible')}
+                        ${hiddenDepartures.length > 0 ? this.renderSearchDepartureItems(hiddenDepartures, 'hidden', lineId) : ''}
                         ${hiddenDepartures.length > 0 ? `
                             <div class="show-more-container">
                                 <button class="show-more-btn" onclick="window.app.showMoreDepartures('${lineId}', this)">

@@ -844,6 +844,128 @@ body {
     margin-top: 2px;
 }
 
+/* Search/Favorites Specific Layout */
+.search-departure-item {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.search-departure-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.search-departure-item:last-child {
+    border-bottom: none;
+}
+
+.search-departure-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.search-line-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.search-line-number {
+    background: var(--primary-color);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    min-width: 35px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.search-direction {
+    font-weight: 500;
+    color: var(--text-primary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-time-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.search-time-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    min-width: 80px;
+}
+
+.search-actual-time {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.search-actual-time.on-time {
+    color: var(--success-color);
+}
+
+.search-actual-time.delayed {
+    color: var(--danger-color);
+}
+
+.search-scheduled-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.search-countdown {
+    background: var(--success-color);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    min-width: 50px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.search-countdown.urgent {
+    background: var(--danger-color);
+}
+
+.search-info-icon {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    transition: var(--transition);
+}
+
+.search-info-icon:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
 /* Show More Functionality */
 .hidden-departures {
     display: none;
@@ -926,6 +1048,26 @@ body {
     font-size: 1.1rem;
 }
 
+.no-live-data {
+    background: rgba(255, 193, 7, 0.1);
+    color: #856404;
+    padding: 15px;
+    border-radius: var(--border-radius);
+    border: 1px solid #ffc107;
+    text-align: center;
+}
+
+.no-live-data div {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.no-live-data small {
+    display: block;
+    margin-top: 4px;
+    opacity: 0.8;
+}
+
 .last-refresh {
     color: var(--text-secondary);
     font-size: 0.8rem;
@@ -958,6 +1100,26 @@ body {
         flex-direction: column;
         align-items: stretch;
         gap: 8px;
+    }
+    
+    /* Search Layout Mobile */
+    .search-departure-main {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .search-line-info {
+        gap: 8px;
+    }
+    
+    .search-time-section {
+        justify-content: space-between;
+        gap: 10px;
+    }
+    
+    .search-time-info {
+        min-width: auto;
+        align-items: flex-start;
     }
     
     .time-info {
@@ -1364,15 +1526,231 @@ input:checked + .slider:before {
 /* Dashboard Styles */
 .dashboard-controls {
     display: flex;
-    gap: 15px;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 25px;
     flex-wrap: wrap;
+    gap: 15px;
+}
+
+.dashboard-actions {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+/* View Toggle */
+.view-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toggle-buttons {
+    display: flex;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 2px;
+}
+
+.view-btn {
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+}
+
+.view-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.view-btn.active {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.view-btn i {
+    font-size: 14px;
+}
+
+/* Display Options Panel */
+.display-options {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 25px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.options-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: var(--bg-tertiary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.options-header h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.options-toggle {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.options-toggle:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.options-toggle.expanded {
+    transform: rotate(180deg);
+}
+
+.options-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.options-content.expanded {
+    max-height: 400px;
+}
+
+.options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    padding: 20px;
+}
+
+.option-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.option-group > label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 5px;
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.radio-option:hover {
+    background: var(--bg-tertiary);
+}
+
+.checkbox-option:hover {
+    background: var(--bg-tertiary);
+}
+
+.radio-option input[type="radio"] {
+    margin: 0;
+}
+
+.checkbox-option input[type="checkbox"] {
+    margin: 0;
+}
+
+.radio-option input[type="checkbox"] {
+    margin: 0;
+}
+
+.refresh-options {
+    margin-left: 20px;
+    margin-top: 10px;
+}
+
+.refresh-options.disabled {
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 20px;
+    min-height: 200px;
+}
+
+/* Dashboard View Modes */
+.dashboard-grid.list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.dashboard-grid.list-view .dashboard-card {
+    width: 100%;
+    max-width: none;
+}
+
+.dashboard-grid.grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.dashboard-grid.grid-view .dashboard-card {
     min-height: 200px;
 }
 
@@ -1585,6 +1963,193 @@ input:checked + .slider:before {
     white-space: nowrap;
 }
 
+.actual-time {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Time Display Layout */
+.time-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.time-display.both {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-display.expected-actual {
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+}
+
+.time-display.expected-actual .expected-time {
+    color: #666;
+    text-decoration: line-through;
+    font-size: 0.8rem;
+}
+
+.time-display.expected-actual .arrow {
+    color: #666;
+    font-weight: bold;
+    margin: 0 2px;
+}
+
+.time-display.expected-actual .actual-time {
+    font-weight: 600;
+}
+
+.time-display.expected-actual .delay-indicator {
+    font-size: 0.75rem;
+    margin-left: 2px;
+}
+
+.time-display.multi-option {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.expected-actual-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+}
+
+.expected-actual-time .expected-time {
+    color: #666;
+    text-decoration: line-through;
+    font-size: 0.8rem;
+}
+
+.expected-actual-time .arrow {
+    color: #666;
+    font-weight: bold;
+    margin: 0 2px;
+}
+
+.expected-actual-time .actual-time {
+    font-weight: 600;
+}
+
+.expected-actual-time .delay-indicator {
+    font-size: 0.75rem;
+    margin-left: 2px;
+}
+
+/* Inline Time Display */
+.time-display-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* Split Time Display - Countdown on the right */
+.time-display-split {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+}
+
+.time-left-elements {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.time-right-element {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.countdown-text {
+    background: var(--success-color);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.expected-text {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.actual-text {
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.difference-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 2px 6px;
+    border-radius: 8px;
+}
+
+.difference-text.diff-ontime {
+    color: var(--success-color);
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.difference-text.diff-delayed {
+    color: var(--danger-color);
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.difference-text.diff-early {
+    color: var(--success-color);
+    background: rgba(40, 167, 69, 0.1);
+}
+
+/* Delay Status Colors */
+.actual-time.on-time {
+    background: var(--success-color);
+    color: white;
+    border-color: var(--success-color);
+}
+
+.actual-time.delayed {
+    background: var(--danger-color);
+    color: white;
+    border-color: var(--danger-color);
+}
+
+.delay-indicator {
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
 .countdown.urgent {
     background: var(--danger-color);
     box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
@@ -1700,9 +2265,16 @@ input:checked + .slider:before {
 .modal-content.extra-large {
     max-width: 1200px;
     width: 95%;
-    max-height: 90vh;
+    max-height: 95vh; /* Allow some margin from viewport edges */
+    height: auto; /* Let content determine height */
     display: flex;
     flex-direction: column;
+}
+
+.modal-content.extra-large .modal-body {
+    max-height: none; /* Remove height restriction for extra-large modals */
+    flex: 1; /* Allow body to take remaining space */
+    overflow-y: auto; /* Keep scroll if needed */
 }
 
 .card-config-container {
@@ -1710,7 +2282,8 @@ input:checked + .slider:before {
     flex-direction: column;
     gap: 30px;
     flex: 1;
-    overflow: hidden;
+    overflow: visible; /* Allow content to be visible */
+    min-height: 0; /* Allow flex item to shrink */
 }
 
 .config-panel-full {
@@ -1724,7 +2297,7 @@ input:checked + .slider:before {
     padding: 20px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
-    min-height: 300px;
+    min-height: 200px; /* Reduced from 300px for more compact view */
 }
 
 .preview-header {
@@ -1767,8 +2340,9 @@ input:checked + .slider:before {
 
 .preview-card-realistic {
     width: 100%;
-    max-width: 500px;
-    min-height: 200px;
+    max-width: none; /* Remove width restriction for full-width preview */
+    min-height: 120px; /* Compact height like real dashboard */
+    max-height: 180px; /* Prevent excessive height */
 }
 
 /* Drag handle for departure lines preview */
@@ -2113,8 +2687,44 @@ input:checked + .slider:before {
 
 /* Responsive Dashboard */
 @media (max-width: 768px) {
+    .dashboard-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    
+    .dashboard-actions {
+        justify-content: center;
+    }
+    
+    .view-toggle {
+        justify-content: center;
+    }
+    
+    /* Display Options Mobile */
+    .options-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 15px;
+    }
+    
+    .option-group {
+        background: var(--bg-primary);
+        padding: 15px;
+        border-radius: 8px;
+    }
+    
+    .refresh-options {
+        margin-left: 0;
+    }
+    
     .dashboard-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .dashboard-grid.grid-view {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
     }
     
     .dashboard-card.medium,
@@ -2230,9 +2840,15 @@ input:checked + .slider:before {
         width: 100%;
         max-width: none;
         max-height: 100vh;
-        height: 100vh;
+        height: auto; /* Let content determine height */
+        min-height: 100vh; /* Ensure it uses full screen when needed */
         margin: 0;
         border-radius: 0;
+    }
+    
+    .modal-content.extra-large .modal-body {
+        max-height: none; /* Remove height restriction on mobile */
+        padding: 20px; /* Slightly reduce padding on mobile */
     }
     
     .card-config-container {
@@ -2456,5 +3072,43 @@ input:checked + .slider:before {
     
     .modal-footer {
         padding: 12px 20px;
+    }
+
+    /* Mobile keyboard handling - only adjust when keyboard is actually open */
+    .modal-content.extra-large {
+        height: 100vh;
+        max-height: 100vh;
+    }
+    
+    /* When input is focused (keyboard likely open), allow content to be scrollable */
+    .modal-content.extra-large:has(input:focus), 
+    .modal-content.extra-large:has(textarea:focus) {
+        height: 100vh;
+        max-height: 100vh;
+        overflow-y: auto;
+    }
+    
+    /* Mobile time display adjustments */
+    .time-display-inline {
+        gap: 4px;
+        font-size: 0.75rem;
+    }
+    
+    .time-display-split {
+        gap: 4px;
+    }
+    
+    .time-left-elements {
+        gap: 4px;
+    }
+    
+    .countdown-text, .expected-text, .actual-text {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+    }
+    
+    .difference-text {
+        font-size: 0.65rem;
+        padding: 1px 4px;
     }
 }
