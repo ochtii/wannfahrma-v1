@@ -1594,9 +1594,6 @@ class WienOPNVApp {
             editDashboardBtn.onclick = () => this.toggleEditMode();
         }
 
-        // Setup view toggle
-        this.setupViewToggle();
-        
         // Setup display options
         this.setupDisplayOptions();
     }
@@ -1605,7 +1602,6 @@ class WienOPNVApp {
         // Initialize display settings
         this.displaySettings = {
             timeDisplayOptions: JSON.parse(localStorage.getItem('wien_opnv_time_display_options')) || ['countdown'],
-            viewMode: localStorage.getItem('wien_opnv_dashboard_view') || 'list',
             autoRefresh: localStorage.getItem('wien_opnv_auto_refresh') !== 'false',
             refreshInterval: parseInt(localStorage.getItem('wien_opnv_refresh_interval')) || 30,
             hideEmptyCards: localStorage.getItem('wien_opnv_hide_empty_cards') === 'true'
@@ -1625,7 +1621,6 @@ class WienOPNVApp {
 
         // Setup option change handlers
         this.setupTimeDisplayOptions();
-        this.setupViewModeOptions();
         this.setupAutoRefreshOptions();
         
         // Apply initial settings
@@ -1657,19 +1652,6 @@ class WienOPNVApp {
                 
                 localStorage.setItem('wien_opnv_time_display_options', JSON.stringify(this.displaySettings.timeDisplayOptions));
                 this.refreshAllCards();
-            });
-        });
-    }
-
-    setupViewModeOptions() {
-        const viewModeRadios = document.querySelectorAll('input[name="viewMode"]');
-        viewModeRadios.forEach(radio => {
-            radio.checked = radio.value === this.displaySettings.viewMode;
-            radio.addEventListener('change', () => {
-                if (radio.checked) {
-                    this.displaySettings.viewMode = radio.value;
-                    this.setDashboardView(radio.value);
-                }
             });
         });
     }
@@ -1724,15 +1706,6 @@ class WienOPNVApp {
     }
 
     applyDisplaySettings() {
-        // Apply view mode
-        this.setDashboardView(this.displaySettings.viewMode);
-        
-        // Update view mode radio buttons
-        const viewModeRadios = document.querySelectorAll('input[name="viewMode"]');
-        viewModeRadios.forEach(radio => {
-            radio.checked = radio.value === this.displaySettings.viewMode;
-        });
-
         // Update hide empty cards checkbox
         const hideEmptyCardsCheckbox = document.getElementById('hideEmptyCards');
         if (hideEmptyCardsCheckbox) {
@@ -1773,42 +1746,6 @@ class WienOPNVApp {
         }
     }
 
-    setupViewToggle() {
-        const viewButtons = document.querySelectorAll('.view-btn');
-        const dashboardGrid = document.getElementById('dashboardGrid');
-        
-        // Load saved view preference
-        const savedView = localStorage.getItem('wien_opnv_dashboard_view') || 'list';
-        this.setDashboardView(savedView);
-        
-        viewButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const view = btn.dataset.view;
-                this.setDashboardView(view);
-                
-                // Save preference
-                localStorage.setItem('wien_opnv_dashboard_view', view);
-            });
-        });
-    }
-
-    setDashboardView(view) {
-        const dashboardGrid = document.getElementById('dashboardGrid');
-        const viewButtons = document.querySelectorAll('.view-btn');
-        
-        if (!dashboardGrid) return;
-        
-        // Update grid classes
-        dashboardGrid.className = `dashboard-grid ${view}-view`;
-        
-        // Update button states
-        viewButtons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.view === view);
-        });
-        
-        console.log(`🎯 Dashboard view changed to: ${view}`);
-    }
-
     loadDashboardCards() {
         const saved = localStorage.getItem('wien_opnv_dashboard_cards');
         return saved ? JSON.parse(saved) : [];
@@ -1841,12 +1778,19 @@ class WienOPNVApp {
         
         // Pre-fill if editing
         if (existingCard) {
-            document.getElementById('cardTitle').value = existingCard.title;
-            document.getElementById('cardSize').value = existingCard.size;
-            document.getElementById('cardDepartureCount').value = existingCard.departureCount;
-            document.getElementById('cardRefreshInterval').value = existingCard.refreshInterval;
-            document.getElementById('cardStation').value = existingCard.stationName;
-            document.getElementById('cardStationData').value = JSON.stringify(existingCard.station);
+            const cardTitle = document.getElementById('cardTitle');
+            const cardSize = document.getElementById('cardSize');
+            const cardDepartureCount = document.getElementById('cardDepartureCount');
+            const cardRefreshInterval = document.getElementById('cardRefreshInterval');
+            const cardStation = document.getElementById('cardStation');
+            const cardStationData = document.getElementById('cardStationData');
+            
+            if (cardTitle) cardTitle.value = existingCard.title;
+            if (cardSize) cardSize.value = existingCard.size;
+            if (cardDepartureCount) cardDepartureCount.value = existingCard.departureCount;
+            if (cardRefreshInterval) cardRefreshInterval.value = existingCard.refreshInterval;
+            if (cardStation) cardStation.value = existingCard.stationName;
+            if (cardStationData) cardStationData.value = JSON.stringify(existingCard.station);
             
             // Pre-fill station search if we have new format data
             if (existingCard.stationName && existingCard.rblNumber) {
@@ -3135,7 +3079,7 @@ class WienOPNVApp {
                 ${sortedDepartures.map(dep => `
                     <div class="departure-item">
                         <div class="line-info">
-                            <span class="line-number" style="background-color: ${this.getLineColor(dep.lineId)}">${dep.line}</span>
+                            <span class="line-badge line-${dep.type.toLowerCase()} ${this.getLineBadgeClass(dep.line, dep.type.toLowerCase())}">${dep.line}</span>
                             <span class="direction">${dep.towards}</span>
                         </div>
                         <div class="departure-time">
@@ -3236,52 +3180,83 @@ class WienOPNVApp {
 
     removeDashboardCard(cardId) {
         if (confirm('Möchten Sie diese Karte wirklich entfernen?')) {
+            console.log(`🗑️ Attempting to remove dashboard card: ${cardId}`);
+            
             // Remove from DOM
             const cardElement = document.getElementById(`card-${cardId}`);
             if (cardElement) {
                 cardElement.remove();
+                console.log(`✅ Removed card element from DOM: card-${cardId}`);
+            } else {
+                console.log(`⚠️ Card element not found in DOM: card-${cardId}`);
             }
             
             // Clear refresh interval
             if (this.cardRefreshIntervals && this.cardRefreshIntervals[cardId]) {
                 clearInterval(this.cardRefreshIntervals[cardId]);
                 delete this.cardRefreshIntervals[cardId];
+                console.log(`✅ Cleared refresh interval for card: ${cardId}`);
             }
             
-            // Remove from storage
+            // Remove from storage and update instance variable
             let cards = this.loadDashboardCards();
+            console.log(`📊 Cards before removal:`, cards.map(c => c.id));
+            
             cards = cards.filter(c => c.id !== cardId);
-            this.saveDashboardCards(cards);
+            console.log(`📊 Cards after removal:`, cards.map(c => c.id));
+            
+            this.dashboardCards = cards; // Update instance variable
+            
+            // Save to localStorage
+            try {
+                localStorage.setItem('wien_opnv_dashboard_cards', JSON.stringify(cards));
+                console.log(`💾 Successfully saved ${cards.length} cards to localStorage`);
+                
+                // Verify save
+                const verification = localStorage.getItem('wien_opnv_dashboard_cards');
+                const verifiedCards = verification ? JSON.parse(verification) : [];
+                console.log(`� Verification: ${verifiedCards.length} cards in localStorage`);
+            } catch (error) {
+                console.error('❌ Error saving to localStorage:', error);
+            }
             
             // Update empty state
             this.updateDashboardEmptyState();
+            
+            console.log(`✅ Dashboard card removal completed for: ${cardId}`);
         }
     }
 
     toggleEditMode() {
         this.isEditMode = !this.isEditMode;
         const controls = document.querySelectorAll('.card-controls');
-        const editBtn = document.getElementById('editDashboardBtn');
+        const editBtn = document.getElementById('editDashboard');
         
         if (this.isEditMode) {
             controls.forEach(ctrl => ctrl.style.display = 'flex');
-            editBtn.textContent = 'Fertig';
-            editBtn.classList.add('active');
+            if (editBtn) {
+                editBtn.textContent = 'Fertig';
+                editBtn.classList.add('active');
+            }
         } else {
             controls.forEach(ctrl => ctrl.style.display = 'none');
-            editBtn.textContent = 'Bearbeiten';
-            editBtn.classList.remove('active');
+            if (editBtn) {
+                editBtn.textContent = 'Bearbeiten';
+                editBtn.classList.remove('active');
+            }
         }
     }
 
     updateDashboardEmptyState() {
         const grid = document.getElementById('dashboardGrid');
-        const emptyState = document.getElementById('dashboardEmptyState');
+        const emptyState = document.getElementById('dashboardEmpty');
         
-        if (grid.children.length === 0) {
-            emptyState.style.display = 'block';
-        } else {
-            emptyState.style.display = 'none';
+        if (grid && emptyState) {
+            if (grid.children.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+            }
         }
     }
 
