@@ -561,6 +561,62 @@ body {
     transform: translateY(-1px);
 }
 
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.btn-success {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn-success:hover {
+    background: #218838;
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-outline:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--primary-color);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn:disabled:hover {
+    background: initial;
+    color: initial;
+    border-color: initial;
+}
+
 .auto-refresh-container {
     display: flex;
     align-items: center;
@@ -1561,17 +1617,58 @@ input:checked + .slider:before {
 /* Dashboard Styles */
 .dashboard-controls {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 15px;
+    margin-bottom: 25px;
 }
 
 .dashboard-actions {
     display: flex;
     gap: 15px;
     flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+/* Edit Mode Info */
+.edit-mode-info {
+    background: var(--bg-tertiary);
+    border: 2px solid var(--primary-color);
+    border-radius: 12px;
+    padding: 16px;
+    animation: slideDown 0.3s ease;
+}
+
+.edit-info-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.edit-info-content i {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+.edit-mode-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 200px;
+    }
 }
 
 /* Display Options Panel */
@@ -1741,7 +1838,7 @@ input:checked + .slider:before {
     box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    cursor: move;
+    cursor: default;
     overflow: hidden;
 }
 
@@ -1780,6 +1877,206 @@ input:checked + .slider:before {
 .dashboard-card.large {
     grid-column: span 2;
     min-height: 400px;
+}
+
+/* Edit Mode & Drag and Drop Styles */
+.dashboard-card {
+    cursor: default !important;
+}
+
+.dashboard-card.edit-mode {
+    position: relative;
+    cursor: default !important;
+    border: 2px dashed var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.dashboard-card.edit-mode:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+}
+
+.dashboard-card.selected {
+    border-color: var(--primary-color);
+    background: rgba(var(--primary-rgb), 0.08);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+    transform: translateY(-2px);
+}
+
+.dashboard-card.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+    z-index: 1000;
+}
+
+.drag-placeholder {
+    border: 2px dashed var(--primary-color);
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: 12px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.drag-handle {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px;
+    cursor: grab !important;
+    color: var(--text-secondary);
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.dashboard-card.edit-mode .drag-handle {
+    opacity: 1;
+}
+
+.drag-handle:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: scale(1.1);
+    cursor: grab !important;
+}
+
+.drag-handle:active {
+    cursor: grabbing !important;
+    transform: scale(0.95);
+}
+
+/* ====== MODERNE EDIT CONTROLS ====== */
+
+.card-checkbox {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    cursor: pointer;
+    
+    /* Verstecke das Standard-Checkbox */
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    
+    /* Checkmark Vorbereitung */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.card-checkbox::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 4px;
+    border: 2px solid transparent;
+    border-top: none;
+    border-right: none;
+    transform: rotate(-45deg) scale(0);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-checkbox:checked {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 12px rgba(var(--primary-rgb), 0.3);
+}
+
+.card-checkbox:checked::before {
+    border-color: white;
+    transform: rotate(-45deg) scale(1);
+}
+
+.card-checkbox:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 12px rgba(var(--primary-rgb), 0.2);
+}
+
+.dashboard-card.edit-mode .card-checkbox {
+    opacity: 1;
+}
+
+/* Edit Button für jede Karte */
+.card-edit-btn {
+    position: absolute;
+    top: 12px;
+    right: 44px; /* Rechts neben der Checkbox */
+    width: 24px;
+    height: 24px;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    color: var(--text-secondary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.card-edit-btn:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 12px rgba(var(--primary-rgb), 0.3);
+    transform: scale(1.1);
+}
+
+.dashboard-card.edit-mode .card-edit-btn {
+    opacity: 1;
+}
+
+.card-edit-btn svg {
+    width: 12px;
+    height: 12px;
+    stroke-width: 2.5;
+}
+
+/* Responsive Edit Controls */
+@media (max-width: 768px) {
+    .card-checkbox {
+        width: 28px;
+        height: 28px;
+        top: 8px;
+        right: 8px;
+    }
+    
+    .card-edit-btn {
+        width: 28px;
+        height: 28px;
+        top: 8px;
+        right: 44px;
+    }
+    
+    .card-edit-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .drag-handle {
+        top: 8px;
+        left: 8px;
+        padding: 8px;
+    }
 }
 
 /* Card Header - Modernized */
@@ -1840,6 +2137,42 @@ input:checked + .slider:before {
     color: white;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* ====== REFRESH SPINNER ====== */
+
+.refresh-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border-color);
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    margin-left: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.refresh-spinner.spinning {
+    animation: spin linear;
+    opacity: 1;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.card-last-update {
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 8px;
+}
+
+.card-last-update .refresh-spinner {
+    margin-left: 4px;
+    margin-right: 0;
 }
 
 /* Card Content - Modernized */
@@ -2620,6 +2953,108 @@ input:checked + .slider:before {
     box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
 }
 
+/* ====== NEUE FORM CONTROLS ====== */
+
+.form-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.form-check-input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.form-check-label {
+    margin: 0;
+    cursor: pointer;
+    flex: 1;
+}
+
+.form-text {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-top: 4px;
+    display: block;
+}
+
+.input-with-unit {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.form-range {
+    flex: 1;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+.form-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+}
+
+.form-range::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.4);
+}
+
+.form-range::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.range-value {
+    font-weight: 500;
+    color: var(--primary-color);
+    min-width: 80px;
+    text-align: right;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .input-with-unit {
+        gap: 8px;
+    }
+    
+    .range-value {
+        min-width: 70px;
+        font-size: 0.9rem;
+    }
+}
+
 .station-search-container {
     position: relative;
 }
@@ -3076,4 +3511,72 @@ input:checked + .slider:before {
         font-size: 0.65rem;
         padding: 1px 4px;
     }
+}
+
+/* Departure Line Cycling Styles */
+.static-departure {
+    border-left: 3px solid var(--success-color);
+    background: rgba(var(--success-color-rgb), 0.05);
+}
+
+.cycling-departure {
+    border-left: 3px solid var(--secondary-color);
+    background: rgba(var(--secondary-color-rgb), 0.05);
+}
+
+.departure-line-options {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.departure-line-options .form-check {
+    margin-bottom: 5px;
+}
+
+.departure-line-options .form-text {
+    margin-top: 5px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* Max departure rows styling */
+.input-with-unit {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.input-with-unit .form-range {
+    flex: 1;
+}
+
+.input-with-unit .range-value {
+    min-width: 70px;
+    font-weight: 500;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+/* Preview improvements */
+.preview-departure-item.static-departure::before {
+    content: "📌";
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+
+.preview-departure-item.cycling-departure::before {
+    content: "🔄";
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+
+.preview-departure-item {
+    position: relative;
 }

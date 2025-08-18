@@ -50,6 +50,24 @@
                             <span>Dashboard bearbeiten</span>
                         </button>
                     </div>
+                    
+                    <!-- Edit Mode Info -->
+                    <div class="edit-mode-info" id="editModeInfo" style="display: none;">
+                        <div class="edit-info-content">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Bearbeitungsmodus aktiv: Karten verschieben per Drag & Drop</span>
+                        </div>
+                        <div class="edit-mode-actions">
+                            <button class="btn btn-outline" id="selectAllCards">
+                                <i class="fas fa-check-square"></i>
+                                Alle auswählen
+                            </button>
+                            <button class="btn btn-danger" id="deleteSelectedCards" disabled>
+                                <i class="fas fa-trash"></i>
+                                Ausgewählte löschen
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Display Options Panel -->
@@ -347,21 +365,38 @@
                                         <input type="text" id="cardTitle" class="form-control" placeholder="Meine Station">
                                     </div>
                                     <div class="form-group">
-                                        <label for="cardSize">Kartengröße</label>
-                                        <select id="cardSize" class="form-control">
-                                            <option value="small">Klein (1x1)</option>
-                                            <option value="medium" selected>Mittel (2x1)</option>
-                                            <option value="large">Groß (2x2)</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
                                         <label for="cardRefreshInterval">Auto-Refresh</label>
                                         <select id="cardRefreshInterval" class="form-control">
-                                            <option value="30" selected>30 Sekunden</option>
+                                            <option value="15" selected>15 Sekunden</option>
+                                            <option value="30">30 Sekunden</option>
                                             <option value="60">1 Minute</option>
                                             <option value="120">2 Minuten</option>
                                             <option value="0">Aus</option>
                                         </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Departure Display Settings -->
+                            <div class="config-section">
+                                <h4><i class="fas fa-display"></i> Anzeige-Einstellungen</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="maxDepartureRows">Max. Abfahrtszeilen pro Karte</label>
+                                        <div class="input-with-unit">
+                                            <input type="range" id="maxDepartureRows" class="form-range" min="3" max="15" value="9">
+                                            <span class="range-value" id="maxDepartureRowsValue">9 Zeilen</span>
+                                        </div>
+                                        <small class="form-text">Maximum: 3 × Anzahl der konfigurierten Abfahrtslinien</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="form-check">
+                                            <input type="checkbox" id="autoSortDepartures" class="form-check-input" checked>
+                                            <label for="autoSortDepartures" class="form-check-label">
+                                                Abfahrten automatisch sortieren
+                                            </label>
+                                            <small class="form-text">Sortiert nach Abfahrtszeit (nächste zuerst)</small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
