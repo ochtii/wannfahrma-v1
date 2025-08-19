@@ -2,7 +2,18 @@
 
 Automatisierte Deployment-Tools für wann fahrma OIDA.
 
-## 📁 Enthaltene Dateien
+## �️ Plattform-spezifische Scripts
+
+### Windows (Entwicklungsumgebung)
+- `setup-webhook-windows.ps1` - PowerShell Setup für lokale Webhook-Tests
+- Für lokale Entwicklung und Testing
+
+### Linux (Produktionsserver)  
+- `setup-webhook.sh` - Komplettes Webhook Setup für Ubuntu Server
+- `github-webhook-info.sh` - GitHub Konfigurationshilfe
+- Für Live-Produktionsumgebung
+
+## 📁 Gemeinsame Dateien
 
 ### `deploy.sh` - Production Deployment Script
 Automatisiertes Deployment auf dem Production Server mit:
@@ -22,7 +33,30 @@ PM2 Process Manager Konfiguration für:
 
 ## 🚀 Verwendung
 
-### Production Deployment
+### Windows Entwicklung (lokale Tests)
+```powershell
+# Option 1: PowerShell Setup (empfohlen)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+.\scripts\deployment\setup-webhook-windows.ps1
+
+# Option 2: Batch File Setup (einfach)
+.\scripts\deployment\setup-webhook-windows.bat
+
+# Webhook Service starten
+node webhook-listener.js
+
+# Oder mit PM2 (falls installiert)
+pm2 start webhook-listener.js --name webhook-dev
+```
+
+**Lokaler Test Workflow:**
+1. Webhook Service starten (siehe oben)
+2. Änderungen committen: `git add . && git commit -m "test"`
+3. Zu live branch: `git checkout live && git merge main`
+4. Push: `git push origin live`
+5. Webhook wird getriggert (falls GitHub konfiguriert)
+
+### Production Deployment (Linux Server)
 ```bash
 # Deployment ausführen
 cd /path/to/wannfahrma-v1
