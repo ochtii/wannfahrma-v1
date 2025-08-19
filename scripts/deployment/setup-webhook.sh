@@ -109,12 +109,15 @@ EOF
         print_success "Nginx Konfiguration erstellt für $WEBHOOK_DOMAIN"
         WEBHOOK_URL="http://${WEBHOOK_DOMAIN}/webhook"
     else
-        print_warning "Keine Domain angegeben, verwende wartenis.org"
-        WEBHOOK_URL="http://webhooks.wartenis.org/webhook/"
+        print_warning "Keine Domain angegeben, verwende Server IP"
+        WEBHOOK_URL="http://18.206.241.165:3001/webhook"
     fi
 else
-    WEBHOOK_URL="http://webhooks.wartenis.org/webhook/"
+    WEBHOOK_URL="http://18.206.241.165:3001/webhook"
 fi
+
+# Add webhook URL to environment
+echo "WEBHOOK_URL=${WEBHOOK_URL}" >> .env
 
 # Stop existing PM2 processes
 print_info "🔄 Aktualisiere PM2 Konfiguration..."

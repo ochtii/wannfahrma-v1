@@ -9,7 +9,7 @@ const WEBHOOK_PORT = process.env.WEBHOOK_PORT || 3001;
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'your-webhook-secret-here';
 const TARGET_BRANCH = 'live';
 const APP_DIR = process.env.APP_DIR || '/home/ubuntu/wannfahrma-v1';
-const WEBHOOK_URL = 'http://webhooks.wartenis.org/webhook/';
+const WEBHOOK_URL = 'http://18.206.241.165:3001/webhook';
 
 // Middleware to parse JSON
 webhookApp.use(express.json());

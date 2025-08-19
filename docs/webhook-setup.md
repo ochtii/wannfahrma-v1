@@ -1,6 +1,21 @@
-# GitHub Webhook Automatisches Deployment
+# GitHub Webhook Automatisches Deployment### Domain Setup (Optional)
 
-## 🎯 Überblick
+Für bessere Sicherheit mit Subdomain (falls gewünscht):
+
+```bash
+# DNS A-Record erstellen
+hooks.wartenis.org → 18.206.241.165
+
+# SSL Zertifikat mit Certbot
+sudo certbot --nginx -d hooks.wartenis.org
+```
+
+Dann in GitHub:
+```
+Payload URL: https://hooks.wartenis.org/webhook
+```
+
+**Aktuell verwenden wir direkt die IP: http://18.206.241.165:3001/webhook**ck
 
 Das automatische Deployment System reagiert auf Push Events im `live` Branch und aktualisiert den Server automatisch. Push Events zu `master` oder `main` werden ignoriert.
 
@@ -33,7 +48,7 @@ Das Script:
 
 3. **Webhook konfigurieren:**
    ```
-   Payload URL: http://webhooks.wartenis.org/webhook/
+   Payload URL: http://18.206.241.165:3001/webhook
    Content type: application/json
    Secret: [Der generierte Secret aus dem Setup]
    Which events: Just the push event

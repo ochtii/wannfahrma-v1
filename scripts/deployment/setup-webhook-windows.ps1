@@ -79,7 +79,7 @@ try {
     Write-Info "Installation: npm install -g pm2"
 }
 
-# Get local IP for webhook URL
+# Get local IP for webhook URL (for local testing)
 Write-Info "🌐 Ermittle lokale IP..."
 $localIP = (Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias "Wi-Fi*", "Ethernet*" | Where-Object { $_.IPAddress -like "192.168.*" -or $_.IPAddress -like "10.*" })[0].IPAddress
 
@@ -87,7 +87,8 @@ if (-not $localIP) {
     $localIP = "localhost"
 }
 
-$webhookUrl = "http://${localIP}:${Port}/webhook"
+$webhookUrlLocal = "http://${localIP}:${Port}/webhook"
+$webhookUrlProduction = "http://18.206.241.165:3001/webhook"
 
 # Show configuration
 Write-Host ""
@@ -97,7 +98,8 @@ Write-Host "==================================================" -ForegroundColor
 Write-Host ""
 
 Write-Info "🔧 Lokale Konfiguration:"
-Write-Host "   Webhook URL: $webhookUrl"
+Write-Host "   Lokale Webhook URL: $webhookUrlLocal"
+Write-Host "   Produktions Webhook URL: $webhookUrlProduction"
 Write-Host "   Webhook Secret: $WebhookSecret"
 Write-Host "   Port: $Port"
 Write-Host "   App Directory: $AppDir"
@@ -119,13 +121,17 @@ Write-Host "   Option 3 - PowerShell:" -ForegroundColor Yellow
 Write-Host "   Start-Process node -ArgumentList 'webhook-listener.js' -NoNewWindow"
 Write-Host ""
 
-Write-Info "📋 GitHub Repository Setup (für lokale Tests):"
+Write-Info "📋 GitHub Repository Setup:"
+Write-Host "   Für lokale Tests:" -ForegroundColor Yellow
 Write-Host "   1. GitHub.com → Repository → Settings → Webhooks"
 Write-Host "   2. Add webhook"
-Write-Host "   3. Payload URL: $webhookUrl"
+Write-Host "   3. Payload URL: $webhookUrlLocal"
 Write-Host "   4. Content type: application/json"
 Write-Host "   5. Secret: $WebhookSecret"
 Write-Host "   6. Events: Just the push event"
+Write-Host ""
+Write-Host "   Für Produktion:" -ForegroundColor Green
+Write-Host "   3. Payload URL: $webhookUrlProduction"
 Write-Host ""
 
 Write-Info "🧪 Lokale Tests:"

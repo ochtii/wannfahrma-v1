@@ -34,7 +34,7 @@ fi
 source .env
 
 # Get server IP
-SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || echo "wartenis.org")
+SERVER_IP="18.206.241.165"
 
 # Check if webhook service is running
 WEBHOOK_RUNNING=false
@@ -43,7 +43,7 @@ if curl -f http://localhost:${WEBHOOK_PORT:-3001}/webhook/health >/dev/null 2>&1
 fi
 
 # Set webhook URL
-WEBHOOK_URL="http://webhooks.wartenis.org/webhook/"
+WEBHOOK_URL_DISPLAY="http://18.206.241.165:3001/webhook"
 
 clear
 echo "=================================================="
@@ -78,7 +78,7 @@ echo ""
 print_info "3. Webhook konfigurieren:"
 echo ""
 echo "   📍 ${BOLD}Payload URL:${NC}"
-echo "      http://webhooks.wartenis.org/webhook/"
+echo "      $WEBHOOK_URL_DISPLAY"
 echo ""
 echo "   📦 ${BOLD}Content type:${NC}"
 echo "      application/json"
@@ -121,11 +121,11 @@ echo ""
 print_header "🧪 Webhook Testing"
 echo ""
 print_info "Health Check:"
-echo "   curl http://webhooks.wartenis.org/webhook/health"
+echo "   curl $WEBHOOK_URL_DISPLAY/health"
 echo ""
 
 print_info "Manual Deployment Test:"
-echo "   curl -X POST http://webhooks.wartenis.org/webhook/deploy \\"
+echo "   curl -X POST $WEBHOOK_URL_DISPLAY/deploy \\"
 echo "        -H 'Content-Type: application/json' \\"
 echo "        -d '{}'"
 echo ""
@@ -177,7 +177,7 @@ print_header "📋 Copy-Paste Konfiguration für GitHub"
 echo ""
 echo "=================================================="
 print_success "Payload URL:"
-echo "http://webhooks.wartenis.org/webhook/"
+echo "http://18.206.241.165:3001/webhook"
 echo ""
 print_success "Secret:"
 echo "${WEBHOOK_SECRET:-FEHLT}"
