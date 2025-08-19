@@ -300,15 +300,101 @@ install_ssl() {
     sudo apt install -y certbot python3-certbot-nginx
     
     read -p "E-Mail für Let's Encrypt: " EMAIL
-    read -p "Domain: " DOMAIN
+    read -p "Domain (z.B. example.com): " DOMAIN
     
-    if [[ -n "$EMAIL" && -n "$DOMAIN" ]]; then
-        print_info "Erstelle SSL Zertifikat für $DOMAIN..."
-        sudo certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email $EMAIL
+    if [[ -z "$EMAIL" || -z "$DOMAIN" ]]; then
+        print_error "E-Mail und Domain sind erforderlich!"
+        return 1
+    fi
+    
+    # DNS-Validierung
+    print_info "Prüfe DNS-Konfiguration für $DOMAIN..."
+    
+    # Get server's public IP
+    SERVER_IP=$(curl -s ifconfig.me || curl -s ipinfo.io/ip || echo "unknown")
+    print_info "Server IP: $SERVER_IP"
+    
+    # Check DNS A record
+    DNS_IP=$(dig +short A $DOMAIN 2>/dev/null | tail -n1)
+    
+    if [[ -z "$DNS_IP" ]]; then
+        print_error "❌ DNS Problem: Keine A-Record für $DOMAIN gefunden!"
+        print_warning "Lösung:"
+        echo "  1. DNS A-Record erstellen: $DOMAIN → $SERVER_IP"
+        echo "  2. Warten bis DNS propagiert ist (kann bis zu 24h dauern)"
+        echo "  3. SSL später manuell installieren: sudo certbot --nginx -d $DOMAIN"
+        echo ""
+        read -p "Trotzdem fortfahren? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_info "SSL Installation abgebrochen"
+            print_info "DNS erst konfigurieren, dann erneut ausführen"
+            return 0
+        fi
+    else
+        print_success "✅ DNS A-Record gefunden: $DOMAIN → $DNS_IP"
         
-        print_success "SSL Zertifikat installiert"
+        if [[ "$DNS_IP" != "$SERVER_IP" ]]; then
+            print_warning "⚠️  DNS zeigt auf andere IP: $DNS_IP (erwartet: $SERVER_IP)"
+            print_info "Das könnte zu Problemen führen..."
+            read -p "Fortfahren? (y/N): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                print_info "SSL Installation abgebrochen"
+                return 0
+            fi
+        fi
+    fi
+    
+    # Check if domain is reachable
+    print_info "Teste HTTP-Erreichbarkeit von $DOMAIN..."
+    if curl -s --connect-timeout 10 -I "http://$DOMAIN" >/dev/null 2>&1; then
+        print_success "✅ Domain ist über HTTP erreichbar"
+    else
+        print_warning "⚠️  Domain nicht über HTTP erreichbar"
+        print_info "Das könnte normale sein wenn Nginx gerade konfiguriert wurde"
+    fi
+    
+    # Attempt SSL certificate creation
+    print_info "Erstelle SSL Zertifikat für $DOMAIN..."
+    print_warning "Das kann ein paar Minuten dauern..."
+    
+    if sudo certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email $EMAIL; then
+        print_success "🔒 SSL Zertifikat erfolgreich installiert!"
         print_info "Automatische Erneuerung wird eingerichtet..."
         sudo systemctl enable certbot.timer
+        sudo systemctl start certbot.timer
+        
+        print_success "✅ HTTPS ist jetzt verfügbar: https://$DOMAIN"
+    else
+        print_error "❌ SSL Zertifikat Installation fehlgeschlagen!"
+        print_warning "Mögliche Ursachen:"
+        echo "  1. DNS A-Record fehlt oder falsch konfiguriert"
+        echo "  2. Domain ist nicht über Internet erreichbar"
+        echo "  3. Firewall blockiert Port 80/443"
+        echo "  4. Nginx läuft nicht richtig"
+        echo ""
+        print_info "Debugging-Schritte:"
+        echo "  # DNS prüfen:"
+        echo "  dig A $DOMAIN"
+        echo "  nslookup $DOMAIN"
+        echo ""
+        echo "  # HTTP-Test:"
+        echo "  curl -I http://$DOMAIN"
+        echo ""
+        echo "  # Nginx Status:"
+        echo "  sudo systemctl status nginx"
+        echo "  sudo nginx -t"
+        echo ""
+        echo "  # Certbot Logs:"
+        echo "  sudo tail -f /var/log/letsencrypt/letsencrypt.log"
+        echo ""
+        echo "  # Manueller Retry:"
+        echo "  sudo certbot --nginx -d $DOMAIN --dry-run"
+        echo "  sudo certbot --nginx -d $DOMAIN"
+        echo ""
+        
+        return 1
     fi
 }
 

@@ -303,6 +303,40 @@ chmod +x scripts/install/test-install.sh
 - **Disk**: 10GB+ SSD
 - **Network**: Stabile Verbindung, Domain-Name
 
+## 🌐 Production Setup
+
+### Domain & DNS Konfiguration
+```bash
+# 1. Domain kaufen/registrieren
+# Bei Provider wie Namecheap, GoDaddy, etc.
+
+# 2. DNS A-Record erstellen
+# Domain: your-domain.com
+# Type: A
+# Value: YOUR-SERVER-IP
+# TTL: 300 (5 Minuten)
+
+# 3. DNS propagation prüfen
+dig A your-domain.com
+nslookup your-domain.com
+
+# 4. HTTP-Erreichbarkeit testen
+curl -I http://your-domain.com
+```
+
+### SSL/HTTPS Setup (Automatisch)
+```bash
+# Das install-ubuntu.sh Script macht automatisch:
+# 1. DNS-Validierung
+# 2. Certbot Installation  
+# 3. SSL-Zertifikat via Let's Encrypt
+# 4. Nginx HTTPS-Konfiguration
+# 5. Auto-Renewal Setup
+
+# Bei Problemen manuell:
+sudo certbot --nginx -d your-domain.com
+```
+
 ## 🔧 Konfiguration
 
 ### Environment Variables
@@ -414,7 +448,35 @@ curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
-#### 4. Permission Denied
+#### 4. SSL/DNS Probleme (Production)
+```bash
+# Problem: "DNS problem: NXDOMAIN looking up A for domain.com"
+# Ursache: DNS A-Record fehlt oder falsch
+
+# Lösung 1: DNS A-Record prüfen
+dig A your-domain.com
+nslookup your-domain.com
+
+# Lösung 2: Server IP ermitteln
+curl ifconfig.me
+ip addr show
+
+# Lösung 3: DNS A-Record erstellen
+# Bei Domain-Provider:
+# Type: A
+# Name: @ (oder subdomain)
+# Value: YOUR-SERVER-IP
+# TTL: 300
+
+# Lösung 4: DNS Propagation abwarten (bis 24h)
+# Online-Tools: whatsmydns.net, dnschecker.org
+
+# Lösung 5: SSL manuell nach DNS-Fix
+sudo certbot --nginx -d your-domain.com --dry-run
+sudo certbot --nginx -d your-domain.com
+```
+
+#### 5. Permission Denied
 ```bash
 # Script ausführbar machen
 chmod +x scripts/install/*.sh

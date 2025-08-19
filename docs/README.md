@@ -11,6 +11,7 @@ Zentrale Dokumentation für das wann fahrma OIDA Projekt.
 ### 🚀 Installation & Setup
 - **[Ubuntu Installation](INSTALL-UBUNTU.md)** - Vollständige Server-Installation
 - **[Auth Setup Guide](auth-setup-guide.md)** - Supabase Authentication Setup
+- **[DNS & SSL Setup](DNS-SSL-SETUP.md)** - Domain und HTTPS-Konfiguration
 - **[Security Fix](SECURITY-FIX.md)** - Kritische Sicherheitsverbesserungen
 
 ### 🔒 Sicherheit
