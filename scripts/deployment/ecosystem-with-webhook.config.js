@@ -26,8 +26,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         WEBHOOK_PORT: 3001,
-        WEBHOOK_SECRET: 'your-webhook-secret-change-this',
         APP_DIR: '/home/ubuntu/wannfahrma-v1'
+        // WEBHOOK_SECRET wird aus .env geladen
       },
       error_file: './logs/webhook-err.log',
       out_file: './logs/webhook-out.log',
