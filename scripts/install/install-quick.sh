@@ -54,16 +54,26 @@ install_node() {
 install_python_packages() {
     print_info "Python Pakete..."
     
-    # Try different pip commands
-    if command -v pip3 &> /dev/null; then
-        pip3 install --user pandas openpyxl requests
-    elif command -v pip &> /dev/null; then
-        pip install --user pandas openpyxl requests
+    # Check for externally-managed-environment (Ubuntu 24.04+)
+    if python3 -c "import sys; exit(0 if sys.version_info >= (3,11) else 1)" 2>/dev/null && \
+       test -f /usr/lib/python*/EXTERNALLY-MANAGED 2>/dev/null; then
+        print_warning "Externally-managed Python environment erkannt"
+        print_info "Verwende apt-Pakete..."
+        sudo apt install -y python3-pandas python3-openpyxl python3-requests python3-venv 2>/dev/null || {
+            print_warning "Apt-Pakete nicht verfügbar, überspringe Python-Pakete"
+        }
     else
-        python3 -m pip install --user pandas openpyxl requests
+        # Try different pip commands for older systems
+        if command -v pip3 &> /dev/null; then
+            pip3 install --user pandas openpyxl requests 2>/dev/null || print_warning "pip3 fehlgeschlagen"
+        elif command -v pip &> /dev/null; then
+            pip install --user pandas openpyxl requests 2>/dev/null || print_warning "pip fehlgeschlagen"
+        else
+            python3 -m pip install --user pandas openpyxl requests 2>/dev/null || print_warning "python3 -m pip fehlgeschlagen"
+        fi
     fi
     
-    print_success "Python Pakete installiert"
+    print_success "Python Setup abgeschlossen"
 }
 
 # Install PM2

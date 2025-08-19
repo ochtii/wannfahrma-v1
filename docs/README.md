@@ -61,12 +61,30 @@ wannfahrma-v1/
 
 ## 🚀 Quick Start
 
-### 1. Lokale Entwicklung
+### 1. Repository herunterladen
 ```bash
+# HTTPS Clone (empfohlen)
+git clone https://github.com/ochtii/wannfahrma-v1.git
+cd wannfahrma-v1
+
+# SSH Clone (für Entwickler)
+git clone git@github.com:ochtii/wannfahrma-v1.git
+cd wannfahrma-v1
+
+# ZIP Download (ohne Git)
+wget https://github.com/ochtii/wannfahrma-v1/archive/refs/heads/master.zip
+unzip master.zip && cd wannfahrma-v1-master
+```
+
+### 2. Lokale Entwicklung
+```bash
+# Nach dem Git Clone
+cd wannfahrma-v1
+
 # Dependencies installieren
 npm install
 
-# Konfiguration erstellen
+# Konfiguration erstellen (optional für Auth)
 cp .env.example .env
 # .env mit echten Werten füllen
 
@@ -74,18 +92,18 @@ cp .env.example .env
 npm start
 ```
 
-### 2. Production Deployment
+### 3. Ubuntu Server Installation
 ```bash
-# Ubuntu Server Installation
+# Vollständige Server-Installation
 chmod +x scripts/install/install-ubuntu.sh
 ./scripts/install/install-ubuntu.sh
 
-# Oder Schnell-Installation
+# Oder Schnell-Installation für Development
 chmod +x scripts/install/install-quick.sh
 ./scripts/install/install-quick.sh
 ```
 
-### 3. Security Check
+### 4. Security Check
 ```bash
 # Linux/macOS
 ./scripts/security/security-check.sh

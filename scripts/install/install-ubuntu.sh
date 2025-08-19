@@ -151,13 +151,58 @@ install_python() {
     fi
     
     # Use python3 -m pip as fallback
-    print_info "Installiere Python Pakete..."
-    if command -v pip3 &> /dev/null; then
-        pip3 install --user pandas openpyxl requests
-    elif command -v pip &> /dev/null; then
-        pip install --user pandas openpyxl requests
+    print_info "Python-Pakete für Datenverarbeitung (optional)..."
+    
+    # Check if data processing is needed
+    if [[ -f "process_data.py" ]]; then
+        print_info "process_data.py gefunden - installiere Datenverarbeitungs-Pakete..."
+        
+        # Check for externally-managed-environment (Ubuntu 24.04+/Debian 12+)
+        EXTERNALLY_MANAGED=false
+        
+        # Check multiple indicators for externally-managed environment
+        if test -f /usr/lib/python*/EXTERNALLY-MANAGED 2>/dev/null || \
+           test -f /usr/lib/python3*/EXTERNALLY-MANAGED 2>/dev/null || \
+           python3 -m pip install --help 2>&1 | grep -q "externally-managed" || \
+           (python3 -c "import sys; exit(0 if sys.version_info >= (3,11) else 1)" 2>/dev/null && \
+            lsb_release -r 2>/dev/null | grep -E "(24\.|12\.)" >/dev/null); then
+            EXTERNALLY_MANAGED=true
+        fi
+        
+        if [ "$EXTERNALLY_MANAGED" = true ]; then
+            print_warning "Python environment ist 'externally-managed' (Ubuntu 24.04+/Debian 12+)"
+            print_info "Verwende system-packages für Python-Pakete..."
+            
+            # Install Python packages via apt (safer for system Python)
+            print_info "Installiere Python-Pakete über apt..."
+            sudo apt update
+            sudo apt install -y python3-pandas python3-openpyxl python3-requests python3-venv python3-dev
+            
+            # Install pipx for Python applications
+            print_info "Installiere pipx für isolated Python-Apps..."
+            sudo apt install -y pipx || {
+                print_warning "pipx nicht verfügbar über apt, installiere über pip..."
+                sudo apt install -y python3-pip
+                python3 -m pip install --user pipx --break-system-packages 2>/dev/null || true
+            }
+            
+            print_success "Python-Pakete über apt installiert (externally-managed environment)"
+        else
+            # Traditional pip installation for older systems
+            print_info "Verwende pip für Paket-Installation (legacy system)..."
+            if command -v pip3 &> /dev/null; then
+                pip3 install --user pandas openpyxl requests
+            elif command -v pip &> /dev/null; then
+                pip install --user pandas openpyxl requests
+            else
+                python3 -m pip install --user pandas openpyxl requests
+            fi
+            print_success "Python-Pakete über pip installiert"
+        fi
     else
-        python3 -m pip install --user pandas openpyxl requests
+        print_info "process_data.py nicht gefunden - überspringe Python-Pakete"
+        print_info "App funktioniert auch ohne Datenverarbeitung"
+        print_success "Python-Installation übersprungen (nicht benötigt)"
     fi
     
     print_success "Python erfolgreich installiert"

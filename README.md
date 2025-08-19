@@ -6,7 +6,18 @@ Eine moderne Web-App für Live-Abfahrtszeiten der Wiener Linien mit Dashboard-Fu
 
 ## 🚀 Quick Start
 
-### 1. Lokale Entwicklung
+### 1. Repository herunterladen
+```bash
+# Git Clone (empfohlen)
+git clone https://github.com/ochtii/wannfahrma-v1.git
+cd wannfahrma-v1
+
+# Oder ZIP Download
+wget https://github.com/ochtii/wannfahrma-v1/archive/refs/heads/master.zip
+unzip master.zip && cd wannfahrma-v1-master
+```
+
+### 2. Lokale Entwicklung
 ```bash
 # Dependencies installieren
 npm install
@@ -19,7 +30,7 @@ cp .env.example .env
 npm start
 ```
 
-### 2. Ubuntu Server Installation
+### 3. Ubuntu Server Installation
 ```bash
 # Vollständige Installation
 chmod +x scripts/install/install-ubuntu.sh

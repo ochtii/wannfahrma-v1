@@ -46,19 +46,229 @@ Automatisierte Installationsskripts für verschiedene Umgebungen.
 
 🎯 **Für:** Pre-Installation Check, Troubleshooting
 
-## 🚀 Verwendung
+## 🚀 Schnellstart
 
-### 1. Vollständige Production Installation
+### 1. Repository clonen
 ```bash
-# Ubuntu Server (empfohlen für Production)
+# HTTPS (empfohlen für die meisten Nutzer)
+git clone https://github.com/ochtii/wannfahrma-v1.git
+cd wannfahrma-v1
+
+# SSH (für Entwickler mit SSH-Keys)
+git clone git@github.com:ochtii/wannfahrma-v1.git
+cd wannfahrma-v1
+
+# Oder ZIP Download
+wget https://github.com/ochtii/wannfahrma-v1/archive/refs/heads/master.zip
+unzip master.zip
+cd wannfahrma-v1-master
+```
+
+### 2. Vollständige Installation (Ubuntu Server)
+```bash
+# Ausführbare Rechte setzen
 chmod +x scripts/install/install-ubuntu.sh
+
+# Installation starten (als normaler User, nicht root!)
 ./scripts/install/install-ubuntu.sh
 
-# Folgen Sie den Prompts für:
-# - Server Domain/Name
-# - SSL-Zertifikat Setup
-# - Nginx Konfiguration
+# Script fragt interaktiv nach:
+# - Domain/Server-Name für Nginx
+# - SSL-Zertifikat Installation (Let's Encrypt)
+# - Firewall-Konfiguration
 ```
+
+### 3. Schnelle Installation (Development)
+```bash
+# Für lokale Entwicklung oder Testing
+chmod +x scripts/install/install-quick.sh
+./scripts/install/install-quick.sh
+
+# Läuft vollautomatisch ohne Eingaben
+```
+
+### 4. System-Check vor Installation
+```bash
+# Empfohlen vor Production-Installation
+chmod +x scripts/install/test-install.sh
+./scripts/install/test-install.sh
+
+# Zeigt potentielle Probleme auf
+```
+
+## 📋 Voraussetzungen
+
+### Minimum System Requirements
+- **OS**: Ubuntu 20.04 LTS oder neuer
+- **RAM**: 1GB (2GB+ empfohlen für Production)
+- **Disk**: 5GB freier Speicher
+- **User**: Sudo-Rechte erforderlich (nicht als root ausführen!)
+
+### Netzwerk-Anforderungen
+```bash
+# Erforderliche Pakete (werden automatisch installiert)
+curl wget git build-essential
+
+# Node.js (LTS Version)
+# Python3 + pip3
+# PM2 (Process Manager)
+
+# Optional für Production
+# Nginx (Reverse Proxy)
+# Certbot (SSL-Zertifikate)
+# UFW (Firewall)
+```
+
+### ⚠️ Python Environment Hinweis (Ubuntu 24.04+)
+**Wichtig**: Ubuntu 24.04+ und Debian 12+ verwenden "externally-managed" Python environments.
+
+```bash
+# Problem: Dieser Fehler kann auftreten
+error: externally-managed-environment
+
+# Lösung: Scripts verwenden automatisch apt-Pakete
+sudo apt install python3-pandas python3-openpyxl python3-requests
+
+# Für custom Python-Apps: pipx verwenden
+sudo apt install pipx
+pipx install your-package
+```
+
+**Unsere Scripts erkennen das automatisch und verwenden die richtige Methode!**
+
+### Git Konfiguration (optional)
+```bash
+# Für eigene Entwicklung
+git config --global user.name "Ihr Name"
+git config --global user.email "ihre.email@example.com"
+
+# SSH Key für GitHub (optional)
+ssh-keygen -t ed25519 -C "ihre.email@example.com"
+cat ~/.ssh/id_ed25519.pub
+# Public Key zu GitHub Account hinzufügen
+```
+
+## 🔧 Detaillierte Installation
+
+### Option A: Vollständige Server-Installation
+
+#### 1. Repository herunterladen
+```bash
+# Mit Git (empfohlen)
+git clone https://github.com/ochtii/wannfahrma-v1.git
+cd wannfahrma-v1
+
+# Aktuelle Version abrufen
+git pull origin master
+```
+
+#### 2. System-Check durchführen
+```bash
+# System-Voraussetzungen prüfen
+chmod +x scripts/install/test-install.sh
+./scripts/install/test-install.sh
+```
+
+#### 3. Installation ausführen
+```bash
+# Vollständige Installation
+chmod +x scripts/install/install-ubuntu.sh
+./scripts/install/install-ubuntu.sh
+```
+
+**Was passiert während der Installation:**
+1. 🔄 System-Update (`apt update && apt upgrade`)
+2. 📦 Essential Packages (`curl`, `wget`, `git`, `build-essential`)
+3. 🟢 Node.js LTS Installation
+4. 🐍 Python3 + pip3 Setup (mit Fehlerbehebung)
+5. ⚙️ PM2 Process Manager
+6. 🌐 Nginx Reverse Proxy (optional)
+7. 🔒 SSL/TLS Zertifikate (Let's Encrypt)
+8. 🛡️ Firewall Konfiguration
+9. 🚀 App Installation & Konfiguration
+10. 📜 Management Scripts erstellen
+
+### Option B: Schnelle Entwickler-Installation
+
+#### 1. Repository clonen
+```bash
+git clone https://github.com/ochtii/wannfahrma-v1.git
+cd wannfahrma-v1
+```
+
+#### 2. Schnell-Installation
+```bash
+chmod +x scripts/install/install-quick.sh
+./scripts/install/install-quick.sh
+```
+
+#### 3. Manueller Start (optional)
+```bash
+# App manuell starten (ohne PM2)
+npm start
+
+# Oder mit PM2
+pm2 start server.js --name wannfahrma
+```
+
+### Option C: Manuelle Installation
+
+#### 1. Repository setup
+```bash
+# Clone & Navigate
+git clone https://github.com/ochtii/wannfahrma-v1.git
+cd wannfahrma-v1
+
+# Umgebung konfigurieren
+cp .env.example .env
+# .env editieren mit echten Werten
+```
+
+#### 2. Dependencies installieren
+```bash
+# System packages
+sudo apt update
+sudo apt install -y curl wget git nodejs npm python3 python3-pip
+
+# Node.js Dependencies
+npm install
+
+# Python Dependencies (falls benötigt)
+pip3 install -r requirements.txt || echo "Keine Python requirements"
+```
+
+#### 3. App starten
+```bash
+# Development
+npm run dev
+
+# Production
+npm start
+
+# Mit PM2
+npm install -g pm2
+pm2 start scripts/deployment/ecosystem.config.js
+```
+
+## 🛠️ Troubleshooting
+
+### Häufige Probleme
+
+#### Git Clone schlägt fehl
+```bash
+# Lösung 1: HTTPS verwenden statt SSH
+git clone https://github.com/ochtii/wannfahrma-v1.git
+
+# Lösung 2: ZIP Download
+wget https://github.com/ochtii/wannfahrma-v1/archive/refs/heads/master.zip
+unzip master.zip
+
+# Lösung 3: Proxy/Firewall
+export http_proxy=http://proxy:port
+export https_proxy=http://proxy:port
+```
+
+#### Node.js Version zu alt
 
 ### 2. Schnelle Entwickler-Installation
 ```bash
@@ -163,21 +373,48 @@ pm2 startup
 
 ### Häufige Probleme
 
-#### 1. pip3 nicht gefunden
+#### 1. Python "externally-managed-environment" Fehler (Ubuntu 24.04+)
+```bash
+# Fehler: "This environment is externally managed"
+error: externally-managed-environment
+
+# Fix: Verwende apt-Pakete (automatisch in Scripts)
+sudo apt install python3-pandas python3-openpyxl python3-requests python3-venv
+
+# Oder pipx für isolated installations
+sudo apt install pipx
+pipx install pandas
+```
+
+#### 2. pip3 nicht gefunden
 ```bash
 # Fix (automatisch in Scripten)
 sudo apt install python3-pip
 sudo ln -sf /usr/bin/pip3 /usr/bin/pip
 ```
 
-#### 2. Node.js Version zu alt
+#### 2. pip3 nicht gefunden
+```bash
+# Fix (automatisch in Scripten)
+sudo apt install python3-pip
+sudo ln -sf /usr/bin/pip3 /usr/bin/pip
+```
+
+#### 3. Node.js Version zu alt
 ```bash
 # Fix (automatisch in install-ubuntu.sh)
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
-#### 3. Permission Denied
+#### 3. Node.js Version zu alt
+```bash
+# Fix (automatisch in install-ubuntu.sh)
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+#### 4. Permission Denied
 ```bash
 # Script ausführbar machen
 chmod +x scripts/install/*.sh
