@@ -1,5 +1,19 @@
-// Load environment variables from .env file
-require('dotenv').config();
+// Read WEBHOOK_SECRET from .env file manually
+const fs = require('fs');
+const path = require('path');
+
+let webhookSecret = 'fallback-secret';
+
+try {
+  const envPath = path.join(__dirname, '../../.env');
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  const secretMatch = envContent.match(/WEBHOOK_SECRET=(.+)/);
+  if (secretMatch) {
+    webhookSecret = secretMatch[1].trim().replace(/['"]/g, '');
+  }
+} catch (error) {
+  console.log('Warning: Could not read .env file, using fallback secret');
+}
 
 module.exports = {
   apps: [
@@ -29,7 +43,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         WEBHOOK_PORT: 3001,
-        WEBHOOK_SECRET: process.env.WEBHOOK_SECRET,
+        WEBHOOK_SECRET: webhookSecret,
         APP_DIR: '/home/ubuntu/wannfahrma-v1'
       },
       error_file: './logs/webhook-err.log',
