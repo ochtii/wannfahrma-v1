@@ -1,18 +1,62 @@
+// Authentication will be available from supabase-config.js
+
 class WienOPNVApp {
     constructor() {
         this.stations = [];
         this.linesData = [];
         this.selectedStation = null;
-        this.autoRefreshInterval = null;
         this.currentRBLs = [];
         this.favorites = [];
         this.currentPage = 'search';
         this.settings = {
-            darkMode: true,
-            refreshInterval: 30
+            darkMode: true
         };
         
+        // Initialize authentication (with fallback)
+        this.initializeAuth();
+        
         this.initializeApp();
+    }
+
+    async initializeAuth() {
+        // Wait for Auth classes to be available
+        let attempts = 0;
+        while (!window.Auth && attempts < 100) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            attempts++;
+        }
+        
+        if (window.Auth && window.UserDataManager) {
+            this.auth = new window.Auth();
+            this.userDataManager = new window.UserDataManager(this.auth);
+            console.log('✅ Authentication system initialized');
+        } else {
+            console.warn('⚠️ Authentication classes not available - running in local-only mode');
+            // Create a fallback auth object
+            this.auth = {
+                isLoggedIn: false,
+                user: null,
+                checkUsageLimits: () => {
+                    const cards = JSON.parse(localStorage.getItem('wien_opnv_dashboard_cards') || '[]');
+                    if (cards.length >= 1) {
+                        return { 
+                            withinLimits: false, 
+                            reason: 'Ohne Anmeldung ist nur 1 Dashboard-Karte erlaubt. Bitte registrieren Sie sich für unbegrenzte Karten.' 
+                        };
+                    }
+                    for (const card of cards) {
+                        if (card.departureLines && card.departureLines.length >= 5) {
+                            return { 
+                                withinLimits: false, 
+                                reason: 'Ohne Anmeldung sind maximal 5 Abfahrtslinien pro Karte erlaubt. Bitte registrieren Sie sich für unbegrenzte Linien.' 
+                            };
+                        }
+                    }
+                    return { withinLimits: true };
+                }
+            };
+            this.userDataManager = null;
+        }
     }
 
     async initializeApp() {
@@ -22,11 +66,16 @@ class WienOPNVApp {
             this.loadFavorites();
             this.setupEventListeners();
             this.setupCardConfigModal();
+            this.setupAuthEventListeners();
+            this.setupAuthStateHandler();
             this.showWelcomeMessage();
             
             // Show the default start page from settings
             const defaultPage = this.settings.defaultStartPage || 'start';
             this.showPage(defaultPage);
+            
+            // Initialize auth UI
+            this.updateAuthUI();
         } catch (error) {
             console.error('Fehler bei der Initialisierung:', error);
         }
@@ -106,8 +155,6 @@ class WienOPNVApp {
 
         // Settings
         const darkModeToggle = document.getElementById('darkModeToggle');
-        const autoRefreshToggle = document.getElementById('autoRefreshToggle');
-        const refreshIntervalSelect = document.getElementById('refreshInterval');
         const defaultStartPageSelect = document.getElementById('defaultStartPage');
         
         if (defaultStartPageSelect) {
@@ -119,18 +166,6 @@ class WienOPNVApp {
         if (darkModeToggle) {
             darkModeToggle.addEventListener('change', () => {
                 this.toggleDarkMode();
-            });
-        }
-
-        if (autoRefreshToggle) {
-            autoRefreshToggle.addEventListener('change', (e) => {
-                this.toggleAutoRefresh(e.target.checked);
-            });
-        }
-
-        if (refreshIntervalSelect) {
-            refreshIntervalSelect.addEventListener('change', (e) => {
-                this.setRefreshInterval(parseInt(e.target.value));
             });
         }
 
@@ -168,10 +203,8 @@ class WienOPNVApp {
         this.loadFavorites();
         this.loadSettings();
         
-        // Start auto-refresh if enabled
-        if (this.settings.autoRefresh) {
-            this.toggleAutoRefresh(true);
-        }
+        // Auto-refresh is now handled per card, not globally
+        console.log('✅ App initialization completed');
     }
 
     handleStationSearch(query) {
@@ -1251,7 +1284,7 @@ class WienOPNVApp {
     }
 
     // Navigation Functions
-    showPage(pageId) {
+    async showPage(pageId) {
         // Reset previous page state before switching
         this.resetPageState();
         
@@ -1277,7 +1310,7 @@ class WienOPNVApp {
         // Load page specific content
         switch (pageId) {
             case 'start':
-                this.loadStartPage();
+                await this.loadStartPage();
                 break;
             case 'favorites':
                 this.loadFavoritesPage();
@@ -1336,7 +1369,7 @@ class WienOPNVApp {
         if (favoriteDepartures) favoriteDepartures.style.display = 'none';
     }
 
-    loadStartPage() {
+    async loadStartPage() {
         console.log('🏠 Loading Start Page...');
         
         this.isEditMode = false;
@@ -1346,13 +1379,13 @@ class WienOPNVApp {
         // Ensure stations are loaded before dashboard
         if (!this.stations || this.stations.length === 0) {
             console.log('📡 Loading stations for dashboard...');
-            this.loadStations().then(() => {
+            this.loadStations().then(async () => {
                 console.log('✅ Stations loaded, initializing dashboard...');
-                this.loadDashboard();
+                await this.loadDashboard();
             });
         } else {
             console.log('✅ Stations already loaded, initializing dashboard...');
-            this.loadDashboard();
+            await this.loadDashboard();
         }
         
         this.setupDashboardControls();
@@ -1376,8 +1409,8 @@ class WienOPNVApp {
     }
 
     // Manual repair function for dashboard cards
-    repairCardManually(cardId, stationDiva) {
-        const cards = this.loadDashboardCards();
+    async repairCardManually(cardId, stationDiva) {
+        const cards = await this.loadDashboardCards();
         const cardIndex = cards.findIndex(c => c.id === cardId);
         
         if (cardIndex === -1) {
@@ -1399,16 +1432,16 @@ class WienOPNVApp {
         cards[cardIndex].rblNumbers = station.rbl_list?.slice(0, cards[cardIndex].departureCount || 10) || [];
         cards[cardIndex].stationName = station.name;
         
-        this.saveDashboardCards(cards);
+        await this.saveDashboardCards(cards);
         console.log(`✅ Card repaired with ${cards[cardIndex].rblNumbers.length} RBLs`);
         
         // Reload dashboard
-        this.loadDashboard();
+        await this.loadDashboard();
     }
 
-    repairDashboardCards() {
+    async repairDashboardCards() {
         console.log('🔧 Repairing dashboard cards...');
-        const cards = this.loadDashboardCards();
+        const cards = await this.loadDashboardCards();
         let repairedCards = [];
         let needsRepair = false;
         
@@ -1525,7 +1558,7 @@ class WienOPNVApp {
         });
         
         if (needsRepair) {
-            this.saveDashboardCards(repairedCards);
+            await this.saveDashboardCards(repairedCards);
             console.log('✅ Dashboard cards migrated to new RBL format');
         } else {
             console.log('✅ Dashboard cards are already in correct format');
@@ -1534,8 +1567,8 @@ class WienOPNVApp {
         return repairedCards;
     }
 
-    loadDashboard() {
-        const dashboardCards = this.loadDashboardCards();
+    async loadDashboard() {
+        const dashboardCards = await this.loadDashboardCards();
         this.dashboardCards = dashboardCards; // Initialize the instance property
         const dashboardGrid = document.getElementById('dashboardGrid');
         const dashboardEmpty = document.getElementById('dashboardEmpty');
@@ -1671,7 +1704,9 @@ class WienOPNVApp {
             timeDisplayOptions: JSON.parse(localStorage.getItem('wien_opnv_time_display_options')) || ['countdown'],
             autoRefresh: localStorage.getItem('wien_opnv_auto_refresh') !== 'false',
             refreshInterval: parseInt(localStorage.getItem('wien_opnv_refresh_interval')) || 30,
-            hideEmptyCards: localStorage.getItem('wien_opnv_hide_empty_cards') === 'true'
+            hideEmptyCards: localStorage.getItem('wien_opnv_hide_empty_cards') === 'true',
+            dashboardLayout: localStorage.getItem('wien_opnv_dashboard_layout') || 'list',
+            enableAnimations: localStorage.getItem('wien_opnv_enable_animations') !== 'false'
         };
 
         // Setup options toggle
@@ -1724,38 +1759,7 @@ class WienOPNVApp {
     }
 
     setupAutoRefreshOptions() {
-        const autoRefreshCheckbox = document.getElementById('autoRefreshEnabled');
-        const refreshOptions = document.getElementById('refreshOptions');
-        const refreshRadios = document.querySelectorAll('input[name="refreshInterval"]');
-
-        // Setup checkbox
-        if (autoRefreshCheckbox) {
-            autoRefreshCheckbox.checked = this.displaySettings.autoRefresh;
-            autoRefreshCheckbox.addEventListener('change', () => {
-                this.displaySettings.autoRefresh = autoRefreshCheckbox.checked;
-                localStorage.setItem('wien_opnv_auto_refresh', autoRefreshCheckbox.checked);
-                
-                if (refreshOptions) {
-                    refreshOptions.classList.toggle('disabled', !autoRefreshCheckbox.checked);
-                }
-                
-                this.updateAutoRefresh();
-            });
-        }
-
-        // Setup refresh interval radios
-        refreshRadios.forEach(radio => {
-            radio.checked = parseInt(radio.value) === this.displaySettings.refreshInterval;
-            radio.addEventListener('change', () => {
-                if (radio.checked) {
-                    this.displaySettings.refreshInterval = parseInt(radio.value);
-                    localStorage.setItem('wien_opnv_refresh_interval', radio.value);
-                    this.updateAutoRefresh();
-                }
-            });
-        });
-
-        // Setup hide empty cards option
+        // Setup hide empty cards option (only remaining option in sidebar)
         const hideEmptyCardsCheckbox = document.getElementById('hideEmptyCards');
         if (hideEmptyCardsCheckbox) {
             hideEmptyCardsCheckbox.checked = this.displaySettings.hideEmptyCards;
@@ -1766,10 +1770,74 @@ class WienOPNVApp {
             });
         }
 
-        // Initial state
-        if (refreshOptions) {
-            refreshOptions.classList.toggle('disabled', !this.displaySettings.autoRefresh);
+        // Setup dashboard layout options
+        this.setupDashboardLayoutOptions();
+        
+        // Setup animation toggle
+        this.setupAnimationToggle();
+    }
+
+    setupDashboardLayoutOptions() {
+        console.log('🔧 Setting up dashboard layout options...');
+        const layoutOptions = document.querySelectorAll('input[name="dashboardLayout"]');
+        console.log('📍 Found layout options:', layoutOptions.length);
+        layoutOptions.forEach(radio => {
+            console.log('📍 Radio value:', radio.value, 'Current setting:', this.displaySettings.dashboardLayout);
+            radio.checked = radio.value === (this.displaySettings.dashboardLayout || 'list');
+            radio.addEventListener('change', () => {
+                if (radio.checked) {
+                    console.log('✅ Layout changed to:', radio.value);
+                    this.displaySettings.dashboardLayout = radio.value;
+                    localStorage.setItem('wien_opnv_dashboard_layout', radio.value);
+                    this.applyDashboardLayout();
+                }
+            });
+        });
+    }
+
+    setupAnimationToggle() {
+        console.log('🔧 Setting up animation toggle...');
+        const animationToggle = document.getElementById('enableAnimations');
+        console.log('📍 Animation toggle found:', !!animationToggle);
+        if (animationToggle) {
+            animationToggle.checked = this.displaySettings.enableAnimations !== false; // Default to true
+            console.log('📍 Animation setting:', this.displaySettings.enableAnimations);
+            animationToggle.addEventListener('change', () => {
+                console.log('✅ Animation changed to:', animationToggle.checked);
+                this.displaySettings.enableAnimations = animationToggle.checked;
+                localStorage.setItem('wien_opnv_enable_animations', animationToggle.checked);
+                this.applyAnimationSettings();
+            });
         }
+    }
+
+    applyDashboardLayout() {
+        console.log('🎨 Applying dashboard layout...');
+        const container = document.getElementById('dashboardGrid');
+        console.log('📍 Container found:', !!container);
+        if (!container) return;
+        
+        // Remove existing layout classes
+        container.classList.remove('list-layout', 'tiles-layout');
+        
+        // Add new layout class
+        const layout = this.displaySettings.dashboardLayout || 'list';
+        console.log('📍 Applying layout:', layout);
+        container.classList.add(`${layout}-layout`);
+        console.log('📍 Container classes:', container.className);
+    }
+
+    applyAnimationSettings() {
+        console.log('🎨 Applying animation settings...');
+        const body = document.body;
+        if (this.displaySettings.enableAnimations === false) {
+            console.log('📍 Disabling animations');
+            body.classList.add('animations-disabled');
+        } else {
+            console.log('📍 Enabling animations');
+            body.classList.remove('animations-disabled');
+        }
+        console.log('📍 Body classes:', body.className);
     }
 
     applyDisplaySettings() {
@@ -1784,10 +1852,26 @@ class WienOPNVApp {
         timeDisplayCheckboxes.forEach(checkbox => {
             checkbox.checked = this.displaySettings.timeDisplayOptions.includes(checkbox.value);
         });
+
+        // Update dashboard layout radio buttons
+        const layoutOptions = document.querySelectorAll('input[name="dashboardLayout"]');
+        layoutOptions.forEach(radio => {
+            radio.checked = radio.value === this.displaySettings.dashboardLayout;
+        });
+
+        // Update animation toggle
+        const animationToggle = document.getElementById('enableAnimations');
+        if (animationToggle) {
+            animationToggle.checked = this.displaySettings.enableAnimations;
+        }
+
+        // Apply layout and animation settings
+        this.applyDashboardLayout();
+        this.applyAnimationSettings();
     }
 
-    refreshAllCards() {
-        const cards = this.loadDashboardCards();
+    async refreshAllCards() {
+        const cards = await this.loadDashboardCards();
         cards.forEach(card => {
             this.loadCardDepartures(card);
         });
@@ -1814,6 +1898,15 @@ class WienOPNVApp {
     }
 
     addDashboardCard(existingCard = null) {
+        // Check usage limits for new cards (not when editing existing)
+        if (!existingCard) {
+            const limits = this.checkUsageLimits();
+            if (!limits.withinLimits) {
+                this.showNotification(limits.reason, 'warning');
+                return;
+            }
+        }
+        
         this.currentEditingCard = existingCard;
         
         // Reset form
@@ -2094,14 +2187,14 @@ class WienOPNVApp {
         
         // Form submission
         if (form) {
-            form.onsubmit = (e) => {
+            form.onsubmit = async (e) => {
                 e.preventDefault();
-                this.saveMultiLineCardConfig();
+                await this.saveMultiLineCardConfig();
             };
         }
     }
 
-    saveMultiLineCardConfig() {
+    async saveMultiLineCardConfig() {
         if (!this.currentCardConfig.station) {
             alert('Bitte wählen Sie eine Station aus.');
             return;
@@ -2109,6 +2202,12 @@ class WienOPNVApp {
         
         if (this.currentCardConfig.departureLines.length === 0) {
             alert('Bitte fügen Sie mindestens eine Abfahrtslinie hinzu.');
+            return;
+        }
+        
+        // Check line limits for non-authenticated users
+        if (!this.auth.isLoggedIn && this.currentCardConfig.departureLines.length > 5) {
+            this.showNotification('Ohne Anmeldung sind maximal 5 Abfahrtslinien pro Karte erlaubt. Bitte registrieren Sie sich für unbegrenzte Linien.', 'warning');
             return;
         }
         
@@ -2132,7 +2231,7 @@ class WienOPNVApp {
         
         console.log(`💾 Saving multi-line card:`, cardData);
         
-        let cards = this.loadDashboardCards();
+        let cards = await this.loadDashboardCards();
         
         if (this.currentEditingCard) {
             // Update existing card
@@ -2150,9 +2249,9 @@ class WienOPNVApp {
             console.log(`➕ Added new card`);
         }
         
-        this.saveDashboardCards(cards);
+        await this.saveDashboardCards(cards);
         this.closeCardConfig();
-        this.loadDashboard();
+        await this.loadDashboard();
     }
 
     setFormValues() {
@@ -2964,7 +3063,7 @@ class WienOPNVApp {
         }
     }
 
-    saveNewCardConfig() {
+    async saveNewCardConfig() {
         if (!this.currentCardConfig.station) {
             alert('Bitte wählen Sie eine Station aus.');
             return;
@@ -2979,7 +3078,7 @@ class WienOPNVApp {
         
         // Create card data object
         const cardData = {
-            id: this.generateUniqueCardId(),
+            id: await this.generateUniqueCardId(),
             title: this.currentCardConfig.title || this.currentCardConfig.station.name,
             station: this.currentCardConfig.station,
             stationName: this.currentCardConfig.station.name, // Add explicit stationName
@@ -2992,22 +3091,22 @@ class WienOPNVApp {
         };
         
         // Save card to dashboard
-        this.dashboardCards = this.loadDashboardCards(); // Load existing cards first
+        this.dashboardCards = await this.loadDashboardCards(); // Load existing cards first
         console.log(`📋 Loaded ${this.dashboardCards.length} existing cards before adding new one`);
         this.dashboardCards.push(cardData);
         console.log(`📋 Total cards after adding new one: ${this.dashboardCards.length}`);
-        this.saveDashboardCards();
+        await this.saveDashboardCards();
         
         // Reload the entire dashboard to show all cards
-        this.loadDashboard();
+        await this.loadDashboard();
         
         // Close modal and show success
         this.closeCardConfig();
         alert('✅ Dashboard-Karte wurde erfolgreich erstellt!');
     }
 
-    editDashboardCard(cardId) {
-        const cards = this.loadDashboardCards();
+    async editDashboardCard(cardId) {
+        const cards = await this.loadDashboardCards();
         const card = cards.find(c => c.id === cardId);
         
         if (!card) {
@@ -3019,19 +3118,19 @@ class WienOPNVApp {
         this.addDashboardCard(card);
     }
 
-    generateUniqueCardId() {
+    async generateUniqueCardId() {
         // Generate a unique ID using timestamp and random number
         const timestamp = Date.now();
         const random = Math.floor(Math.random() * 10000);
         const id = `${timestamp}-${random}`;
         
         // Ensure the ID is unique by checking existing cards
-        const existingCards = this.loadDashboardCards();
+        const existingCards = await this.loadDashboardCards();
         const existingIds = existingCards.map(card => card.id);
         
         if (existingIds.includes(id)) {
             // If by some chance there's a collision, recursively try again
-            return this.generateUniqueCardId();
+            return await this.generateUniqueCardId();
         }
         
         return id;
@@ -3048,12 +3147,25 @@ class WienOPNVApp {
         };
     }
 
-    saveDashboardCards(cards = null) {
+    async saveDashboardCards(cards = null) {
         try {
             const cardsToSave = cards || this.dashboardCards;
             console.log(`💾 Saving ${cardsToSave.length} dashboard cards:`, cardsToSave);
-            localStorage.setItem('wien_opnv_dashboard_cards', JSON.stringify(cardsToSave));
-            console.log(`✅ Successfully saved dashboard cards to localStorage`);
+            
+            // Save to Supabase if authenticated, otherwise to localStorage
+            if (this.auth && this.auth.isLoggedIn && this.userDataManager) {
+                const result = await this.userDataManager.saveUserDashboardCards(cardsToSave);
+                if (result.success) {
+                    console.log(`✅ Successfully saved dashboard cards to Supabase`);
+                } else {
+                    console.error('❌ Failed to save to Supabase, falling back to localStorage');
+                    localStorage.setItem('wien_opnv_dashboard_cards', JSON.stringify(cardsToSave));
+                }
+            } else {
+                localStorage.setItem('wien_opnv_dashboard_cards', JSON.stringify(cardsToSave));
+                console.log(`✅ Successfully saved dashboard cards to localStorage`);
+            }
+            
             console.log('📋 Saved order:', cardsToSave.map((c, index) => `${index + 1}. ${c.title}`));
             
             // Update instance property if cards were passed
@@ -3065,12 +3177,53 @@ class WienOPNVApp {
         }
     }
 
-    loadDashboardCards() {
+    async loadDashboardCards() {
         try {
-            const saved = localStorage.getItem('wien_opnv_dashboard_cards');
-            const cards = saved ? JSON.parse(saved) : [];
+            let cards = [];
             
-            console.log(`📂 Loaded ${cards.length} cards from localStorage`);
+            // Load from Supabase if authenticated, otherwise from localStorage
+            if (this.auth && this.auth.isLoggedIn && this.userDataManager) {
+                // First check if there are any local cards that need migration
+                const localCards = localStorage.getItem('wien_opnv_dashboard_cards');
+                if (localCards && localCards !== '[]') {
+                    console.log('🔄 Local cards found, checking if migration is needed...');
+                    const localCardsArray = JSON.parse(localCards);
+                    
+                    // Check if user already has cards in Supabase
+                    const supabaseCards = await this.userDataManager.loadUserDashboardCards();
+                    
+                    if (supabaseCards.length === 0 && localCardsArray.length > 0) {
+                        console.log('🚀 Migrating local cards to Supabase...');
+                        const migrationResult = await this.userDataManager.migrateLocalStorageData();
+                        if (migrationResult.success) {
+                            console.log('✅ Migration successful:', migrationResult.message);
+                            // Load the migrated cards from Supabase
+                            cards = await this.userDataManager.loadUserDashboardCards();
+                        } else {
+                            console.error('❌ Migration failed:', migrationResult.message);
+                            // Fallback to local cards
+                            cards = localCardsArray;
+                        }
+                    } else {
+                        // User already has Supabase cards, use those
+                        cards = supabaseCards;
+                        // Clear old localStorage if it exists
+                        if (localCardsArray.length > 0) {
+                            console.log('🧹 Clearing old localStorage after using Supabase cards');
+                            localStorage.removeItem('wien_opnv_dashboard_cards');
+                        }
+                    }
+                } else {
+                    // No local cards, just load from Supabase
+                    cards = await this.userDataManager.loadUserDashboardCards();
+                }
+                console.log(`📂 Loaded ${cards.length} cards from Supabase`);
+            } else {
+                const saved = localStorage.getItem('wien_opnv_dashboard_cards');
+                cards = saved ? JSON.parse(saved) : [];
+                console.log(`📂 Loaded ${cards.length} cards from localStorage`);
+            }
+            
             if (cards.length > 0) {
                 console.log('📋 Load order:', cards.map((c, index) => `${index + 1}. ${c.title}`));
             }
@@ -3102,7 +3255,7 @@ class WienOPNVApp {
         }
     }
 
-    saveCardConfig() {
+    async saveCardConfig() {
         const stationData = document.getElementById('cardStationData').value;
         const selectedLine = document.getElementById('cardLineSelect').value;
         const selectedDirection = document.getElementById('cardDirectionSelect').value;
@@ -3143,7 +3296,7 @@ class WienOPNVApp {
         console.log(`💾 Saving card for station ${station.name}, Line ${lineData.line}, Direction: ${selectedDirection}`);
         console.log(`📍 Using RBLs: ${cardData.lineRbls.join(', ')}`);
         
-        let cards = this.loadDashboardCards();
+        let cards = await this.loadDashboardCards();
         
         if (this.currentEditingCard) {
             // Update existing card
@@ -3156,9 +3309,9 @@ class WienOPNVApp {
             cards.push(cardData);
         }
         
-        this.saveDashboardCards(cards);
+        await this.saveDashboardCards(cards);
         this.closeCardConfig();
-        this.loadDashboard();
+        await this.loadDashboard();
     }
 
     closeCardConfig() {
@@ -3672,14 +3825,20 @@ class WienOPNVApp {
                     <span class="direction">${item.departure.towards}</span>
                 </div>
                 <div class="departure-time">
-                    ${this.formatDepartureTime(item.departure)}
+                    ${item.cyclingInfo ? '' : this.formatDepartureTime(item.departure)}
                 </div>
                 ${item.cyclingInfo ? `
                     <div class="cycling-status">
                         <span class="cycling-label">${item.cyclingInfo.nextLabel} Abfahrt</span>
                         <span class="cycling-position">${item.cyclingInfo.current}/${item.cyclingInfo.total}</span>
-                        <div class="cycling-progress-bar">
-                            <div class="cycling-progress-fill" style="width: ${item.cyclingInfo.progress}%"></div>
+                        <div class="cycling-progress-container">
+                            <div class="cycling-progress-bar">
+                                <div class="cycling-tram-track">
+                                    <div class="cycling-tram ${this.getVehicleType(item.line)}" style="left: ${item.cyclingInfo.progress}%"></div>
+                                    <div class="cycling-progress-fill" style="width: ${item.cyclingInfo.progress}%"></div>
+                                </div>
+                            </div>
+                            <span class="cycling-countdown">${item.departure.countdown}</span>
                         </div>
                     </div>
                 ` : ''}
@@ -3843,12 +4002,12 @@ class WienOPNVApp {
         }
     }
 
-    getDashboardCard(cardId) {
-        const cards = this.loadDashboardCards();
+    async getDashboardCard(cardId) {
+        const cards = await this.loadDashboardCards();
         return cards.find(c => c.id === cardId);
     }
 
-    removeDashboardCard(cardId) {
+    async removeDashboardCard(cardId) {
         if (confirm('Möchten Sie diese Karte wirklich entfernen?')) {
             console.log(`🗑️ Attempting to remove dashboard card: ${cardId}`);
             
@@ -3896,7 +4055,7 @@ class WienOPNVApp {
             }
             
             // Remove from storage and update instance variable
-            let cards = this.loadDashboardCards();
+            let cards = await this.loadDashboardCards();
             console.log(`📊 Cards before removal:`, cards.map(c => c.id));
             
             cards = cards.filter(c => c.id !== cardId);
@@ -3906,8 +4065,8 @@ class WienOPNVApp {
             
             // Save to localStorage
             try {
-                localStorage.setItem('wien_opnv_dashboard_cards', JSON.stringify(cards));
-                console.log(`💾 Successfully saved ${cards.length} cards to localStorage`);
+                await this.saveDashboardCards(cards);
+                console.log(`✅ Successfully saved ${cards.length} cards after removal`);
                 
                 // Verify save
                 const verification = localStorage.getItem('wien_opnv_dashboard_cards');
@@ -4103,7 +4262,7 @@ class WienOPNVApp {
         }
     }
 
-    deleteSelectedCards() {
+    async deleteSelectedCards() {
         const selectedCards = document.querySelectorAll('.dashboard-card.selected');
         if (selectedCards.length === 0) return;
         
@@ -4113,7 +4272,9 @@ class WienOPNVApp {
             
         if (confirm(confirmMessage)) {
             const cardIds = Array.from(selectedCards).map(card => card.dataset.cardId);
-            cardIds.forEach(cardId => this.removeDashboardCard(cardId));
+            for (const cardId of cardIds) {
+                await this.removeDashboardCard(cardId);
+            }
             this.updateSelectionButtons();
         }
     }
@@ -4165,7 +4326,9 @@ class WienOPNVApp {
                 const dragInfo = document.getElementById('drag-info');
                 if (dragInfo) dragInfo.remove();
                 
-                this.reorderDashboardCards(evt.oldIndex, evt.newIndex);
+                this.reorderDashboardCards(evt.oldIndex, evt.newIndex).catch(error => {
+                    console.error('❌ Error reordering cards:', error);
+                });
             }
         });
         
@@ -4180,12 +4343,12 @@ class WienOPNVApp {
         }
     }
 
-    reorderDashboardCards(oldIndex, newIndex) {
+    async reorderDashboardCards(oldIndex, newIndex) {
         if (oldIndex === newIndex) return;
         
         console.log(`🔄 Reordering cards: ${oldIndex} -> ${newIndex}`);
         
-        const cards = this.loadDashboardCards();
+        const cards = await this.loadDashboardCards();
         if (!cards || cards.length === 0) {
             console.warn('❌ No cards to reorder');
             return;
@@ -4200,7 +4363,7 @@ class WienOPNVApp {
         console.log('📋 Cards after reorder:', cards.map(c => c.title));
         
         // Save the new order
-        this.saveDashboardCards(cards);
+        await this.saveDashboardCards(cards);
         console.log('✅ Card order saved to localStorage');
         
         // Optional: Add visual feedback
@@ -4297,6 +4460,14 @@ class WienOPNVApp {
         if (refreshInterval && this.settings) {
             refreshInterval.value = this.settings.refreshInterval || 30;
         }
+
+        // Initialize dashboard layout and animation options
+        console.log('📄 Settings page loaded, initializing layout and animation options...');
+        this.setupDashboardLayoutOptions();
+        this.setupAnimationToggle();
+        
+        // Apply current settings immediately
+        this.applyDisplaySettings();
     }
 
     // Favorites Management
@@ -4598,39 +4769,6 @@ class WienOPNVApp {
         this.applySettings();
     }
 
-    toggleAutoRefresh(enabled) {
-        this.settings.autoRefresh = enabled;
-        this.saveSettings();
-        
-        if (enabled) {
-            const intervalMs = this.settings.refreshInterval * 1000;
-            
-            this.autoRefreshInterval = setInterval(() => {
-                this.refreshDepartures();
-            }, intervalMs);
-            console.log(`✓ Auto-Refresh aktiviert (${this.settings.refreshInterval}s)`);
-        } else {
-            if (this.autoRefreshInterval) {
-                clearInterval(this.autoRefreshInterval);
-                this.autoRefreshInterval = null;
-            }
-            console.log('○ Auto-Refresh deaktiviert');
-        }
-    }
-
-    setRefreshInterval(seconds) {
-        this.settings.refreshInterval = seconds;
-        this.saveSettings();
-        
-        // Restart auto-refresh if it's enabled
-        if (this.settings.autoRefresh) {
-            this.toggleAutoRefresh(false);
-            this.toggleAutoRefresh(true);
-        }
-        
-        console.log(`⏱️ Refresh-Intervall geändert: ${seconds}s`);
-    }
-
     setDefaultStartPage(page) {
         this.settings.defaultStartPage = page;
         this.saveSettings();
@@ -4699,7 +4837,362 @@ class WienOPNVApp {
         // Default color if not found
         return '#007bff';
     }
+
+    // ===== AUTHENTICATION METHODS =====
+    
+    setupAuthEventListeners() {
+        // Login button
+        document.getElementById('loginBtn')?.addEventListener('click', () => {
+            this.openAuthModal('loginModal');
+        });
+        
+        // Register button
+        document.getElementById('registerBtn')?.addEventListener('click', () => {
+            this.openAuthModal('registerModal');
+            this.checkLocalDataForMigration();
+        });
+        
+        // Logout button
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            this.handleLogout();
+        });
+        
+        // Form submissions
+        document.getElementById('loginForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleLogin();
+        });
+        
+        document.getElementById('registerForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleRegister();
+        });
+        
+        document.getElementById('resetPasswordForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handlePasswordReset();
+        });
+    }
+    
+    setupAuthStateHandler() {
+        // Override the auth state change handler
+        this.auth.onAuthStateChange = (isLoggedIn, user) => {
+            this.updateAuthUI();
+            if (isLoggedIn && user) {
+                this.handleUserLoggedIn(user);
+            } else {
+                this.handleUserLoggedOut();
+            }
+        };
+    }
+    
+    updateAuthUI() {
+        const guestStatus = document.getElementById('guestStatus');
+        const userInfo = document.getElementById('userInfo');
+        const userEmail = document.getElementById('userEmail');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        
+        // Handle case where elements might not exist yet
+        if (!guestStatus || !userInfo) return;
+        
+        if (this.auth.isLoggedIn && this.auth.user) {
+            // Show user info
+            guestStatus.style.display = 'none';
+            userInfo.style.display = 'flex';
+            if (userEmail) userEmail.textContent = this.auth.user.email;
+            
+            // Show logout button, hide login/register
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (registerBtn) registerBtn.style.display = 'none';
+            if (logoutBtn) logoutBtn.style.display = 'flex';
+        } else {
+            // Show guest status
+            guestStatus.style.display = 'flex';
+            userInfo.style.display = 'none';
+            
+            // Show login/register buttons, hide logout
+            if (loginBtn) loginBtn.style.display = 'flex';
+            if (registerBtn) registerBtn.style.display = 'flex';
+            if (logoutBtn) logoutBtn.style.display = 'none';
+        }
+        
+        // Update usage warnings
+        this.updateUsageWarnings();
+    }
+    
+    updateUsageWarnings() {
+        const usageWarning = document.getElementById('usageWarning');
+        const usageWarningText = document.getElementById('usageWarningText');
+        
+        if (!this.auth.isLoggedIn) {
+            const limits = this.auth.checkUsageLimits();
+            if (!limits.withinLimits) {
+                usageWarning.style.display = 'flex';
+                usageWarningText.textContent = limits.reason;
+            } else {
+                usageWarning.style.display = 'none';
+            }
+        } else {
+            usageWarning.style.display = 'none';
+        }
+    }
+    
+    checkUsageLimits() {
+        if (this.auth.isLoggedIn) {
+            return { canAdd: true }; // No limits for authenticated users
+        }
+        
+        return this.auth.checkUsageLimits();
+    }
+    
+    checkLocalDataForMigration() {
+        const localCards = JSON.parse(localStorage.getItem('wien_opnv_dashboard_cards') || '[]');
+        const migrationOption = document.getElementById('migrationOption');
+        const migrationHint = document.getElementById('migrationHint');
+        
+        if (localCards.length > 0) {
+            migrationOption.style.display = 'block';
+            migrationHint.textContent = `${localCards.length} gespeicherte Karten werden übertragen`;
+        } else {
+            migrationOption.style.display = 'none';
+        }
+    }
+    
+    openAuthModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('show');
+            modal.style.display = 'block';
+        }
+    }
+    
+    async handleLogin() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        
+        if (!email || !password) {
+            this.showNotification('Bitte füllen Sie alle Felder aus.', 'error');
+            return;
+        }
+        
+        const result = await this.auth.login(email, password);
+        
+        if (result.success) {
+            this.showNotification(result.message, 'success');
+            this.closeAuthModal('loginModal');
+        } else {
+            this.showNotification(result.message, 'error');
+        }
+    }
+    
+    async handleRegister() {
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        const confirmPassword = document.getElementById('registerPasswordConfirm').value;
+        const migrateData = document.getElementById('migrateData').checked;
+        
+        if (!email || !password || !confirmPassword) {
+            this.showNotification('Bitte füllen Sie alle Felder aus.', 'error');
+            return;
+        }
+        
+        if (password !== confirmPassword) {
+            this.showNotification('Passwörter stimmen nicht überein.', 'error');
+            return;
+        }
+        
+        if (password.length < 6) {
+            this.showNotification('Passwort muss mindestens 6 Zeichen lang sein.', 'error');
+            return;
+        }
+        
+        const result = await this.auth.register(email, password);
+        
+        if (result.success) {
+            this.showNotification(result.message, 'success');
+            this.closeAuthModal('registerModal');
+            
+            // If user is logged in and wants to migrate data
+            if (this.auth.isLoggedIn && migrateData) {
+                setTimeout(() => this.handleDataMigration(), 1000);
+            }
+        } else {
+            this.showNotification(result.message, 'error');
+        }
+    }
+    
+    async handlePasswordReset() {
+        const email = document.getElementById('resetEmail').value;
+        
+        if (!email) {
+            this.showNotification('Bitte geben Sie Ihre E-Mail-Adresse ein.', 'error');
+            return;
+        }
+        
+        const result = await this.auth.resetPassword(email);
+        
+        if (result.success) {
+            this.showNotification(result.message, 'success');
+            this.closeAuthModal('resetPasswordModal');
+        } else {
+            this.showNotification(result.message, 'error');
+        }
+    }
+    
+    async handleLogout() {
+        if (confirm('Möchten Sie sich wirklich abmelden?')) {
+            const result = await this.auth.logout();
+            
+            if (result.success) {
+                this.showNotification(result.message, 'success');
+            } else {
+                this.showNotification(result.message, 'error');
+            }
+        }
+    }
+    
+    async handleUserLoggedIn(user) {
+        console.log('User logged in:', user);
+        
+        // Reload dashboard cards from user account
+        await this.loadAndRenderDashboard();
+    }
+    
+    async handleUserLoggedOut() {
+        console.log('User logged out');
+        
+        // Reload dashboard cards from localStorage
+        await this.loadAndRenderDashboard();
+    }
+    
+    async handleDataMigration() {
+        try {
+            const result = await this.userDataManager.migrateLocalStorageData();
+            
+            if (result.success) {
+                this.showNotification(result.message, 'success');
+                // Reload dashboard to show migrated data
+                await this.loadAndRenderDashboard();
+            } else {
+                this.showNotification(result.message, 'error');
+            }
+        } catch (error) {
+            this.showNotification('Fehler bei der Datenübertragung: ' + error.message, 'error');
+        }
+    }
+    
+    async loadAndRenderDashboard() {
+        // Reload cards
+        this.dashboardCards = await this.loadDashboardCards();
+        
+        // Re-render dashboard if on start page
+        if (this.currentPage === 'start') {
+            await this.loadDashboard();
+        }
+        
+        // Update usage warnings
+        this.updateUsageWarnings();
+    }
+    
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="notification-close" onclick="this.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        // Add to page
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 100);
+    }
+    // Helper function to determine vehicle type from line number
+    getVehicleType(lineNumber) {
+        if (!lineNumber) return 'tram';
+        
+        const line = lineNumber.toString().toLowerCase();
+        
+        // U-Bahn (Metro)
+        if (line.startsWith('u')) {
+            return 'metro';
+        }
+        
+        // S-Bahn (Suburban train)
+        if (line.startsWith('s')) {
+            return 'train';
+        }
+        
+        // Bus lines (numbers 1A-99A, or numbers > 100)
+        if (line.includes('a') || parseInt(line) > 100) {
+            return 'bus';
+        }
+        
+        // Night buses (N prefix)
+        if (line.startsWith('n')) {
+            return 'bus';
+        }
+        
+        // Default: Tram for everything else (1-99)
+        return 'tram';
+    }
+    
 }
+
+// Global auth modal functions
+window.closeAuthModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        
+        // Clear form data
+        const form = modal.querySelector('form');
+        if (form) {
+            form.reset();
+        }
+    }
+};
+
+window.switchToRegister = function() {
+    window.closeAuthModal('loginModal');
+    window.app.openAuthModal('registerModal');
+    window.app.checkLocalDataForMigration();
+};
+
+window.switchToLogin = function() {
+    window.closeAuthModal('registerModal');
+    window.app.openAuthModal('loginModal');
+};
+
+window.showForgotPassword = function() {
+    window.closeAuthModal('loginModal');
+    window.app.openAuthModal('resetPasswordModal');
+    
+    // Pre-fill email if available
+    const loginEmail = document.getElementById('loginEmail').value;
+    if (loginEmail) {
+        document.getElementById('resetEmail').value = loginEmail;
+    }
+};
 
 // App initialisieren
 const app = new WienOPNVApp();

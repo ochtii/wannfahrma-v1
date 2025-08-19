@@ -1,4 +1,48 @@
+# =============================================================================
+# wann fahrma OIDA - .gitignore
+# =============================================================================
+# Schützt sensible Daten und verhindert Upload großer/unnötiger Dateien
+# =============================================================================
+
+# Environment & Configuration Files
+# =============================================================================
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+*.env
+config/production.json
+config/staging.json
+config/local.json
+
+# API Keys & Secrets
+# =============================================================================
+secrets/
+keys/
+certificates/
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+auth.json
+credentials.json
+service-account.json
+
+# Database & Supabase
+# =============================================================================
+supabase/.env
+supabase/config.toml
+database.db
+*.sqlite
+*.sqlite3
+backup.sql
+dump.sql
+
 # Python
+# =============================================================================
 __pycache__/
 *.pyc
 *.pyo
@@ -9,35 +53,215 @@ __pycache__/
 .pytest_cache/
 venv/
 env/
-.env
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
 
 # Node.js
+# =============================================================================
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+.npm
+.eslintcache
+.node_repl_history
+*.tgz
+.yarn-integrity
+.env.npm
+package-lock.json.bak
 
-# IDE
+# IDE & Editors
+# =============================================================================
 .vscode/
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
 .idea/
 *.swp
 *.swo
 *~
+.atom/
+.sublime-project
+.sublime-workspace
 
-# OS
+# OS Files
+# =============================================================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 desktop.ini
+$RECYCLE.BIN/
 
-# Logs
+# Logs & Debugging
+# =============================================================================
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+debug.log
+error.log
+access.log
+pm2.log
+combined.log
+out.log
+err.log
 
-# Temporary files
+# Runtime & Process Files
+# =============================================================================
+pids/
+*.pid
+*.seed
+*.pid.lock
+.grunt/
+lib-cov/
+.nyc_output/
+.cache/
+.tmp/
+.temp/
+
+# Backup & Archive Files
+# =============================================================================
+backup/
+backups/
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+*.tar
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# Data Files (Large/Raw Data)
+# =============================================================================
+data/oebb/
+data/wiener_linien/
+raw_data/
+exports/
+uploads/
+downloads/
+*.xlsx
+*.xls
+*.csv.bak
+*.json.bak
+
+# Keep essential data files but ignore large raw data
+!wien_opnv_data.json
+!stations.json
+!lines.json
+!mock-data.js
+
+# Build & Distribution
+# =============================================================================
+dist/
+build/
+.build/
+out/
+target/
+*.tsbuildinfo
+
+# Test Coverage & Reports
+# =============================================================================
+coverage/
+.nyc_output/
+test-results/
+junit.xml
+test-report.html
+
+# Temporary Files
+# =============================================================================
 *.tmp
 *.temp
+*.swp
+*.swo
+.temporary/
+temp/
 
-# Data directory (contains large files and raw data)
-data/
+# SSL Certificates & Security
+# =============================================================================
+ssl/
+certs/
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
 
-# Processed data files (keep these for the app to work)
-# wien_opnv_data.json
+# Docker & Container Files
+# =============================================================================
+.dockerignore
+Dockerfile.local
+docker-compose.override.yml
+.docker/
+
+# Cloud & Deployment
+# =============================================================================
+.aws/
+.azure/
+.gcloud/
+.vercel/
+.netlify/
+deployment-config.json
+
+# Mobile & App Specific
+# =============================================================================
+.expo/
+.expo-shared/
+
+# Analytics & Monitoring
+# =============================================================================
+.sentry/
+analytics/
+metrics/
+
+# Cache Directories
+# =============================================================================
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+
+# PM2 & Process Management
+# =============================================================================
+ecosystem.config.js.bak
+.pm2/
+
+# Nginx & Web Server
+# =============================================================================
+access.log
+error.log
+nginx.conf.bak
+
+# Custom Application Files
+# =============================================================================
+user-data/
+sessions/
+uploads/
+static/uploads/
+public/uploads/
+
+# Development & Testing
+# =============================================================================
+.env.test
+test-data/
+fixtures/
+mocks/
+stubs/

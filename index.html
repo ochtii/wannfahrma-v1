@@ -29,6 +29,42 @@
             </button>
         </nav>
 
+        <!-- Authentication Header -->
+        <header class="auth-header" id="authHeader">
+            <div class="auth-info">
+                <div class="user-status" id="userStatus">
+                    <div class="guest-status" id="guestStatus">
+                        <i class="fas fa-user-slash"></i>
+                        <span>Gast-Modus</span>
+                        <span class="limits-info">1 Karte, 5 Linien</span>
+                    </div>
+                    <div class="user-info" id="userInfo" style="display: none;">
+                        <i class="fas fa-user-circle"></i>
+                        <span class="user-email" id="userEmail"></span>
+                        <span class="unlimited-badge">Unlimited</span>
+                    </div>
+                </div>
+                <div class="auth-actions" id="authActions">
+                    <button class="btn btn-outline" id="loginBtn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Anmelden
+                    </button>
+                    <button class="btn btn-primary" id="registerBtn">
+                        <i class="fas fa-user-plus"></i>
+                        Registrieren
+                    </button>
+                    <button class="btn btn-outline" id="logoutBtn" style="display: none;">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Abmelden
+                    </button>
+                </div>
+            </div>
+            <div class="usage-warning" id="usageWarning" style="display: none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="usageWarningText"></span>
+            </div>
+        </header>
+
         <!-- Main Content -->
         <main class="main-content">
             <!-- Start Page -->
@@ -103,6 +139,29 @@
                                 </div>
                             </div>
 
+                            <!-- Dashboard Layout -->
+                            <div class="option-group">
+                                <label>Dashboard-Ansicht</label>
+                                <div class="radio-group">
+                                    <label class="radio-option">
+                                        <input type="radio" name="dashboardLayout" value="list" checked>
+                                        <span>Liste (kompakt)</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="dashboardLayout" value="tiles">
+                                        <span>Kacheln (quadratisch)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Animation Options -->
+                            <div class="option-group">
+                                <label>
+                                    <input type="checkbox" id="enableAnimations" checked>
+                                    Warteanzeigen-Animation (Straßenbahn)
+                                </label>
+                            </div>
+
                             <!-- Hide Cards Without Data -->
                             <div class="option-group">
                                 <label>
@@ -111,31 +170,6 @@
                                 </label>
                             </div>
 
-                            <!-- Auto Refresh -->
-                            <div class="option-group">
-                                <label>
-                                    <input type="checkbox" id="autoRefreshEnabled" checked>
-                                    Automatische Aktualisierung
-                                </label>
-                                <div class="refresh-options" id="refreshOptions">
-                                    <label class="radio-option">
-                                        <input type="radio" name="refreshInterval" value="15">
-                                        <span>15 Sekunden</span>
-                                    </label>
-                                    <label class="radio-option">
-                                        <input type="radio" name="refreshInterval" value="30" checked>
-                                        <span>30 Sekunden</span>
-                                    </label>
-                                    <label class="radio-option">
-                                        <input type="radio" name="refreshInterval" value="60">
-                                        <span>60 Sekunden</span>
-                                    </label>
-                                    <label class="radio-option">
-                                        <input type="radio" name="refreshInterval" value="120">
-                                        <span>2 Minuten</span>
-                                    </label>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -267,30 +301,6 @@
                             <input type="checkbox" id="darkModeToggle">
                             <span class="slider"></span>
                         </label>
-                    </div>
-
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <h4>Auto-Refresh</h4>
-                            <p>Automatische Aktualisierung der Abfahrtszeiten</p>
-                        </div>
-                        <div class="setting-control">
-                            <input type="checkbox" id="autoRefreshToggle" class="checkbox">
-                            <label for="autoRefreshToggle" class="toggle-label">Aktiviert</label>
-                        </div>
-                    </div>
-
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <h4>Auto-Refresh Intervall</h4>
-                            <p>Zeit zwischen automatischen Updates</p>
-                        </div>
-                        <select id="refreshInterval" class="setting-select">
-                            <option value="15">15 Sekunden</option>
-                            <option value="30" selected>30 Sekunden</option>
-                            <option value="60">1 Minute</option>
-                            <option value="120">2 Minuten</option>
-                        </select>
                     </div>
 
                     <div class="setting-item">
@@ -475,7 +485,123 @@
         </div>
     </div>
 
+    <!-- Authentication Modals -->
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content auth-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-sign-in-alt"></i> Anmelden</h3>
+                <button class="modal-close" onclick="closeAuthModal('loginModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="loginEmail">E-Mail-Adresse</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Passwort</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Anmelden
+                        </button>
+                        <button type="button" class="btn btn-link" onclick="showForgotPassword()">
+                            Passwort vergessen?
+                        </button>
+                    </div>
+                </form>
+                <div class="auth-switch">
+                    <p>Noch kein Konto? <button class="btn btn-link" onclick="switchToRegister()">Jetzt registrieren</button></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content auth-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Registrieren</h3>
+                <button class="modal-close" onclick="closeAuthModal('registerModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="registerForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="registerEmail">E-Mail-Adresse</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Passwort</label>
+                        <input type="password" id="registerPassword" required minlength="6">
+                        <small class="form-hint">Mindestens 6 Zeichen</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPasswordConfirm">Passwort bestätigen</label>
+                        <input type="password" id="registerPasswordConfirm" required>
+                    </div>
+                    
+                    <!-- Data Migration Option -->
+                    <div class="migration-option" id="migrationOption">
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-option">
+                                <input type="checkbox" id="migrateData" checked>
+                                <span>Meine lokalen Daten übernehmen</span>
+                            </label>
+                            <small class="form-hint" id="migrationHint">Ihre gespeicherten Karten werden in Ihren Account übertragen</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i>
+                            Registrieren
+                        </button>
+                    </div>
+                </form>
+                <div class="auth-switch">
+                    <p>Bereits ein Konto? <button class="btn btn-link" onclick="switchToLogin()">Jetzt anmelden</button></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Reset Modal -->
+    <div class="modal" id="resetPasswordModal">
+        <div class="modal-content auth-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-key"></i> Passwort zurücksetzen</h3>
+                <button class="modal-close" onclick="closeAuthModal('resetPasswordModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="resetPasswordForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="resetEmail">E-Mail-Adresse</label>
+                        <input type="email" id="resetEmail" required>
+                        <small class="form-hint">Wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                            E-Mail senden
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="closeAuthModal('resetPasswordModal')">
+                            Abbrechen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Konfiguration laden (muss vor anderen Scripts sein) -->
+    <script src="config.js"></script>
+    <script src="supabase-config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

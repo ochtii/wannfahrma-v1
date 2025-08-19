@@ -1,53 +1,83 @@
 # 🚇 wann fahrma OIDA
 
-Eine moderne Web-App für Live-Abfahrtszeiten der Wiener Linien.
+Eine moderne Web-App für Live-Abfahrtszeiten der Wiener Linien mit Dashboard-Funktionalität, Benutzer-Authentication und modernem Design.
 
-## 🚀 Schnellstart
+> 📚 **Für umfassende Dokumentation siehe: [`docs/README.md`](docs/README.md)**
 
-### 1. Abhängigkeiten installieren
+## 🚀 Quick Start
+
+### 1. Lokale Entwicklung
 ```bash
+# Dependencies installieren
 npm install
-```
 
-### 2. Daten verarbeiten (einmalig)
-```bash
-python process_data.py
-```
+# Konfiguration (optional für Auth)
+cp .env.example .env
+# .env mit echten Werten füllen
 
-### 3. Server starten
-```bash
+# Server starten
 npm start
+```
+
+### 2. Ubuntu Server Installation
+```bash
+# Vollständige Installation
+chmod +x scripts/install/install-ubuntu.sh
+./scripts/install/install-ubuntu.sh
+
+# Oder Schnell-Installation
+chmod +x scripts/install/install-quick.sh
+./scripts/install/install-quick.sh
 ```
 
 Die App ist dann verfügbar unter: **http://localhost:3000**
 
-## 📝 Verfügbare Scripts
+## 📚 Dokumentation & Scripts
+
+### 📖 Vollständige Dokumentation
+- **[docs/README.md](docs/README.md)** - Zentrale Dokumentation
+- **[docs/INSTALL-UBUNTU.md](docs/INSTALL-UBUNTU.md)** - Server Installation
+- **[docs/SECURITY.md](docs/SECURITY.md)** - Sicherheitsrichtlinien
+
+### 🛠️ Scripts & Tools
+- **[scripts/install/](scripts/install/)** - Installationsskripts
+- **[scripts/security/](scripts/security/)** - Sicherheitstools
+- **[scripts/deployment/](scripts/deployment/)** - Deployment-Tools
+
+## ✨ Features
+
+- � **Live ÖPNV-Daten** - Real-time Abfahrtszeiten Wiener Linien
+- 👤 **User Authentication** - Supabase Integration mit localStorage-Migration
+- 📱 **Responsive Design** - Mobile & Desktop optimiert
+- 🎯 **Dashboard** - Personalisierte Haltestellen-Sammlung
+- 🚋 **Animierte Fahrzeuge** - Cycling mit verschiedenen Fahrzeug-Typen
+- 💾 **Data Persistence** - localStorage + Cloud-Synchronisation
+- 🔒 **Security** - HTTPS, Input Validation, Rate Limiting
+
+## �📝 Verfügbare NPM Scripts
 
 - `npm start` - Startet den Produktionsserver
 - `npm run dev` - Startet den Entwicklungsserver mit Auto-Reload
 - `npm run proxy` - Startet nur den API-Proxy (falls benötigt)
 
-## 🛠️ Entwicklung
-
-### Server mit Auto-Reload starten:
-```bash
-npm run dev
-```
-
-### Nur den API-Proxy starten:
-```bash
-npm run proxy
-```
-
-## 📂 Projektstruktur
+## � Projekt-Struktur (Reorganisiert)
 
 ```
 wannfahrma-v1/
-├── index.html          # Haupt-HTML-Datei
-├── app.js              # Frontend JavaScript
-├── style.css           # Styling
-├── server.js           # Express Server + API Proxy
-├── api_proxy.js        # Standalone API Proxy
+├── docs/                    # 📚 Zentrale Dokumentation
+│   ├── README.md           # Haupt-Dokumentation
+│   ├── INSTALL-UBUNTU.md   # Server Installation
+│   └── ...                 # Weitere Docs
+├── scripts/                # 🛠️ Hilfsskripts
+│   ├── install/            # Installation Scripts
+│   ├── security/           # Security Tools
+│   └── deployment/         # Deployment Scripts
+├── index.html              # 🌐 Frontend
+├── app.js                  # 🎯 Haupt-Anwendung
+├── server.js               # 🖥️ Backend Server
+├── style.css               # 🎨 Styling
+├── config.js               # ⚙️ Basis-Konfiguration
+├── supabase-config.js      # 🔐 Supabase Setup
 ├── process_data.py     # Datenverarbeitung
 ├── package.json        # npm Konfiguration
 └── data/               # Rohdaten von Wiener Linien
