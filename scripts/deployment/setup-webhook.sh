@@ -109,11 +109,11 @@ EOF
         print_success "Nginx Konfiguration erstellt für $WEBHOOK_DOMAIN"
         WEBHOOK_URL="http://${WEBHOOK_DOMAIN}/webhook"
     else
-        print_warning "Keine Domain angegeben, überspringe Nginx Setup"
-        WEBHOOK_URL="http://$(curl -s ifconfig.me):3001/webhook"
+        print_warning "Keine Domain angegeben, verwende wartenis.org"
+        WEBHOOK_URL="http://webhooks.wartenis.org/webhook/"
     fi
 else
-    WEBHOOK_URL="http://$(curl -s ifconfig.me):3001/webhook"
+    WEBHOOK_URL="http://webhooks.wartenis.org/webhook/"
 fi
 
 # Stop existing PM2 processes

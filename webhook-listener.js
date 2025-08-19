@@ -9,6 +9,7 @@ const WEBHOOK_PORT = process.env.WEBHOOK_PORT || 3001;
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'your-webhook-secret-here';
 const TARGET_BRANCH = 'live';
 const APP_DIR = process.env.APP_DIR || '/home/ubuntu/wannfahrma-v1';
+const WEBHOOK_URL = 'http://webhooks.wartenis.org/webhook/';
 
 // Middleware to parse JSON
 webhookApp.use(express.json());
@@ -251,7 +252,8 @@ webhookApp.listen(WEBHOOK_PORT, () => {
     log(`   Target Branch: ${TARGET_BRANCH}`, 'STARTUP');
     log(`   App Directory: ${APP_DIR}`, 'STARTUP');
     log(`   Health Check: http://localhost:${WEBHOOK_PORT}/webhook/health`, 'STARTUP');
-    log(`   Webhook URL: http://your-domain.com:${WEBHOOK_PORT}/webhook`, 'STARTUP');
+    log(`   Webhook URL: ${WEBHOOK_URL}`, 'STARTUP');
+    log(`   GitHub Setup: Repository → Settings → Webhooks → Add webhook`, 'STARTUP');
     
     // Ensure log directory exists
     const logDir = path.join(APP_DIR, 'logs');

@@ -33,7 +33,7 @@ Das Script:
 
 3. **Webhook konfigurieren:**
    ```
-   Payload URL: http://deine-server-ip:3001/webhook
+   Payload URL: http://webhooks.wartenis.org/webhook/
    Content type: application/json
    Secret: [Der generierte Secret aus dem Setup]
    Which events: Just the push event
@@ -54,7 +54,7 @@ sudo certbot --nginx -d hooks.example.com
 
 Dann in GitHub:
 ```
-Payload URL: https://hooks.example.com/webhook
+Payload URL: https://webhooks.wartenis.org/webhook/
 ```
 
 ## 🎮 Verwendung
