@@ -1,4 +1,5 @@
 // Read WEBHOOK_SECRET from .env file manually
+// Test
 const fs = require('fs');
 const path = require('path');
 
