@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const webhookApp = express();
-const WEBHOOK_PORT = process.env.WEBHOOK_PORT || 3001;
+const WEBHOOK_PORT = 3001; // Fixed port for webhook service
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'your-webhook-secret-here';
 const TARGET_BRANCH = 'live';
 const APP_DIR = process.env.APP_DIR || '/home/ubuntu/wannfahrma-v1';
