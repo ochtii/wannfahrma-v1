@@ -537,7 +537,7 @@ EOF
     mkdir -p logs
     
     print_info "Starte Anwendung mit PM2..."
-    pm2 start ecosystem.config.js
+    pm2 start scripts/deployment/ecosystem.config.js
     pm2 save
     
     print_success "PM2 erfolgreich konfiguriert"

@@ -58,6 +58,17 @@ Automatisierte Installationsskripts für verschiedene Umgebungen.
 
 🎯 **Für:** Problembehebung, Neuinstallation nach Fehlern
 
+### `update-pm2-config.sh` - PM2 Konfiguration Update
+**Aktualisiert bestehende PM2 Setups auf neue Pfad-Struktur:**
+
+✅ **Features:**
+- Verschiebt ecosystem.config.js zu scripts/deployment/
+- Aktualisiert Management Scripts (start.sh, stop.sh, etc.)
+- Neustart mit korrekter Konfiguration
+- Backup alter Konfigurationen
+
+🎯 **Für:** Updates nach Projektreorganisation, PM2 Pfad-Probleme
+
 ## 🚀 Schnellstart
 
 ### 1. Repository clonen
@@ -526,7 +537,30 @@ chmod +x scripts/install/cleanup.sh
 # - Intelligente Reparatur
 ```
 
-#### 7. Port 3000 belegt
+#### 7. PM2 "ecosystem.config.js not found" Fehler
+```bash
+# Problem: PM2 sucht ecosystem.config.js im Root statt in scripts/deployment/
+[PM2][ERROR] File ecosystem.config.js not found
+
+# Lösung 1: Update Script verwenden (empfohlen)
+chmod +x scripts/install/update-pm2-config.sh
+./scripts/install/update-pm2-config.sh
+
+# Lösung 2: Manuell korrigieren
+pm2 stop wannfahrma
+pm2 delete wannfahrma
+pm2 start scripts/deployment/ecosystem.config.js
+pm2 save
+
+# Lösung 3: Management Scripts aktualisieren
+# start.sh editieren:
+pm2 start scripts/deployment/ecosystem.config.js
+
+# Lösung 4: Temporärer Symlink
+ln -s scripts/deployment/ecosystem.config.js ecosystem.config.js
+```
+
+#### 8. Port 3000 belegt
 ```bash
 # Port prüfen
 sudo netstat -tlnp | grep :3000

@@ -28,6 +28,8 @@ Alle Installationsskripts finden Sie unter `../scripts/install/`:
 - `install-ubuntu.sh` - Vollständige Ubuntu Server Installation
 - `install-quick.sh` - Schnelle Basis-Installation
 - `test-install.sh` - System-Check vor Installation
+- `cleanup.sh` - Installation Bereinigung
+- `update-pm2-config.sh` - PM2 Konfiguration Update
 
 ### 🔒 Security Scripts
 Sicherheitstools unter `../scripts/security/`:
@@ -38,6 +40,21 @@ Sicherheitstools unter `../scripts/security/`:
 Deployment-Tools unter `../scripts/deployment/`:
 - `deploy.sh` - Production Deployment
 - `ecosystem.config.js` - PM2 Konfiguration
+
+## ⚠️ Nach Projektreorganisation (PM2 Fix)
+
+Falls Sie nach der Projektreorganisation PM2-Probleme haben:
+
+```bash
+# Quick Fix für "ecosystem.config.js not found"
+cd ~/wannfahrma-v1
+chmod +x scripts/install/update-pm2-config.sh
+./scripts/install/update-pm2-config.sh
+
+# Oder manuell:
+pm2 stop wannfahrma
+pm2 start scripts/deployment/ecosystem.config.js
+```
 
 ## 🏗️ Projekt-Struktur
 
