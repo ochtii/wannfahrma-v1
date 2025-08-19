@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require('dotenv').config();
+
 module.exports = {
   apps: [
     {
@@ -26,8 +29,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         WEBHOOK_PORT: 3001,
+        WEBHOOK_SECRET: process.env.WEBHOOK_SECRET,
         APP_DIR: '/home/ubuntu/wannfahrma-v1'
-        // WEBHOOK_SECRET wird aus .env geladen
       },
       error_file: './logs/webhook-err.log',
       out_file: './logs/webhook-out.log',
