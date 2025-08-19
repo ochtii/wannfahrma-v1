@@ -19,19 +19,39 @@ function verifySignature(req, res, next) {
     const signature = req.headers['x-hub-signature-256'];
     const payload = JSON.stringify(req.body);
     
+    log(`🔍 Signature verification attempt`, 'DEBUG');
+    log(`   Received signature: ${signature}`, 'DEBUG');
+    log(`   Payload length: ${payload.length}`, 'DEBUG');
+    log(`   Secret configured: ${WEBHOOK_SECRET ? 'Yes' : 'No'}`, 'DEBUG');
+    
     if (!signature) {
-        console.log('❌ No signature provided');
+        log('❌ No signature provided in request headers', 'ERROR');
+        log('   Expected header: x-hub-signature-256', 'ERROR');
         return res.status(401).send('No signature provided');
+    }
+    
+    if (!WEBHOOK_SECRET || WEBHOOK_SECRET === 'your-webhook-secret-here') {
+        log('❌ Webhook secret not configured properly', 'ERROR');
+        log('   Please set WEBHOOK_SECRET in environment variables', 'ERROR');
+        return res.status(500).send('Webhook secret not configured');
     }
     
     const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET);
     const digest = 'sha256=' + hmac.update(payload, 'utf8').digest('hex');
     
+    log(`   Expected signature: ${digest}`, 'DEBUG');
+    log(`   Signatures match: ${digest === signature}`, 'DEBUG');
+    
     if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))) {
-        console.log('❌ Invalid signature');
+        log('❌ Invalid signature - authentication failed', 'ERROR');
+        log('   This could mean:', 'ERROR');
+        log('   1. Wrong webhook secret in GitHub repository settings', 'ERROR');
+        log('   2. Wrong WEBHOOK_SECRET environment variable on server', 'ERROR');
+        log('   3. Request not from GitHub', 'ERROR');
         return res.status(401).send('Invalid signature');
     }
     
+    log('✅ Signature verification successful', 'SUCCESS');
     next();
 }
 
@@ -213,7 +233,22 @@ webhookApp.get('/webhook/health', (req, res) => {
         uptime: process.uptime(),
         memory: process.memoryUsage(),
         target_branch: TARGET_BRANCH,
-        app_dir: APP_DIR
+        app_dir: APP_DIR,
+        webhook_url: WEBHOOK_URL
+    });
+});
+
+// Debug endpoint to check webhook configuration (without exposing secret)
+webhookApp.get('/webhook/debug', (req, res) => {
+    res.json({
+        webhook_secret_configured: !!(WEBHOOK_SECRET && WEBHOOK_SECRET !== 'your-webhook-secret-here'),
+        webhook_secret_length: WEBHOOK_SECRET ? WEBHOOK_SECRET.length : 0,
+        target_branch: TARGET_BRANCH,
+        app_dir: APP_DIR,
+        webhook_url: WEBHOOK_URL,
+        port: WEBHOOK_PORT,
+        node_env: process.env.NODE_ENV || 'not-set',
+        timestamp: new Date().toISOString()
     });
 });
 
@@ -226,6 +261,25 @@ webhookApp.post('/webhook/deploy', verifySignature, async (req, res) => {
         res.json({
             success: true,
             message: 'Deployment completed',
+            ...result
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Test deployment endpoint (without signature verification - for debugging)
+webhookApp.post('/webhook/test-deploy', async (req, res) => {
+    log('🧪 Test deployment triggered (no signature check)', 'TEST');
+    
+    try {
+        const result = await deployUpdate();
+        res.json({
+            success: true,
+            message: 'Test deployment completed',
             ...result
         });
     } catch (error) {
