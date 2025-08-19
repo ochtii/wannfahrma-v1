@@ -52,7 +52,7 @@ echo ==================================================
 echo.
 echo 🔧 Konfiguration:
 echo    Webhook Secret: %WEBHOOK_SECRET%
-echo    Port: 3001
+echo    Port: 3001 (fixiert)
 echo    Directory: %CD%
 echo.
 echo 🚀 Webhook Service starten:

@@ -1,9 +1,13 @@
-# PowerShell script for Windows development environment
+# PowerShell script for Windows # GitHub Webhook Configuration (Development)
+WEBHOOK_PORT=3001
+WEBHOOK_SECRET=${WebhookSecret}
+APP_DIR=${AppDir}
+NODE_ENV=developmentopment environment
 # GitHub Webhook Setup für lokale Entwicklung
 
 param(
     [string]$WebhookSecret = "",
-    [int]$Port = 3001
+    [int]$Port = 3001  # Fixed webhook port
 )
 
 # Farben für PowerShell
@@ -87,7 +91,7 @@ if (-not $localIP) {
     $localIP = "localhost"
 }
 
-$webhookUrlLocal = "http://${localIP}:${Port}/webhook"
+$webhookUrlLocal = "http://${localIP}:3001/webhook"
 $webhookUrlProduction = "http://18.206.241.165:3001/webhook"
 
 # Show configuration
@@ -101,7 +105,7 @@ Write-Info "🔧 Lokale Konfiguration:"
 Write-Host "   Lokale Webhook URL: $webhookUrlLocal"
 Write-Host "   Produktions Webhook URL: $webhookUrlProduction"
 Write-Host "   Webhook Secret: $WebhookSecret"
-Write-Host "   Port: $Port"
+Write-Host "   Port: 3001 (fixiert)"
 Write-Host "   App Directory: $AppDir"
 Write-Host ""
 
@@ -136,10 +140,10 @@ Write-Host ""
 
 Write-Info "🧪 Lokale Tests:"
 Write-Host "   # Health Check"
-Write-Host "   Invoke-RestMethod -Uri 'http://localhost:$Port/webhook/health'"
+Write-Host "   Invoke-RestMethod -Uri 'http://localhost:3001/webhook/health'"
 Write-Host ""
 Write-Host "   # Manual Deploy Test"
-Write-Host "   Invoke-RestMethod -Uri 'http://localhost:$Port/webhook/deploy' -Method Post -ContentType 'application/json' -Body '{}'"
+Write-Host "   Invoke-RestMethod -Uri 'http://localhost:3001/webhook/deploy' -Method Post -ContentType 'application/json' -Body '{}'"
 Write-Host ""
 
 Write-Info "🔄 Entwicklungsworkflow:"

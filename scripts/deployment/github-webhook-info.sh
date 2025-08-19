@@ -38,7 +38,7 @@ SERVER_IP="18.206.241.165"
 
 # Check if webhook service is running
 WEBHOOK_RUNNING=false
-if curl -f http://localhost:${WEBHOOK_PORT:-3001}/webhook/health >/dev/null 2>&1; then
+if curl -f http://localhost:3001/webhook/health >/dev/null 2>&1; then
     WEBHOOK_RUNNING=true
 fi
 
@@ -54,7 +54,7 @@ echo ""
 # Show current status
 print_header "📊 Status Check"
 echo "   Server IP: $SERVER_IP"
-echo "   Webhook Port: ${WEBHOOK_PORT:-3001}"
+echo "   Webhook Port: 3001"
 
 if [ "$WEBHOOK_RUNNING" = true ]; then
     print_success "   ✅ Webhook Service läuft"
@@ -155,7 +155,7 @@ echo ""
 print_header "🔒 Sicherheitshinweise"
 echo ""
 print_warning "⚠️  Webhook Secret sicher aufbewahren!"
-print_warning "⚠️  Port ${WEBHOOK_PORT:-3001} ist öffentlich zugänglich"
+print_warning "⚠️  Port 3001 ist öffentlich zugänglich"
 print_info "💡 Für Produktion: Nginx Reverse Proxy mit SSL verwenden"
 echo ""
 
