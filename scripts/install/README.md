@@ -46,6 +46,18 @@ Automatisierte Installationsskripts für verschiedene Umgebungen.
 
 🎯 **Für:** Pre-Installation Check, Troubleshooting
 
+### `cleanup.sh` - Installation Bereinigung
+**Behebt beschädigte Installationen:**
+
+✅ **Features:**
+- Erkennt beschädigte Git Repositories
+- Bereinigt PM2 Prozesse
+- Entfernt Nginx Konfigurationen
+- Bietet automatischen Neudownload
+- Intelligente Reparatur vs. Neuinstallation
+
+🎯 **Für:** Problembehebung, Neuinstallation nach Fehlern
+
 ## 🚀 Schnellstart
 
 ### 1. Repository clonen
@@ -485,7 +497,36 @@ chmod +x scripts/install/*.sh
 ./scripts/install/install-ubuntu.sh
 ```
 
-#### 4. Port 3000 belegt
+#### 6. Git Clone Probleme
+```bash
+# Problem: "fatal: Unable to read current working directory"
+# Ursache: Script befindet sich in gelöschtem Verzeichnis
+
+# Lösung 1: Working Directory wechseln
+cd ~
+./scripts/install/install-ubuntu.sh
+
+# Lösung 2: Verzeichnis manuell bereinigen
+rm -rf ~/wannfahrma-v1
+git clone https://github.com/ochtii/wannfahrma-v1.git ~/wannfahrma-v1
+
+# Lösung 3: ZIP Download statt Git
+wget https://github.com/ochtii/wannfahrma-v1/archive/refs/heads/master.zip
+unzip master.zip
+mv wannfahrma-v1-master wannfahrma-v1
+
+# Lösung 4: Cleanup Script verwenden (empfohlen)
+chmod +x scripts/install/cleanup.sh
+./scripts/install/cleanup.sh
+
+# Cleanup Script macht automatisch:
+# - Beschädigte Repositories erkennen und reparieren
+# - PM2 Prozesse bereinigen  
+# - Neudownload anbieten
+# - Intelligente Reparatur
+```
+
+#### 7. Port 3000 belegt
 ```bash
 # Port prüfen
 sudo netstat -tlnp | grep :3000

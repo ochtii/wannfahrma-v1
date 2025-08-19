@@ -404,23 +404,70 @@ setup_application() {
     
     APP_DIR="$HOME/wannfahrma-v1"
     
+    # Ensure we're not in the target directory when manipulating it
+    cd "$HOME"
+    
     if [[ -d "$APP_DIR" ]]; then
         print_warning "Verzeichnis $APP_DIR existiert bereits!"
-        read -p "Überschreiben? (y/N): " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            rm -rf "$APP_DIR"
+        
+        # Check if it's a valid git repository
+        if [[ -d "$APP_DIR/.git" ]]; then
+            print_info "Git Repository gefunden. Versuche Update..."
+            cd "$APP_DIR"
+            
+            # Try to update existing repository
+            if git fetch origin && git reset --hard origin/master; then
+                print_success "Repository erfolgreich aktualisiert"
+            else
+                print_warning "Git Update fehlgeschlagen. Neuinstallation nötig."
+                cd "$HOME"
+                read -p "Repository komplett neu clonen? (y/N): " -n 1 -r
+                echo
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    print_info "Entferne altes Verzeichnis..."
+                    rm -rf "$APP_DIR"
+                else
+                    print_error "Installation abgebrochen"
+                    return 1
+                fi
+            fi
         else
-            print_info "Installation in bestehendes Verzeichnis..."
+            print_warning "Kein Git Repository gefunden"
+            read -p "Verzeichnis überschreiben? (y/N): " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                print_info "Entferne altes Verzeichnis..."
+                rm -rf "$APP_DIR"
+            else
+                print_info "Installation in bestehendes Verzeichnis..."
+                cd "$APP_DIR"
+            fi
         fi
     fi
     
+    # Clone repository if directory doesn't exist
     if [[ ! -d "$APP_DIR" ]]; then
         print_info "Clone Repository..."
-        git clone https://github.com/ochtii/wannfahrma-v1.git "$APP_DIR"
+        if git clone https://github.com/ochtii/wannfahrma-v1.git "$APP_DIR"; then
+            print_success "Repository erfolgreich geklont"
+        else
+            print_error "Git Clone fehlgeschlagen!"
+            print_info "Mögliche Lösungen:"
+            echo "  1. Internet-Verbindung prüfen"
+            echo "  2. Git installieren: sudo apt install git"
+            echo "  3. Repository manuell herunterladen:"
+            echo "     wget https://github.com/ochtii/wannfahrma-v1/archive/refs/heads/master.zip"
+            echo "     unzip master.zip"
+            echo "     mv wannfahrma-v1-master wannfahrma-v1"
+            return 1
+        fi
     fi
     
-    cd "$APP_DIR"
+    # Ensure we're in the app directory
+    if ! cd "$APP_DIR"; then
+        print_error "Kann nicht in App-Verzeichnis wechseln: $APP_DIR"
+        return 1
+    fi
     
     print_info "Installiere NPM Dependencies..."
     npm install

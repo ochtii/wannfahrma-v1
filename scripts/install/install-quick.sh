@@ -94,11 +94,40 @@ setup_app() {
     
     APP_DIR="$HOME/wannfahrma-v1"
     
-    if [[ ! -d "$APP_DIR" ]]; then
-        git clone https://github.com/ochtii/wannfahrma-v1.git "$APP_DIR"
+    # Ensure we're not in the target directory
+    cd "$HOME"
+    
+    if [[ -d "$APP_DIR" ]]; then
+        print_warning "Verzeichnis $APP_DIR existiert bereits"
+        # Quick install - just update if it's a git repo
+        if [[ -d "$APP_DIR/.git" ]]; then
+            print_info "Aktualisiere existierendes Repository..."
+            cd "$APP_DIR"
+            git fetch origin && git reset --hard origin/master || {
+                print_warning "Git Update fehlgeschlagen, verwende existierendes Verzeichnis"
+            }
+        else
+            print_info "Verwende existierendes Verzeichnis..."
+            cd "$APP_DIR"
+        fi
+    else
+        print_info "Clone Repository..."
+        if git clone https://github.com/ochtii/wannfahrma-v1.git "$APP_DIR"; then
+            cd "$APP_DIR"
+        else
+            print_error "Git Clone fehlgeschlagen! Versuche ZIP Download..."
+            wget https://github.com/ochtii/wannfahrma-v1/archive/refs/heads/master.zip -O /tmp/wannfahrma.zip || {
+                print_error "Download fehlgeschlagen. Bitte manuell installieren."
+                return 1
+            }
+            unzip /tmp/wannfahrma.zip -d "$HOME/"
+            mv "$HOME/wannfahrma-v1-master" "$APP_DIR"
+            cd "$APP_DIR"
+            print_success "Repository via ZIP heruntergeladen"
+        fi
     fi
     
-    cd "$APP_DIR"
+    print_info "Installiere Dependencies..."
     npm install
     
     # Create simple .env
