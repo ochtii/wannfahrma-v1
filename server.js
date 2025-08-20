@@ -76,7 +76,7 @@ if (!fs.existsSync(logsDir)) {
 
 // Helper function to get client type from User-Agent
 function getClientType(userAgent) {
-    if (!userAgent) return 'unknown';
+    if (!userAgent || userAgent === 'unknown') return 'unknown';
     
     const ua = userAgent.toLowerCase();
     
@@ -100,12 +100,39 @@ function getClientType(userAgent) {
         return 'desktop';
     }
     
+    // Common browsers
+    if (ua.includes('chrome') || ua.includes('firefox') || ua.includes('safari') || ua.includes('edge')) {
+        return 'browser';
+    }
+    
     // Bots/Crawlers
     if (ua.includes('bot') || ua.includes('crawler') || ua.includes('spider')) {
         return 'bot';
     }
     
+    // PostMan, curl, axios etc.
+    if (ua.includes('postman') || ua.includes('curl') || ua.includes('axios') || ua.includes('node')) {
+        return 'api-client';
+    }
+    
     return 'unknown';
+}
+
+// Helper function to clean IP address
+function cleanIP(ip) {
+    if (!ip) return 'unknown';
+    
+    // Remove IPv6 prefix for IPv4 addresses
+    if (ip.startsWith('::ffff:')) {
+        return ip.substring(7);
+    }
+    
+    // Localhost variations
+    if (ip === '::1' || ip === '127.0.0.1' || ip === 'localhost') {
+        return 'localhost';
+    }
+    
+    return ip;
 }
 
 // Enhanced logging function with colors and request grouping
@@ -118,6 +145,7 @@ function logAPIRequest(ip, userAgent, endpoint, statusCode, requestType, additio
     
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
     const clientType = getClientType(userAgent);
+    const cleanedIP = cleanIP(ip);
     
     // Build source information for incoming requests
     let sourceInfo = '';
@@ -148,11 +176,11 @@ function logAPIRequest(ip, userAgent, endpoint, statusCode, requestType, additio
     }
     
     // Console output with colors
-    const logLine = `${color}[${requestId}] ${prefix} [${timestamp}][${clientType}][${ip}][${requestType}][${statusCode}][${endpoint}]${colors.reset}`;
+    const logLine = `${color}[${requestId}] ${prefix} [${timestamp}][${clientType}][${cleanedIP}][${requestType}][${statusCode}][${endpoint}]${colors.reset}`;
     console.log(logLine + (additionalInfo ? ` ${colors.dim}${additionalInfo}${colors.reset}` : '') + (sourceInfo ? ` ${colors.dim}${sourceInfo}${colors.reset}` : ''));
     
     // File output without colors
-    const fileLogLine = `[${requestId}] [${timestamp}][${clientType}][${ip}][${requestType}][${statusCode}][${endpoint}]${additionalInfo ? ` ${additionalInfo}` : ''}${sourceInfo}`;
+    const fileLogLine = `[${requestId}] [${timestamp}][${clientType}][${cleanedIP}][${requestType}][${statusCode}][${endpoint}]${additionalInfo ? ` ${additionalInfo}` : ''}${sourceInfo}`;
     
     // Write to log file
     try {
