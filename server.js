@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,6 +13,38 @@ const rateLimit = new Map();
 const RATE_LIMIT_WINDOW = 60000; // 1 Minute
 const MAX_REQUESTS_PER_WINDOW = 50; // Erhöht von 10 auf 50
 const CACHE_TTL = 60000; // Verlängert von 30s auf 60s
+
+// API Logging System
+function logAPIRequest(clientIP, userAgent, endpoint, responseCode, requestType = 'API', additionalInfo = '') {
+    const timestamp = new Date().toISOString();
+    
+    // Detect client type from User-Agent
+    let clientType = 'desktop';
+    if (userAgent) {
+        const ua = userAgent.toLowerCase();
+        if (ua.includes('android')) {
+            clientType = 'android';
+        } else if (ua.includes('mobile') || ua.includes('iphone') || ua.includes('ipad')) {
+            clientType = 'mobile';
+        }
+    }
+    
+    // Create log entry
+    const logEntry = `[${timestamp}][${clientType}][${clientIP}][${requestType}][${responseCode}][${endpoint}]${additionalInfo ? ' ' + additionalInfo : ''}\n`;
+    
+    // Ensure logs directory exists
+    const logsDir = path.join(__dirname, 'logs');
+    if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+    }
+    
+    // Append to log file
+    const logFile = path.join(logsDir, 'api_logs.log');
+    fs.appendFileSync(logFile, logEntry);
+    
+    // Also log to console for debugging
+    console.log(`📊 API Log: ${logEntry.trim()}`);
+}
 
 // Enable CORS for all routes
 app.use(cors());
@@ -63,10 +96,12 @@ app.get('/api/departures/:rbl', async (req, res) => {
     try {
         const rbl = req.params.rbl;
         const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+        const userAgent = req.get('User-Agent') || 'unknown';
         const cacheKey = `departures_${rbl}`;
         
         // Validierung der RBL
         if (!rbl || isNaN(parseFloat(rbl))) {
+            logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, 400, 'VALIDATION', 'Invalid RBL number');
             return res.status(400).json({
                 error: 'Ungültige RBL-Nummer',
                 message: 'RBL muss eine gültige Zahl sein',
@@ -78,12 +113,14 @@ app.get('/api/departures/:rbl', async (req, res) => {
         const cachedData = getCachedData(cacheKey);
         if (cachedData) {
             console.log(`✓ Cache hit for RBL ${rbl}`);
+            logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, 200, 'CACHE', 'Cache hit');
             return res.json(cachedData);
         }
         
         // Check rate limit
         if (isRateLimited(clientIP)) {
             console.log(`⚠️ Rate limit exceeded for IP ${clientIP}`);
+            logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, 429, 'RATE_LIMIT', 'Rate limit exceeded');
             return res.status(429).json({ 
                 error: 'Rate Limit erreicht',
                 message: 'Zu viele Anfragen. Bitte warten Sie einen Moment.',
@@ -102,6 +139,8 @@ app.get('/api/departures/:rbl', async (req, res) => {
             try {
                 // Wiener Linien OGD API
                 const apiUrl = `https://www.wienerlinien.at/ogd_realtime/monitor`;
+                const wienerLinienStartTime = Date.now();
+                
                 const response = await axios.get(apiUrl, {
                     params: {
                         rbl: rbl,
@@ -116,12 +155,17 @@ app.get('/api/departures/:rbl', async (req, res) => {
                     }
                 });
 
+                // Log successful external API call
+                const responseTime = Date.now() - wienerLinienStartTime;
+                logAPIRequest(clientIP, userAgent, `EXTERNAL: ${apiUrl}`, response.status, 'WIENER_LINIEN', `RBL:${rbl} ResponseTime:${responseTime}ms`);
+
                 // API-spezifische Fehlerbehandlung
                 if (response.data && response.data.message) {
                     const { messageCode, value } = response.data.message;
                     
                     // Rate Limit erreicht (Code 316)
                     if (messageCode === 316) {
+                        logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, 429, 'API_RATE_LIMIT', `WL API rate limit - Code:${messageCode}`);
                         return res.status(429).json({
                             error: 'Rate Limit erreicht',
                             message: 'Zu viele Anfragen an die Wiener Linien API. Bitte versuchen Sie es später erneut.',
@@ -132,6 +176,7 @@ app.get('/api/departures/:rbl', async (req, res) => {
                     
                     // Andere API-Fehler
                     if (messageCode !== 1) {
+                        logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, 400, 'API_ERROR', `WL API error - Code:${messageCode} Message:${value}`);
                         return res.status(400).json({
                             error: 'API-Fehler',
                             message: value || 'Unbekannter API-Fehler',
@@ -145,10 +190,20 @@ app.get('/api/departures/:rbl', async (req, res) => {
                 setCachedData(cacheKey, response.data);
                 console.log(`✅ Abfahrten geladen und gecacht für RBL: ${rbl}`);
                 
+                // Log successful API response
+                logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, 200, 'SUCCESS', `RBL:${rbl} Cached`);
+                
                 return res.json(response.data);
                 
             } catch (error) {
                 retryCount++;
+                
+                // Log external API error
+                if (error.response) {
+                    logAPIRequest(clientIP, userAgent, `EXTERNAL: ${apiUrl}`, error.response.status, 'WIENER_LINIEN_ERROR', `RBL:${rbl} Retry:${retryCount}/${maxRetries} Error:${error.message}`);
+                } else {
+                    logAPIRequest(clientIP, userAgent, `EXTERNAL: ${apiUrl}`, 0, 'WIENER_LINIEN_ERROR', `RBL:${rbl} Retry:${retryCount}/${maxRetries} Network error`);
+                }
                 
                 // Bei 403-Fehlern: Kurze Pause und Retry
                 if (error.response?.status === 403 && retryCount <= maxRetries) {
@@ -165,8 +220,13 @@ app.get('/api/departures/:rbl', async (req, res) => {
     } catch (error) {
         console.error(`❌ Fehler beim Laden der Abfahrten für RBL ${req.params.rbl}:`, error.message);
         
+        const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+        const userAgent = req.get('User-Agent') || 'unknown';
+        const rbl = req.params.rbl;
+        
         // Verschiedene Fehlertypen unterscheiden
         if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+            logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, 503, 'CONNECTION_ERROR', `External API unreachable: ${error.code}`);
             return res.status(503).json({
                 error: 'Service nicht verfügbar',
                 message: 'Die Wiener Linien API ist momentan nicht erreichbar. Bitte versuchen Sie es später erneut.',
@@ -175,6 +235,7 @@ app.get('/api/departures/:rbl', async (req, res) => {
         }
         
         if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, 504, 'TIMEOUT_ERROR', `Request timeout after 15s`);
             return res.status(504).json({
                 error: 'Zeitüberschreitung',
                 message: 'Die Anfrage hat zu lange gedauert. Bitte versuchen Sie es erneut.',
@@ -188,6 +249,7 @@ app.get('/api/departures/:rbl', async (req, res) => {
             const apiData = error.response.data;
             
             if (status === 403) {
+                logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, 403, 'ACCESS_DENIED', 'WL API access denied');
                 return res.status(403).json({
                     error: 'Zugriff verweigert',
                     message: 'Keine Berechtigung für die Wiener Linien API.',
@@ -196,6 +258,7 @@ app.get('/api/departures/:rbl', async (req, res) => {
             }
             
             if (status === 404) {
+                logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, 404, 'NOT_FOUND', `RBL ${rbl} not found`);
                 return res.status(404).json({
                     error: 'RBL nicht gefunden',
                     message: 'Die angegebene RBL-Nummer existiert nicht.',
@@ -203,6 +266,7 @@ app.get('/api/departures/:rbl', async (req, res) => {
                 });
             }
             
+            logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, status, 'HTTP_ERROR', `WL API returned ${status}`);
             return res.status(status).json({
                 error: 'API-Fehler',
                 message: `Die Wiener Linien API hat einen Fehler zurückgegeben (${status}).`,
@@ -212,6 +276,7 @@ app.get('/api/departures/:rbl', async (req, res) => {
         }
         
         // Allgemeiner Fehler
+        logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, 500, 'GENERAL_ERROR', error.message);
         res.status(500).json({
             error: 'Serverfehler',
             message: 'Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.',
@@ -222,6 +287,10 @@ app.get('/api/departures/:rbl', async (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const userAgent = req.get('User-Agent') || 'unknown';
+    
+    logAPIRequest(clientIP, userAgent, '/health', 200, 'HEALTH_CHECK', 'Health check successful');
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
