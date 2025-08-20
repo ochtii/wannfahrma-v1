@@ -352,6 +352,66 @@ function logAPIRequest(ip, userAgent, endpoint, statusCode, requestType, additio
     return requestId;
 }
 
+// Function to log detailed API response (headers + payload)
+function logDetailedAPIResponse(response, requestId, clientIP, userAgent, url) {
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const cleanedIP = cleanIP(clientIP);
+    
+    console.log(`${colors.green}[${requestId}] 📤 OUT [${timestamp}] DETAILED API RESPONSE:${colors.reset}`);
+    console.log(`${colors.dim}URL: ${url}${colors.reset}`);
+    console.log(`${colors.dim}Status: ${response.status} ${response.statusText}${colors.reset}`);
+    
+    // Log headers
+    console.log(`${colors.cyan}Response Headers:${colors.reset}`);
+    Object.entries(response.headers).forEach(([key, value]) => {
+        console.log(`${colors.dim}  ${key}: ${value}${colors.reset}`);
+    });
+    
+    // Log payload (formatted)
+    console.log(`${colors.cyan}Response Payload:${colors.reset}`);
+    try {
+        const formattedPayload = JSON.stringify(response.data, null, 2);
+        // Truncate if too long for console
+        if (formattedPayload.length > 2000) {
+            console.log(`${colors.dim}${formattedPayload.substring(0, 2000)}...${colors.reset}`);
+            console.log(`${colors.yellow}[Payload truncated - full response: ${formattedPayload.length} characters]${colors.reset}`);
+        } else {
+            console.log(`${colors.dim}${formattedPayload}${colors.reset}`);
+        }
+    } catch (e) {
+        console.log(`${colors.red}[Could not format payload as JSON]${colors.reset}`);
+        console.log(`${colors.dim}${response.data}${colors.reset}`);
+    }
+    
+    // Also write to separate detailed log file
+    try {
+        const detailedLogData = {
+            timestamp: timestamp,
+            requestId: requestId,
+            clientIP: cleanedIP,
+            url: url,
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
+            payload: response.data
+        };
+        
+        const logEntry = `\n=== API RESPONSE ${requestId} at ${timestamp} ===\n` +
+                        `URL: ${url}\n` +
+                        `Client: ${cleanedIP}\n` +
+                        `Status: ${response.status} ${response.statusText}\n` +
+                        `Headers: ${JSON.stringify(response.headers, null, 2)}\n` +
+                        `Payload: ${JSON.stringify(response.data, null, 2)}\n` +
+                        `=== END RESPONSE ${requestId} ===\n`;
+        
+        fs.appendFileSync(path.join(logsDir, 'api_detailed_responses.log'), logEntry);
+    } catch (error) {
+        console.error('❌ Fehler beim Schreiben der detaillierten Response-Logs:', error.message);
+    }
+    
+    console.log(`${colors.green}[${requestId}] 📤 OUT [${timestamp}] END DETAILED RESPONSE${colors.reset}\n`);
+}
+
 // Middleware to log all incoming requests
 app.use((req, res, next) => {
     const clientIP = getRealClientIP(req);
@@ -441,7 +501,11 @@ app.get('/api/departures/:rbl', async (req, res) => {
         });
         const responseTime = Date.now() - startTime;
         
+        // Log basic response info
         logAPIRequest(clientIP, userAgent, apiUrl, response.status, 'EXTERNAL_RESPONSE', `${responseTime}ms - ${JSON.stringify(response.data).length} bytes`, extRequestId);
+        
+        // Log detailed response (headers + payload)
+        logDetailedAPIResponse(response, extRequestId, clientIP, userAgent, apiUrl);
         
         // Process the response
         if (response.data && response.data.data && response.data.data.monitors) {
@@ -502,6 +566,10 @@ app.get('/api/departures/:rbl', async (req, res) => {
             const apiData = error.response.data;
             
             logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, status, 'HTTP_ERROR', `WL API returned ${status}`, req.requestId);
+            
+            // Log detailed error response
+            console.log(`${colors.red}[${req.requestId}] 📤 OUT DETAILED ERROR RESPONSE:${colors.reset}`);
+            logDetailedAPIResponse(error.response, req.requestId, clientIP, userAgent, apiUrl);
             
             if (status === 403) {
                 return res.status(403).json({
