@@ -77,48 +77,177 @@ if (!fs.existsSync(logsDir)) {
     fs.mkdirSync(logsDir, { recursive: true });
 }
 
-// Helper function to get client type from User-Agent
+// Advanced User-Agent parsing for detailed client type detection
 function getClientType(userAgent) {
-    if (!userAgent || userAgent === 'unknown') return 'unknown';
+    if (!userAgent || userAgent === 'unknown' || userAgent === '') return 'unknown';
     
     const ua = userAgent.toLowerCase();
     
-    // Android detection
-    if (ua.includes('android')) {
-        return 'android';
-    }
-    
-    // iOS detection
-    if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod')) {
-        return 'mobile';
-    }
-    
-    // Mobile browsers
-    if (ua.includes('mobile') || ua.includes('mobi')) {
-        return 'mobile';
-    }
-    
-    // Desktop browsers
-    if (ua.includes('windows') || ua.includes('macintosh') || ua.includes('linux')) {
-        return 'desktop';
-    }
-    
-    // Common browsers
-    if (ua.includes('chrome') || ua.includes('firefox') || ua.includes('safari') || ua.includes('edge')) {
-        return 'browser';
-    }
-    
-    // Bots/Crawlers
-    if (ua.includes('bot') || ua.includes('crawler') || ua.includes('spider')) {
+    // Bots and Crawlers (check first to avoid false positives)
+    if (ua.includes('googlebot') || ua.includes('bingbot') || ua.includes('slurp') || 
+        ua.includes('duckduckbot') || ua.includes('baiduspider') || ua.includes('yandexbot') ||
+        ua.includes('facebookexternalhit') || ua.includes('twitterbot') || ua.includes('linkedinbot') ||
+        ua.includes('whatsapp') || ua.includes('telegrambot') || ua.includes('discordbot') ||
+        ua.includes('crawler') || ua.includes('spider') || ua.includes('scraper')) {
+        
+        // Specific bot identification
+        if (ua.includes('googlebot')) return 'google-bot';
+        if (ua.includes('bingbot')) return 'bing-bot';
+        if (ua.includes('facebookexternalhit')) return 'facebook-bot';
+        if (ua.includes('twitterbot')) return 'twitter-bot';
+        if (ua.includes('whatsapp')) return 'whatsapp-bot';
+        if (ua.includes('telegrambot')) return 'telegram-bot';
         return 'bot';
     }
     
-    // PostMan, curl, axios etc.
-    if (ua.includes('postman') || ua.includes('curl') || ua.includes('axios') || ua.includes('node')) {
+    // API Clients and Development Tools
+    if (ua.includes('postman') || ua.includes('insomnia') || ua.includes('paw') ||
+        ua.includes('curl') || ua.includes('wget') || ua.includes('httpie') ||
+        ua.includes('axios') || ua.includes('fetch') || ua.includes('node-fetch') ||
+        ua.includes('python-requests') || ua.includes('python-urllib') ||
+        ua.includes('java') || ua.includes('okhttp') || ua.includes('apache-httpclient')) {
+        
+        if (ua.includes('postman')) return 'postman';
+        if (ua.includes('insomnia')) return 'insomnia';
+        if (ua.includes('curl')) return 'curl';
+        if (ua.includes('python')) return 'python-client';
+        if (ua.includes('java')) return 'java-client';
+        if (ua.includes('node')) return 'node-client';
         return 'api-client';
     }
     
+    // Mobile Apps (native apps)
+    if ((ua.includes('android') && !ua.includes('chrome') && !ua.includes('firefox')) ||
+        (ua.includes('iphone') && !ua.includes('safari')) ||
+        ua.includes('mobile app') || ua.includes('native')) {
+        
+        if (ua.includes('android')) return 'android-app';
+        if (ua.includes('iphone') || ua.includes('ios')) return 'ios-app';
+        return 'mobile-app';
+    }
+    
+    // Mobile Browsers
+    if (ua.includes('android')) {
+        if (ua.includes('chrome')) return 'android-chrome';
+        if (ua.includes('firefox')) return 'android-firefox';
+        if (ua.includes('opera')) return 'android-opera';
+        if (ua.includes('samsung')) return 'android-samsung';
+        return 'android-browser';
+    }
+    
+    // iOS Browsers
+    if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod')) {
+        if (ua.includes('crios')) return 'ios-chrome';
+        if (ua.includes('fxios')) return 'ios-firefox';
+        if (ua.includes('opera')) return 'ios-opera';
+        if (ua.includes('safari')) return 'ios-safari';
+        return 'ios-browser';
+    }
+    
+    // Desktop Browsers
+    if (ua.includes('chrome') && !ua.includes('edg') && !ua.includes('opr')) {
+        if (ua.includes('windows')) return 'win-chrome';
+        if (ua.includes('mac')) return 'mac-chrome';
+        if (ua.includes('linux')) return 'linux-chrome';
+        return 'chrome';
+    }
+    
+    if (ua.includes('firefox')) {
+        if (ua.includes('windows')) return 'win-firefox';
+        if (ua.includes('mac')) return 'mac-firefox';
+        if (ua.includes('linux')) return 'linux-firefox';
+        return 'firefox';
+    }
+    
+    if (ua.includes('safari') && !ua.includes('chrome')) {
+        if (ua.includes('mac')) return 'mac-safari';
+        return 'safari';
+    }
+    
+    if (ua.includes('edg')) {
+        if (ua.includes('windows')) return 'win-edge';
+        if (ua.includes('mac')) return 'mac-edge';
+        return 'edge';
+    }
+    
+    if (ua.includes('opera') || ua.includes('opr')) {
+        if (ua.includes('windows')) return 'win-opera';
+        if (ua.includes('mac')) return 'mac-opera';
+        return 'opera';
+    }
+    
+    // Generic mobile detection
+    if (ua.includes('mobile') || ua.includes('mobi') || ua.includes('phone')) {
+        return 'mobile-generic';
+    }
+    
+    // Generic desktop detection
+    if (ua.includes('windows')) return 'windows-generic';
+    if (ua.includes('macintosh') || ua.includes('mac os')) return 'mac-generic';
+    if (ua.includes('linux') || ua.includes('ubuntu') || ua.includes('debian')) return 'linux-generic';
+    
+    // Smart TV and Gaming Consoles
+    if (ua.includes('smart-tv') || ua.includes('smarttv') || ua.includes('tizen') ||
+        ua.includes('webos') || ua.includes('roku') || ua.includes('chromecast')) {
+        return 'smart-tv';
+    }
+    
+    if (ua.includes('playstation') || ua.includes('xbox') || ua.includes('nintendo')) {
+        return 'gaming-console';
+    }
+    
+    // IoT and Embedded devices
+    if (ua.includes('raspberry') || ua.includes('arduino') || ua.includes('esp32') ||
+        ua.includes('embedded') || ua.includes('iot')) {
+        return 'iot-device';
+    }
+    
     return 'unknown';
+}
+
+// Helper function to extract browser/device info for logging
+function getUserAgentInfo(userAgent) {
+    if (!userAgent || userAgent === 'unknown' || userAgent === '') return '';
+    
+    const ua = userAgent.toLowerCase();
+    let info = [];
+    
+    // Extract version numbers
+    const chromeMatch = ua.match(/chrome\/(\d+)/);
+    const firefoxMatch = ua.match(/firefox\/(\d+)/);
+    const safariMatch = ua.match(/version\/(\d+)/);
+    const edgeMatch = ua.match(/edg\/(\d+)/);
+    
+    if (chromeMatch && !ua.includes('edg')) info.push(`Chrome/${chromeMatch[1]}`);
+    if (firefoxMatch) info.push(`Firefox/${firefoxMatch[1]}`);
+    if (safariMatch && ua.includes('safari') && !ua.includes('chrome')) info.push(`Safari/${safariMatch[1]}`);
+    if (edgeMatch) info.push(`Edge/${edgeMatch[1]}`);
+    
+    // Extract OS info
+    if (ua.includes('windows nt 10')) info.push('Windows 10/11');
+    else if (ua.includes('windows nt 6.3')) info.push('Windows 8.1');
+    else if (ua.includes('windows nt 6.1')) info.push('Windows 7');
+    else if (ua.includes('windows')) info.push('Windows');
+    
+    if (ua.includes('mac os x')) {
+        const macMatch = ua.match(/mac os x (\d+)[_.](\d+)/);
+        if (macMatch) info.push(`macOS ${macMatch[1]}.${macMatch[2]}`);
+        else info.push('macOS');
+    }
+    
+    if (ua.includes('android')) {
+        const androidMatch = ua.match(/android (\d+\.?\d*)/);
+        if (androidMatch) info.push(`Android ${androidMatch[1]}`);
+        else info.push('Android');
+    }
+    
+    if (ua.includes('iphone os') || ua.includes('ios')) {
+        const iosMatch = ua.match(/os (\d+)[_.](\d+)/);
+        if (iosMatch) info.push(`iOS ${iosMatch[1]}.${iosMatch[2]}`);
+        else info.push('iOS');
+    }
+    
+    return info.length > 0 ? ` (${info.join(', ')})` : '';
 }
 
 // Helper function to get real client IP (important for production behind proxy)
@@ -176,6 +305,7 @@ function logAPIRequest(ip, userAgent, endpoint, statusCode, requestType, additio
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
     const clientType = getClientType(userAgent);
     const cleanedIP = cleanIP(ip);
+    const userAgentInfo = getUserAgentInfo(userAgent);
     
     // Build source information for incoming requests
     let sourceInfo = '';
@@ -205,12 +335,12 @@ function logAPIRequest(ip, userAgent, endpoint, statusCode, requestType, additio
         prefix = '🔄 INT';
     }
     
-    // Console output with colors
-    const logLine = `${color}[${requestId}] ${prefix} [${timestamp}][${clientType}][${cleanedIP}][${requestType}][${statusCode}][${endpoint}]${colors.reset}`;
+    // Console output with colors (with enhanced user-agent info)
+    const logLine = `${color}[${requestId}] ${prefix} [${timestamp}][${clientType}${userAgentInfo}][${cleanedIP}][${requestType}][${statusCode}][${endpoint}]${colors.reset}`;
     console.log(logLine + (additionalInfo ? ` ${colors.dim}${additionalInfo}${colors.reset}` : '') + (sourceInfo ? ` ${colors.dim}${sourceInfo}${colors.reset}` : ''));
     
-    // File output without colors
-    const fileLogLine = `[${requestId}] [${timestamp}][${clientType}][${cleanedIP}][${requestType}][${statusCode}][${endpoint}]${additionalInfo ? ` ${additionalInfo}` : ''}${sourceInfo}`;
+    // File output without colors (with enhanced user-agent info)
+    const fileLogLine = `[${requestId}] [${timestamp}][${clientType}${userAgentInfo}][${cleanedIP}][${requestType}][${statusCode}][${endpoint}]${additionalInfo ? ` ${additionalInfo}` : ''}${sourceInfo}`;
     
     // Write to log file
     try {
