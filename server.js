@@ -110,7 +110,7 @@ function getClientType(userAgent) {
 
 // Enhanced logging function with colors and request grouping
 let requestCounter = 0;
-function logAPIRequest(ip, userAgent, endpoint, statusCode, requestType, additionalInfo = '', requestId = null) {
+function logAPIRequest(ip, userAgent, endpoint, statusCode, requestType, additionalInfo = '', requestId = null, referrer = null, origin = null) {
     if (!requestId) {
         requestCounter++;
         requestId = requestCounter.toString().padStart(4, '0');
@@ -118,6 +118,13 @@ function logAPIRequest(ip, userAgent, endpoint, statusCode, requestType, additio
     
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
     const clientType = getClientType(userAgent);
+    
+    // Build source information for incoming requests
+    let sourceInfo = '';
+    if (requestType.includes('INCOMING') && (referrer || origin)) {
+        const source = referrer || origin || 'direct';
+        sourceInfo = ` from: ${source}`;
+    }
     
     // Different colors for different request types
     let color = colors.reset;
@@ -142,10 +149,10 @@ function logAPIRequest(ip, userAgent, endpoint, statusCode, requestType, additio
     
     // Console output with colors
     const logLine = `${color}[${requestId}] ${prefix} [${timestamp}][${clientType}][${ip}][${requestType}][${statusCode}][${endpoint}]${colors.reset}`;
-    console.log(logLine + (additionalInfo ? ` ${colors.dim}${additionalInfo}${colors.reset}` : ''));
+    console.log(logLine + (additionalInfo ? ` ${colors.dim}${additionalInfo}${colors.reset}` : '') + (sourceInfo ? ` ${colors.dim}${sourceInfo}${colors.reset}` : ''));
     
     // File output without colors
-    const fileLogLine = `[${requestId}] [${timestamp}][${clientType}][${ip}][${requestType}][${statusCode}][${endpoint}]${additionalInfo ? ` ${additionalInfo}` : ''}`;
+    const fileLogLine = `[${requestId}] [${timestamp}][${clientType}][${ip}][${requestType}][${statusCode}][${endpoint}]${additionalInfo ? ` ${additionalInfo}` : ''}${sourceInfo}`;
     
     // Write to log file
     try {
@@ -161,6 +168,8 @@ function logAPIRequest(ip, userAgent, endpoint, statusCode, requestType, additio
 app.use((req, res, next) => {
     const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
     const userAgent = req.get('User-Agent') || 'unknown';
+    const referrer = req.get('Referer') || req.get('Referrer') || null;
+    const origin = req.get('Origin') || null;
     
     // Generate request ID for this request
     const requestId = logAPIRequest(
@@ -169,7 +178,10 @@ app.use((req, res, next) => {
         req.originalUrl, 
         '-', 
         'INCOMING_REQUEST', 
-        `${req.method} ${req.originalUrl}`
+        `${req.method} ${req.originalUrl}`,
+        null,
+        referrer,
+        origin
     );
     
     // Store request ID in request object for response logging
