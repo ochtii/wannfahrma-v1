@@ -12,7 +12,7 @@ const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX = 50; // 50 requests per minute
 
 function rateLimit(req, res, next) {
-    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const clientIP = getRealClientIP(req);
     const now = Date.now();
     
     if (!rateLimitMap.has(clientIP)) {
@@ -39,6 +39,9 @@ function rateLimit(req, res, next) {
 // Cache for API responses (simple in-memory cache)
 const cache = new Map();
 const CACHE_TTL = 60 * 1000; // 60 seconds
+
+// Trust proxy for real IP detection (important for production behind nginx/load balancer)
+app.set('trust proxy', true);
 
 app.use(rateLimit);
 app.use(express.static('.'));
@@ -113,6 +116,33 @@ function getClientType(userAgent) {
     // PostMan, curl, axios etc.
     if (ua.includes('postman') || ua.includes('curl') || ua.includes('axios') || ua.includes('node')) {
         return 'api-client';
+    }
+    
+    return 'unknown';
+}
+
+// Helper function to get real client IP (important for production behind proxy)
+function getRealClientIP(req) {
+    // Try multiple sources in order of preference
+    const possibleIPs = [
+        req.headers['cf-connecting-ip'],     // Cloudflare
+        req.headers['x-real-ip'],            // nginx
+        req.headers['x-forwarded-for'],      // Standard proxy header
+        req.headers['x-client-ip'],          // Apache
+        req.headers['x-cluster-client-ip'],  // Cluster
+        req.connection?.remoteAddress,       // Direct connection
+        req.socket?.remoteAddress,           // Socket connection
+        req.ip                               // Express default
+    ];
+    
+    for (const ip of possibleIPs) {
+        if (ip) {
+            // Handle comma-separated IPs (x-forwarded-for can have multiple)
+            const cleanedIP = ip.split(',')[0].trim();
+            if (cleanedIP && cleanedIP !== 'unknown') {
+                return cleanedIP;
+            }
+        }
     }
     
     return 'unknown';
@@ -194,7 +224,7 @@ function logAPIRequest(ip, userAgent, endpoint, statusCode, requestType, additio
 
 // Middleware to log all incoming requests
 app.use((req, res, next) => {
-    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const clientIP = getRealClientIP(req);
     const userAgent = req.get('User-Agent') || 'unknown';
     const referrer = req.get('Referer') || req.get('Referrer') || null;
     const origin = req.get('Origin') || null;
@@ -241,7 +271,7 @@ app.use((req, res, next) => {
 // API endpoint for departures
 app.get('/api/departures/:rbl', async (req, res) => {
     const rbl = req.params.rbl;
-    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const clientIP = getRealClientIP(req);
     const userAgent = req.get('User-Agent') || 'unknown';
     
     // Validate RBL parameter (allow integers and floats)
