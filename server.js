@@ -1,5 +1,4 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
@@ -7,24 +6,41 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Rate limiting: 50 requests per minute per IP
-const limiter = rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minute
-    max: 50,
-    message: {
-        error: 'Rate limit exceeded',
-        message: 'Zu viele Anfragen. Bitte warten Sie eine Minute bevor Sie es erneut versuchen.',
-        type: 'RATE_LIMIT'
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+// Simple rate limiting without external library
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 50; // 50 requests per minute
+
+function rateLimit(req, res, next) {
+    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const now = Date.now();
+    
+    if (!rateLimitMap.has(clientIP)) {
+        rateLimitMap.set(clientIP, []);
+    }
+    
+    const requests = rateLimitMap.get(clientIP);
+    // Remove old requests outside the window
+    const validRequests = requests.filter(time => now - time < RATE_LIMIT_WINDOW);
+    
+    if (validRequests.length >= RATE_LIMIT_MAX) {
+        return res.status(429).json({
+            error: 'Rate limit exceeded',
+            message: 'Zu viele Anfragen. Bitte warten Sie eine Minute bevor Sie es erneut versuchen.',
+            type: 'RATE_LIMIT'
+        });
+    }
+    
+    validRequests.push(now);
+    rateLimitMap.set(clientIP, validRequests);
+    next();
+}
 
 // Cache for API responses (simple in-memory cache)
 const cache = new Map();
 const CACHE_TTL = 60 * 1000; // 60 seconds
 
-app.use(limiter);
+app.use(rateLimit);
 app.use(express.static('.'));
 app.use(express.json());
 
