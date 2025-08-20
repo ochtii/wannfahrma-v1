@@ -1,9 +1,14 @@
 // Supabase Configuration and Authentication Module
 // Note: Configure SUPABASE_URL and SUPABASE_ANON_KEY in .env file
 
-// Configuration from environment variables
-const SUPABASE_URL = process.env.SUPABASE_URL || window.SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || window.SUPABASE_ANON_KEY || '';
+// Configuration from environment variables (browser-safe)
+const SUPABASE_URL = (typeof process !== 'undefined' && process.env) 
+    ? process.env.SUPABASE_URL 
+    : (typeof window !== 'undefined' && window.SUPABASE_URL) || '';
+    
+const SUPABASE_ANON_KEY = (typeof process !== 'undefined' && process.env) 
+    ? process.env.SUPABASE_ANON_KEY 
+    : (typeof window !== 'undefined' && window.SUPABASE_ANON_KEY) || '';
 
 // Check if Supabase configuration is available
 const isSupabaseConfigured = () => {

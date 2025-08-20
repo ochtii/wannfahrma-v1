@@ -4875,15 +4875,19 @@ class WienOPNVApp {
     }
     
     setupAuthStateHandler() {
-        // Override the auth state change handler
-        this.auth.onAuthStateChange = (isLoggedIn, user) => {
-            this.updateAuthUI();
-            if (isLoggedIn && user) {
-                this.handleUserLoggedIn(user);
-            } else {
-                this.handleUserLoggedOut();
-            }
-        };
+        // Override the auth state change handler only if auth is available
+        if (this.auth && typeof this.auth.onAuthStateChange !== 'undefined') {
+            this.auth.onAuthStateChange = (isLoggedIn, user) => {
+                this.updateAuthUI();
+                if (isLoggedIn && user) {
+                    this.handleUserLoggedIn(user);
+                } else {
+                    this.handleUserLoggedOut();
+                }
+            };
+        } else {
+            console.warn('⚠️ Auth state handler not available - running in local mode');
+        }
     }
     
     updateAuthUI() {

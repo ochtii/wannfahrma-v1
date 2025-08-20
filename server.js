@@ -188,8 +188,8 @@ app.get('/api/departures/:rbl', async (req, res) => {
     const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
     const userAgent = req.get('User-Agent') || 'unknown';
     
-    // Validate RBL parameter
-    if (!rbl || !/^\d+$/.test(rbl)) {
+    // Validate RBL parameter (allow integers and floats)
+    if (!rbl || !/^\d+(\.\d+)?$/.test(rbl)) {
         logAPIRequest(clientIP, userAgent, `/api/departures/${rbl}`, 400, 'VALIDATION_ERROR', 'Invalid RBL format', req.requestId);
         return res.status(400).json({
             error: 'Ungültige RBL',
