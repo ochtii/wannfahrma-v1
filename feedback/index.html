@@ -703,9 +703,8 @@
                 apiBase = 'http://18.206.241.165:3002';
             }
             
-            // The endpoint structure is: /feedback/stats not /api/feedback/stats
-            const cleanEndpoint = endpoint.replace('/api/feedback/', '/feedback/');
-            const url = `${apiBase}${cleanEndpoint}`;
+            // Use the correct endpoint structure: /api/feedback/stats
+            const url = `${apiBase}${endpoint}`;
             
             console.log(`� API Call: ${url}`);
             
@@ -1103,12 +1102,13 @@
             console.log('🌐 Current location:', window.location.href);
             
             const testUrls = [
-                // Test the actual feedback API endpoints
-                'http://18.206.241.165:3002/feedback/stats',
-                'http://18.206.241.165:3002/feedback/recent',
+                // Test the actual feedback API endpoints (correct structure)
+                'http://18.206.241.165:3002/api/feedback/stats',
+                'http://18.206.241.165:3002/api/feedback/recent',
+                'http://18.206.241.165:3002/health',
                 'http://18.206.241.165:3002/',
                 // Test local development endpoints
-                'http://127.0.0.1:3002/feedback/stats',
+                'http://127.0.0.1:3002/api/feedback/stats',
                 'http://127.0.0.1:3002/',
                 // Test if static files are accessible
                 `${window.location.origin}/feedback/feedback-api.js`,
@@ -1142,7 +1142,7 @@
             }
             
             console.log('🔧 Diagnostics complete. Analysis:');
-            console.log('💡 Expected working URL: http://18.206.241.165:3002/feedback/stats');
+            console.log('💡 Expected working URL: http://18.206.241.165:3002/api/feedback/stats');
             console.log('💡 If this works, the feedback system should be fully functional');
         }
         
