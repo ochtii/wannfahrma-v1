@@ -176,4 +176,49 @@ function resetForm() {
 }
 window.resetForm = resetForm;
 
-// ...add all feedback, stats, recent, admin, and API logic here as in original index.html...
+// Load statistics
+function loadStats() {
+    const statsLoading = document.getElementById('stats-loading');
+    const statsContent = document.getElementById('stats-content');
+    try {
+        statsLoading.style.display = 'block';
+        statsContent.style.display = 'none';
+        // Simulate API call and update stats
+        setTimeout(() => {
+            document.getElementById('stats-updated').textContent = new Date().toLocaleString('de-DE');
+            statsLoading.style.display = 'none';
+            statsContent.style.display = 'block';
+        }, 500);
+    } catch (error) {
+        statsLoading.innerHTML = `<div style='color: #dc3545;'>❌ Fehler beim Laden der Statistiken<br><small>${error.message}</small></div>`;
+    }
+}
+window.loadStats = loadStats;
+
+// Load recent feedback (stub)
+function loadRecentFeedback(page = 1) {
+    const recentLoading = document.getElementById('recent-loading');
+    const recentContent = document.getElementById('recent-content');
+    recentLoading.style.display = 'block';
+    recentContent.style.display = 'none';
+    setTimeout(() => {
+        recentLoading.style.display = 'none';
+        recentContent.style.display = 'block';
+        recentContent.innerHTML = '<div>Feedback geladen (Demo)</div>';
+    }, 500);
+}
+window.loadRecentFeedback = loadRecentFeedback;
+
+// Admin login (stub)
+function adminLogin() {
+    const errorDiv = document.getElementById('admin-login-error');
+    errorDiv.style.display = 'none';
+    // Simulate login
+    setTimeout(() => {
+        document.getElementById('admin-login').style.display = 'none';
+        document.getElementById('admin-dashboard').style.display = 'block';
+    }, 500);
+}
+window.adminLogin = adminLogin;
+
+// ...existing code...
