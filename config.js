@@ -151,6 +151,20 @@ if (typeof window !== 'undefined') {
     // Config-Objekt global verfügbar machen
     window.appConfig = appConfig;
     window.CONFIG = appConfig; // Alias für einfacheren Zugriff
+    
+    // Reload-Funktion für asynchrone Updates
+    window.loadConfig = function() {
+        const newConfig = new ConfigLoader();
+        const newSupabaseConfig = newConfig.getSupabaseConfig();
+        if (newSupabaseConfig) {
+            window.SUPABASE_URL = newSupabaseConfig.url;
+            window.SUPABASE_ANON_KEY = newSupabaseConfig.anonKey;
+        }
+        window.appConfig = newConfig;
+        window.CONFIG = newConfig;
+        console.log('🔄 Konfiguration aktualisiert');
+        return newConfig;
+    };
 }
 
 // Export für Module

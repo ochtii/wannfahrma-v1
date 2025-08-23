@@ -28,8 +28,7 @@ if (typeof window !== 'undefined' && window.supabase && isSupabaseConfigured()) 
 document.addEventListener('DOMContentLoaded', () => {
     // Check if User Authentication is enabled
     if (window.CONFIG && !window.CONFIG.isFeatureEnabled('USER_AUTH')) {
-        console.info('ℹ️ User Authentication ist deaktiviert (Feature-Flag)');
-        return;
+        return; // Silent return - keine Log-Ausgabe nötig
     }
 
     if (!supabaseClient && typeof window.supabase !== 'undefined' && isSupabaseConfigured()) {
@@ -53,12 +52,8 @@ class Auth {
     }
 
     async initialize() {
-        // Warte auf Config-Verfügbarkeit
-        let configAttempts = 0;
-        while (!window.CONFIG && configAttempts < 20) {
-            await new Promise(resolve => setTimeout(resolve, 50));
-            configAttempts++;
-        }
+        // Kurz warten um sicherzustellen dass CONFIG verfügbar ist
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         // Check if User Authentication is enabled
         if (window.CONFIG && !window.CONFIG.isFeatureEnabled('USER_AUTH')) {

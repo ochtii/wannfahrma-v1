@@ -599,69 +599,42 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Environment Variables (injiziert vom Server oder geladen per API) -->
-    <!-- Kann vom Server über Template-Engine überschrieben werden -->
+    <!-- Environment Variables - Inline Fallback für sofortige Verfügbarkeit -->
     <script>
-        // Server kann hier ENV_VARS injizieren (z.B. per Template-Engine)
-        window.ENV_VARS = window.ENV_VARS || {};
-    </script>
-    
-    <!-- Environment Variables (für lokale Entwicklung) -->
-    <script>
-        // Lade .env Datei für lokale Entwicklung
-        if (Object.keys(window.ENV_VARS).length === 0) {
-            // Erkenne ob wir lokal oder in Production sind
-            const isLocalDevelopment = window.location.hostname === 'localhost' || 
-                                      window.location.hostname === '127.0.0.1' ||
-                                      window.location.hostname.startsWith('192.168.');
-            
-            if (isLocalDevelopment) {
-                // Versuche Environment-Variablen vom lokalen Server zu laden
-                fetch('/api/env')
-                    .then(response => {
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        return response.json();
-                    })
-                    .then(envVars => {
-                        window.ENV_VARS = envVars;
-                        console.log('🔧 Environment-Variablen vom Server geladen:', Object.keys(envVars));
-                    })
-                    .catch(error => {
-                        console.warn('⚠️ Konnte Environment-Variablen nicht vom Server laden:', error.message);
-                        // Fallback für lokale Entwicklung ohne Server
-                        window.ENV_VARS = {
-                            SUPABASE_URL: '',
-                            SUPABASE_ANON_KEY: '',
-                            DEBUG_MODE: 'true',
-                            ENABLE_USER_AUTH: 'false'
-                        };
-                        console.log('🔧 Fallback Environment-Variablen geladen');
-                    });
-            } else {
-                // Production-Modus: Versuche ebenfalls /api/env oder nutze Fallback
-                fetch('/api/env')
-                    .then(response => {
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        return response.json();
-                    })
-                    .then(envVars => {
-                        window.ENV_VARS = envVars;
-                        console.log('🌐 Production Environment-Variablen geladen:', Object.keys(envVars));
-                    })
-                    .catch(error => {
-                        console.warn('⚠️ Production: Konnte Environment-Variablen nicht laden, nutze Fallback');
-                        window.ENV_VARS = {
-                            DEBUG_MODE: 'false',
-                            ENABLE_USER_AUTH: 'true'
-                        };
-                    });
+        // Sofortige Fallback-Werte setzen um Race-Conditions zu vermeiden
+        window.ENV_VARS = window.ENV_VARS || {
+            DEBUG_MODE: (window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1') ? 'true' : 'false',
+            ENABLE_USER_AUTH: (window.location.hostname === 'localhost' || 
+                              window.location.hostname === '127.0.0.1') ? 'false' : 'true',
+            ENABLE_ANALYTICS: 'false',
+            SUPABASE_URL: '',
+            SUPABASE_ANON_KEY: ''
+        };
+        
+        // Versuche bessere Werte asynchron zu laden (überschreibt Fallback falls verfügbar)
+        (async function() {
+            try {
+                const response = await fetch('/api/env');
+                if (response.ok) {
+                    const envVars = await response.json();
+                    Object.assign(window.ENV_VARS, envVars);
+                    console.log('🔧 Environment-Variablen aktualisiert:', Object.keys(envVars));
+                    
+                    // Config neu laden falls schon initialisiert
+                    if (window.CONFIG && typeof window.loadConfig === 'function') {
+                        window.loadConfig();
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Verwende Fallback Environment-Variablen:', error.message);
             }
-        } else {
-            console.log('🌐 Environment-Variablen bereits verfügbar (Server-injiziert)');
-        }
+        })();
+        
+        console.log('🔧 Basis Environment-Variablen verfügbar');
     </script>
     
-    <!-- Konfiguration laden (muss vor anderen Scripts sein) -->
+    <!-- Konfiguration laden (nach Environment-Setup) -->
     <script src="config.js"></script>
     <script src="supabase-config.js"></script>
     <script src="app.js"></script>
