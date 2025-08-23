@@ -361,19 +361,37 @@ function displayRecentFeedback(data) {
                 <p>Die API hat keine Daten zurückgegeben.</p>
             </div>
         `;
-    } else if (!data.feedbacks || data.feedbacks.length === 0) {
-        console.log('No feedbacks found, showing empty state');
+    } else if (!data.feedbacks && !data.feedback) {
+        console.log('No feedbacks property found in data');
         recentContent.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: #6c757d;">
-                <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
-                <h3>Kein Feedback gefunden</h3>
-                <p>Für die aktuellen Filter wurde kein Feedback gefunden.</p>
-                <small>Total in response: ${data.total || 0}</small>
+            <div style="text-align: center; padding: 40px; color: #dc3545;">
+                <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                <h3>Unerwartete API-Antwort</h3>
+                <p>Die API-Antwort hat ein unerwartetes Format.</p>
+                <small>Verfügbare Eigenschaften: ${Object.keys(data).join(', ')}</small>
             </div>
         `;
     } else {
-        console.log(`Displaying ${data.feedbacks.length} feedbacks`);
-        const feedbackHtml = data.feedbacks.map(feedback => {
+        // Normalisiere die Datenstruktur - API kann 'feedback' oder 'feedbacks' verwenden
+        const feedbacks = data.feedbacks || data.feedback || [];
+        
+        if (feedbacks.length === 0) {
+            console.log('No feedbacks found, showing empty state');
+            recentContent.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #6c757d;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
+                    <h3>Kein Feedback gefunden</h3>
+                    <p>Für die aktuellen Filter wurde kein Feedback gefunden.</p>
+                    <small>Total in response: ${data.total || 0}</small>
+                </div>
+            `;
+        } else {
+            console.log(`Displaying ${feedbacks.length} feedbacks`);
+            
+            // Update data object to use consistent property name
+            data.feedbacks = feedbacks;
+            
+            const feedbackHtml = data.feedbacks.map(feedback => {
             const typeIcons = {
                 general: '💬',
                 bug: '🐛',
@@ -409,6 +427,7 @@ function displayRecentFeedback(data) {
         }).join('');
         
         recentContent.innerHTML = feedbackHtml;
+        }
     }
     
     // Update pagination
