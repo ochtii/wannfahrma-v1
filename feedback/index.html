@@ -698,26 +698,49 @@
         
         // Robust API call function with automatic endpoint detection
         async function apiCall(endpoint, options = {}) {
-            const possibleBases = [
-                API_BASE,
-                `${API_BASE}/feedback`,
-                `${window.location.protocol}//${window.location.hostname}:3002`,
-                `${window.location.protocol}//${window.location.hostname}/feedback`
+            // Different possible API base configurations
+            const possibleConfigs = [
+                // Local development
+                { base: 'http://127.0.0.1:3002', path: endpoint },
+                // Production: Feedback app served from /feedback with API on same path
+                { base: `${window.location.protocol}//${window.location.hostname}/feedback`, path: endpoint },
+                // Production: Direct port access
+                { base: `${window.location.protocol}//${window.location.hostname}:3002`, path: endpoint },
+                // Production: Main server proxy
+                { base: `${window.location.protocol}//${window.location.hostname}`, path: `/feedback${endpoint}` },
+                // Production: Alternative main server proxy
+                { base: `${window.location.protocol}//${window.location.hostname}`, path: endpoint }
             ];
             
-            for (const base of possibleBases) {
+            let lastError = null;
+            
+            for (const config of possibleConfigs) {
                 try {
-                    const response = await fetch(`${base}${endpoint}`, options);
-                    if (response.ok || response.status < 500) {
+                    const url = `${config.base}${config.path}`;
+                    console.log(`Trying API endpoint: ${url}`);
+                    
+                    const response = await fetch(url, options);
+                    
+                    // Check if response is actually JSON (not HTML error page)
+                    const contentType = response.headers.get('content-type');
+                    if (response.ok && contentType && contentType.includes('application/json')) {
+                        console.log(`✅ Successfully connected to: ${url}`);
                         return response;
+                    } else if (response.status === 404) {
+                        console.log(`❌ 404 at: ${url}`);
+                        continue; // Try next configuration
+                    } else if (response.ok) {
+                        // Response is ok but not JSON - might be HTML error page
+                        console.log(`⚠️  Non-JSON response from: ${url}`);
+                        continue;
                     }
                 } catch (error) {
-                    // Continue to next base URL
-                    console.log(`Failed to connect to ${base}${endpoint}:`, error.message);
+                    console.log(`❌ Failed to connect to ${config.base}${config.path}:`, error.message);
+                    lastError = error;
                 }
             }
             
-            throw new Error('Feedback API ist momentan nicht erreichbar. Bitte versuche es später erneut.');
+            throw new Error(lastError ? lastError.message : 'Feedback API ist momentan nicht erreichbar. Bitte versuche es später erneut.');
         }
         
         // Tab management
@@ -890,7 +913,13 @@
                     body: JSON.stringify(feedbackData)
                 });
                 
-                const result = await response.json();
+                let result;
+                try {
+                    const text = await response.text();
+                    result = JSON.parse(text);
+                } catch (parseError) {
+                    throw new Error('Server-Antwort konnte nicht verarbeitet werden. Bitte versuche es später erneut.');
+                }
                 
                 if (response.ok) {
                     messageContainer.innerHTML = `
@@ -938,7 +967,14 @@
                 statsContent.style.display = 'none';
                 
                 const response = await apiCall('/api/feedback/stats');
-                const stats = await response.json();
+                
+                let stats;
+                try {
+                    const text = await response.text();
+                    stats = JSON.parse(text);
+                } catch (parseError) {
+                    throw new Error('Statistik-Daten konnten nicht geladen werden.');
+                }
                 
                 const avgRating = Object.keys(stats.ratings).length > 0 ? 
                     (Object.entries(stats.ratings).reduce((sum, [rating, count]) => sum + rating * count, 0) / 
@@ -996,7 +1032,14 @@
                 recentContent.style.display = 'none';
                 
                 const response = await apiCall('/api/feedback/recent?limit=10');
-                const data = await response.json();
+                
+                let data;
+                try {
+                    const text = await response.text();
+                    data = JSON.parse(text);
+                } catch (parseError) {
+                    throw new Error('Aktuelle Feedback-Daten konnten nicht geladen werden.');
+                }
                 
                 if (data.count === 0) {
                     recentContent.innerHTML = `
