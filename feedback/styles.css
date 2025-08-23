@@ -10,10 +10,12 @@
     --input-color: #222;
     --card-bg: #ffffff;
     --shadow: rgba(0,0,0,0.15);
+    --header-bg: linear-gradient(45deg, #38b000, #70e000);
+    --header-text: #ffffff;
 }
 
 [data-theme="dark"] {
-    --bg-gradient: linear-gradient(135deg, #1a4a00 0%, #2d5a00 100%);
+    --bg-gradient: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
     --text-color: #f0f0f0;
     --container-bg: #2d2d2d;
     --form-bg: #3d3d3d;
@@ -22,6 +24,8 @@
     --input-color: #f0f0f0;
     --card-bg: #3d3d3d;
     --shadow: rgba(0,0,0,0.3);
+    --header-bg: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+    --header-text: #f0f0f0;
 }
 
 body {
@@ -50,8 +54,8 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 .header {
-    background: linear-gradient(45deg, #38b000, #70e000);
-    color: white;
+    background: var(--header-bg);
+    color: var(--header-text);
     padding: 40px 30px 30px 30px;
     text-align: center;
     position: relative;
