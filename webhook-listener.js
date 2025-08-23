@@ -97,12 +97,12 @@ async function deployUpdate() {
     log('🚀 Starting deployment process...', 'DEPLOY');
     
     try {
-        // 1. Stop the application
-        log('⏹️ Stopping PM2 application...', 'DEPLOY');
+        // 1. Stop the applications
+        log('⏹️ Stopping PM2 applications...', 'DEPLOY');
         try {
-            await execCommand('pm2 stop wannfahrma');
+            await execCommand('pm2 stop wannfahrma wannfahrma-feedback');
         } catch (error) {
-            log('PM2 stop failed (app might not be running)', 'WARN');
+            log('PM2 stop failed (apps might not be running)', 'WARN');
         }
         
         // 2. Backup current version
@@ -135,26 +135,45 @@ async function deployUpdate() {
         log('📦 Installing/updating dependencies...', 'DEPLOY');
         await execCommand('npm ci --production');
         
+        // 8.1. Install feedback dependencies
+        log('📦 Installing feedback API dependencies...', 'DEPLOY');
+        await execCommand('cd feedback && npm ci --production && cd ..');
+        
         // 9. Run any database migrations or setup tasks
         log('🔧 Running setup tasks...', 'DEPLOY');
         // Add any specific setup commands here if needed
         
-        // 10. Start the application
-        log('🚀 Starting PM2 application...', 'DEPLOY');
+        // 10. Start the application with feedback API
+        log('🚀 Starting PM2 applications (main + feedback)...', 'DEPLOY');
         await execCommand('pm2 start scripts/deployment/ecosystem.config.js');
         await execCommand('pm2 save');
         
         // 11. Health check
-        log('❤️ Performing health check...', 'DEPLOY');
+        log('❤️ Performing health checks...', 'DEPLOY');
         
-        // Wait a bit for the app to start
+        // Wait a bit for the apps to start
         await new Promise(resolve => setTimeout(resolve, 5000));
         
         try {
             await execCommand('curl -f http://localhost:3000/health');
-            log('✅ Health check passed', 'DEPLOY');
+            log('✅ Main app health check passed', 'DEPLOY');
         } catch (error) {
-            log('⚠️ Health check failed, but continuing...', 'WARN');
+            log('⚠️ Main app health check failed, but continuing...', 'WARN');
+        }
+        
+        try {
+            await execCommand('curl -f http://localhost:3002/health');
+            log('✅ Feedback API health check passed', 'DEPLOY');
+        } catch (error) {
+            log('⚠️ Feedback API health check failed, but continuing...', 'WARN');
+        }
+        
+        // Test the proxy route
+        try {
+            await execCommand('curl -f http://localhost:3000/api/feedback/stats');
+            log('✅ Feedback API proxy health check passed', 'DEPLOY');
+        } catch (error) {
+            log('⚠️ Feedback API proxy health check failed, but continuing...', 'WARN');
         }
         
         const deployTime = Date.now() - deployStart;
