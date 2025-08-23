@@ -28,6 +28,36 @@ app.use((req, res, next) => {
 // Paths
 const feedbackDataDir = path.join(__dirname, 'data');
 const feedbackLogsDir = path.join(__dirname, 'logs');
+const configFile = path.join(__dirname, 'config.json');
+
+// Admin configuration
+const DEFAULT_CONFIG = {
+    adminPassword: 'admin123', // Change this in production!
+    feedbackStatuses: [
+        'neu',
+        'in_bearbeitung', 
+        'geloest',
+        'vorgemerkt',
+        'abgelehnt'
+    ]
+};
+
+// Load or create config
+let config = DEFAULT_CONFIG;
+try {
+    if (fs.existsSync(configFile)) {
+        const configData = fs.readFileSync(configFile, 'utf8');
+        config = { ...DEFAULT_CONFIG, ...JSON.parse(configData) };
+    } else {
+        // Create default config file
+        fs.writeFileSync(configFile, JSON.stringify(DEFAULT_CONFIG, null, 2));
+        console.log(`${colors.yellow}📝 Created default config file: ${configFile}${colors.reset}`);
+        console.log(`${colors.yellow}⚠️  Please change the default admin password!${colors.reset}`);
+    }
+} catch (error) {
+    console.error(`${colors.red}❌ Error loading config:${colors.reset}`, error.message);
+    config = DEFAULT_CONFIG;
+}
 
 // Ensure directories exist
 if (!fs.existsSync(feedbackDataDir)) {
@@ -119,7 +149,7 @@ app.post('/api/feedback', (req, res) => {
     const feedbackId = generateId();
     
     // Validate required fields
-    const { message, type, rating, userAgent } = req.body;
+    const { message, type, rating, userAgent, name, contact } = req.body;
     
     if (!message || message.trim().length === 0) {
         logFeedback('VALIDATION_ERROR', { error: 'Message required', ip: clientIP }, clientIP);
@@ -136,6 +166,9 @@ app.post('/api/feedback', (req, res) => {
         message: message.trim(),
         type: type || 'general', // general, bug, feature, improvement
         rating: rating || null, // 1-5 stars
+        name: name ? name.trim() : null, // Optional sender name
+        contact: contact ? contact.trim() : null, // Optional contact info
+        status: 'neu', // Default status
         ip: clientIP,
         userAgent: userAgent || req.get('User-Agent') || 'unknown',
         metadata: {
@@ -143,7 +176,12 @@ app.post('/api/feedback', (req, res) => {
             page: req.body.page || null,
             browser: req.body.browser || null,
             screen: req.body.screen || null,
+            platform: req.body.platform || null,
             additional: req.body.additional || null
+        },
+        admin: {
+            lastModified: timestamp,
+            notes: null
         }
     };
     
@@ -308,6 +346,217 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Admin authentication middleware
+function adminAuth(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Admin authentication required' });
+    }
+    
+    const password = authHeader.substring(7); // Remove 'Bearer '
+    if (password !== config.adminPassword) {
+        return res.status(403).json({ error: 'Invalid admin password' });
+    }
+    
+    next();
+}
+
+// POST /api/admin/login - Admin login
+app.post('/api/admin/login', (req, res) => {
+    const { password } = req.body;
+    const clientIP = getClientIP(req);
+    
+    if (password === config.adminPassword) {
+        logFeedback('ADMIN_LOGIN_SUCCESS', {}, clientIP);
+        res.json({ 
+            success: true, 
+            token: password, // Simple token approach
+            message: 'Admin login successful' 
+        });
+    } else {
+        logFeedback('ADMIN_LOGIN_FAILED', {}, clientIP);
+        res.status(401).json({ error: 'Invalid password' });
+    }
+});
+
+// GET /api/admin/feedbacks - Get all feedbacks with admin info
+app.get('/api/admin/feedbacks', adminAuth, (req, res) => {
+    const clientIP = getClientIP(req);
+    
+    try {
+        const { limit, status, type } = req.query;
+        const allFeedbacks = [];
+        
+        // Read all feedback files
+        const files = fs.readdirSync(feedbackDataDir)
+            .filter(file => file.startsWith('feedback_') && file.endsWith('.json'))
+            .sort((a, b) => b.localeCompare(a)); // Newest first
+        
+        for (const file of files) {
+            try {
+                const filePath = path.join(feedbackDataDir, file);
+                const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+                allFeedbacks.push(...data);
+            } catch (error) {
+                console.error(`Error reading ${file}:`, error.message);
+            }
+        }
+        
+        // Filter feedbacks
+        let filteredFeedbacks = allFeedbacks;
+        
+        if (status) {
+            filteredFeedbacks = filteredFeedbacks.filter(f => f.status === status);
+        }
+        
+        if (type) {
+            filteredFeedbacks = filteredFeedbacks.filter(f => f.type === type);
+        }
+        
+        // Sort by timestamp (newest first)
+        filteredFeedbacks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        // Apply limit
+        if (limit) {
+            filteredFeedbacks = filteredFeedbacks.slice(0, parseInt(limit));
+        }
+        
+        logFeedback('ADMIN_FEEDBACKS_FETCHED', { count: filteredFeedbacks.length }, clientIP);
+        
+        res.json({
+            feedbacks: filteredFeedbacks,
+            total: allFeedbacks.length,
+            filtered: filteredFeedbacks.length,
+            availableStatuses: config.feedbackStatuses
+        });
+        
+    } catch (error) {
+        console.error('Error fetching admin feedbacks:', error);
+        res.status(500).json({ error: 'Failed to fetch feedbacks' });
+    }
+});
+
+// PUT /api/admin/feedback/:id - Update feedback status/notes
+app.put('/api/admin/feedback/:id', adminAuth, (req, res) => {
+    const feedbackId = req.params.id;
+    const { status, notes } = req.body;
+    const clientIP = getClientIP(req);
+    
+    try {
+        // Find and update feedback
+        const files = fs.readdirSync(feedbackDataDir)
+            .filter(file => file.startsWith('feedback_') && file.endsWith('.json'));
+        
+        let feedbackFound = false;
+        
+        for (const file of files) {
+            const filePath = path.join(feedbackDataDir, file);
+            const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            
+            const feedbackIndex = data.findIndex(f => f.id === feedbackId);
+            
+            if (feedbackIndex !== -1) {
+                // Update feedback
+                if (status && config.feedbackStatuses.includes(status)) {
+                    data[feedbackIndex].status = status;
+                }
+                
+                if (notes !== undefined) {
+                    data[feedbackIndex].admin.notes = notes;
+                }
+                
+                data[feedbackIndex].admin.lastModified = new Date().toISOString();
+                
+                // Save updated data
+                fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+                
+                logFeedback('ADMIN_FEEDBACK_UPDATED', { 
+                    id: feedbackId, 
+                    status: data[feedbackIndex].status,
+                    hasNotes: !!notes 
+                }, clientIP);
+                
+                res.json({
+                    success: true,
+                    feedback: data[feedbackIndex],
+                    message: 'Feedback updated successfully'
+                });
+                
+                feedbackFound = true;
+                break;
+            }
+        }
+        
+        if (!feedbackFound) {
+            res.status(404).json({ error: 'Feedback not found' });
+        }
+        
+    } catch (error) {
+        console.error('Error updating feedback:', error);
+        res.status(500).json({ error: 'Failed to update feedback' });
+    }
+});
+
+// GET /api/admin/stats - Enhanced admin statistics
+app.get('/api/admin/stats', adminAuth, (req, res) => {
+    const clientIP = getClientIP(req);
+    
+    try {
+        const stats = {
+            total: 0,
+            byStatus: {},
+            byType: {},
+            byRating: {},
+            recentActivity: [],
+            topIssues: []
+        };
+        
+        // Initialize status counts
+        config.feedbackStatuses.forEach(status => {
+            stats.byStatus[status] = 0;
+        });
+        
+        // Read all feedback files
+        const files = fs.readdirSync(feedbackDataDir)
+            .filter(file => file.startsWith('feedback_') && file.endsWith('.json'))
+            .sort((a, b) => b.localeCompare(a));
+        
+        for (const file of files) {
+            try {
+                const filePath = path.join(feedbackDataDir, file);
+                const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+                
+                data.forEach(feedback => {
+                    stats.total++;
+                    
+                    // Count by status
+                    const status = feedback.status || 'neu';
+                    stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
+                    
+                    // Count by type
+                    const type = feedback.type || 'general';
+                    stats.byType[type] = (stats.byType[type] || 0) + 1;
+                    
+                    // Count by rating
+                    if (feedback.rating) {
+                        stats.byRating[feedback.rating] = (stats.byRating[feedback.rating] || 0) + 1;
+                    }
+                });
+            } catch (error) {
+                console.error(`Error reading ${file}:`, error.message);
+            }
+        }
+        
+        logFeedback('ADMIN_STATS_FETCHED', { total: stats.total }, clientIP);
+        
+        res.json(stats);
+        
+    } catch (error) {
+        console.error('Error generating admin stats:', error);
+        res.status(500).json({ error: 'Failed to generate admin statistics' });
+    }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     const clientIP = getClientIP(req);
@@ -327,6 +576,10 @@ app.use((req, res) => {
             'POST /api/feedback',
             'GET /api/feedback/stats',
             'GET /api/feedback/recent',
+            'POST /api/admin/login',
+            'GET /api/admin/feedbacks',
+            'PUT /api/admin/feedback/:id',
+            'GET /api/admin/stats',
             'GET /health'
         ]
     });

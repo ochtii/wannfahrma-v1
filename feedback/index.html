@@ -519,6 +519,51 @@
                 grid-template-columns: 1fr;
             }
         }
+        .feedback-type {
+            display: inline-block;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .feedback-type.general { background: #6c757d; }
+        .feedback-type.bug { background: #dc3545; }
+        .feedback-type.feature { background: #007bff; }
+        .feedback-type.improvement { background: #28a745; }
+        
+        .feedback-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        #admin-tab-btn {
+            display: none; /* Hidden by default, shown with Ctrl+Shift+A */
+        }
+        
+        .admin-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .admin-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .admin-controls select,
+        .admin-controls button {
+            padding: 8px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: white;
+        }
+        
+        .admin-controls button:hover {
+            background: #e9ecef;
+        }
     </style>
 </head>
 <body>
@@ -537,6 +582,9 @@
             </button>
             <button class="nav-tab" onclick="showTab('recent')">
                 🕒 Aktuell
+            </button>
+            <button class="nav-tab" onclick="showTab('admin')" id="admin-tab-btn" style="display: none;">
+                🔐 Admin
             </button>
         </div>
         
@@ -584,15 +632,17 @@
                             <option value="web">🌐 Web Browser (Desktop)</option>
                             <option value="web-mobile">📱 Web Browser (Mobil)</option>
                             <option value="android">🤖 Android App</option>
-                            <option value="ios">🍎 iOS App</option>
-                            <option value="desktop">💻 Desktop App</option>
-                            <option value="other">🔧 Andere</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
                         <label for="feedback-message">Deine Nachricht:</label>
                         <textarea id="feedback-message" placeholder="Erzähl uns, was dir aufgefallen ist, was du dir wünschst oder wie wir die App verbessern können..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="feedback-name">Dein Name (optional):</label>
+                        <input type="text" id="feedback-name" placeholder="Wie können wir dich ansprechen?">
                     </div>
                     
                     <div class="form-group">
@@ -657,6 +707,71 @@
                     Lade aktuelles Feedback...
                 </div>
                 <div id="recent-content" style="display: none;"></div>
+            </div>
+            
+            <!-- Admin Tab -->
+            <div id="admin-tab" class="tab-content">
+                <!-- Admin Login -->
+                <div id="admin-login" style="max-width: 400px; margin: 0 auto; text-align: center;">
+                    <h3>🔐 Admin-Bereich</h3>
+                    <p style="color: #6c757d; margin-bottom: 30px;">
+                        Bitte gib das Admin-Passwort ein, um fortzufahren.
+                    </p>
+                    
+                    <div class="form-group">
+                        <input type="password" id="admin-password" placeholder="Admin-Passwort" style="text-align: center;">
+                    </div>
+                    
+                    <button onclick="adminLogin()" class="btn btn-primary" style="width: 100%;">
+                        🔓 Anmelden
+                    </button>
+                    
+                    <div id="admin-login-error" style="color: #dc3545; margin-top: 15px; display: none;"></div>
+                </div>
+                
+                <!-- Admin Dashboard -->
+                <div id="admin-dashboard" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>🔐 Admin Dashboard</h3>
+                        <button onclick="adminLogout()" class="btn btn-secondary">
+                            🚪 Abmelden
+                        </button>
+                    </div>
+                    
+                    <!-- Admin Filters -->
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <select id="admin-status-filter" onchange="loadAdminFeedbacks()">
+                            <option value="">Alle Status</option>
+                            <option value="neu">🆕 Neu</option>
+                            <option value="in_bearbeitung">⏳ In Bearbeitung</option>
+                            <option value="geloest">✅ Gelöst</option>
+                            <option value="vorgemerkt">📌 Vorgemerkt</option>
+                            <option value="abgelehnt">❌ Abgelehnt</option>
+                        </select>
+                        
+                        <select id="admin-type-filter" onchange="loadAdminFeedbacks()">
+                            <option value="">Alle Typen</option>
+                            <option value="general">💬 Allgemein</option>
+                            <option value="bug">🐛 Bug</option>
+                            <option value="feature">🚀 Feature</option>
+                            <option value="improvement">⚡ Verbesserung</option>
+                        </select>
+                        
+                        <button onclick="loadAdminFeedbacks()" class="btn btn-secondary">
+                            🔄 Aktualisieren
+                        </button>
+                    </div>
+                    
+                    <!-- Admin Stats Summary -->
+                    <div id="admin-stats-summary" style="margin-bottom: 20px;"></div>
+                    
+                    <!-- Admin Feedbacks List -->
+                    <div id="admin-loading" class="loading" style="display: none;">
+                        <div class="loading-spinner"></div>
+                        Lade Admin-Daten...
+                    </div>
+                    <div id="admin-feedbacks-list"></div>
+                </div>
             </div>
         </div>
         
@@ -842,8 +957,6 @@
             
             if (/android/.test(userAgent)) {
                 selectElement.value = 'android';
-            } else if (/iphone|ipad/.test(userAgent)) {
-                selectElement.value = 'ios';
             } else if (isMobile) {
                 selectElement.value = 'web-mobile';
             } else {
@@ -880,6 +993,7 @@
                 type: document.getElementById('feedback-type').value,
                 platform: document.getElementById('feedback-platform').value,
                 message: document.getElementById('feedback-message').value,
+                name: document.getElementById('feedback-name').value || null,
                 rating: currentRating || null,
                 page: document.getElementById('feedback-page').value || null,
                 contact: document.getElementById('feedback-contact').value || null,
@@ -911,20 +1025,28 @@
                 }
                 
                 if (response.ok) {
+                    const senderName = feedbackData.name ? `, ${feedbackData.name}` : '';
                     messageContainer.innerHTML = `
                         <div class="success-message">
-                            🎉 <strong>Vielen Dank!</strong> Dein Feedback wurde erfolgreich gesendet!
+                            🎉 <strong>Vielen Dank${senderName}!</strong> Dein Feedback wurde erfolgreich gesendet!
                             <br><small>Feedback-ID: ${result.id}</small>
+                            <br><small style="color: #28a745;">Wir werden uns dein Feedback genau ansehen und bei Bedarf auf dich zukommen.</small>
                         </div>
                     `;
                     
                     // Reset form
                     resetForm();
                     
-                    // Show success animation
+                    // Show success animation with confetti effect
+                    const successMsg = messageContainer.querySelector('.success-message');
+                    successMsg.style.animation = 'bounceIn 0.6s ease-out';
+                    
+                    // Auto-hide after longer time due to more content
                     setTimeout(() => {
-                        messageContainer.innerHTML = '';
-                    }, 5000);
+                        if (messageContainer.innerHTML.includes('erfolgreich gesendet')) {
+                            messageContainer.innerHTML = '';
+                        }
+                    }, 8000);
                     
                     // Refresh stats if on stats tab
                     if (document.getElementById('stats-tab').classList.contains('active')) {
@@ -1162,6 +1284,255 @@
                 loadRecentFeedback();
             }
         }, 15000);
+        
+        // Admin functionality
+        let adminToken = null;
+        
+        // Admin login
+        async function adminLogin() {
+            const password = document.getElementById('admin-password').value;
+            const errorDiv = document.getElementById('admin-login-error');
+            
+            if (!password) {
+                errorDiv.textContent = 'Bitte Passwort eingeben';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await apiCall('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    adminToken = result.token;
+                    document.getElementById('admin-login').style.display = 'none';
+                    document.getElementById('admin-dashboard').style.display = 'block';
+                    document.getElementById('admin-password').value = '';
+                    errorDiv.style.display = 'none';
+                    
+                    // Load admin data
+                    await loadAdminFeedbacks();
+                    await loadAdminStats();
+                } else {
+                    errorDiv.textContent = result.error || 'Anmeldung fehlgeschlagen';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Verbindungsfehler: ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+        
+        // Admin logout
+        function adminLogout() {
+            adminToken = null;
+            document.getElementById('admin-login').style.display = 'block';
+            document.getElementById('admin-dashboard').style.display = 'none';
+            document.getElementById('admin-password').value = '';
+            document.getElementById('admin-login-error').style.display = 'none';
+        }
+        
+        // Load admin feedbacks
+        async function loadAdminFeedbacks() {
+            if (!adminToken) return;
+            
+            const loadingDiv = document.getElementById('admin-loading');
+            const listDiv = document.getElementById('admin-feedbacks-list');
+            
+            try {
+                loadingDiv.style.display = 'block';
+                
+                const statusFilter = document.getElementById('admin-status-filter').value;
+                const typeFilter = document.getElementById('admin-type-filter').value;
+                
+                let url = '/api/admin/feedbacks?limit=50';
+                if (statusFilter) url += `&status=${statusFilter}`;
+                if (typeFilter) url += `&type=${typeFilter}`;
+                
+                const response = await apiCall(url, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Fehler beim Laden der Feedbacks');
+                }
+                
+                const data = await response.json();
+                
+                listDiv.innerHTML = `
+                    <div style="margin-bottom: 15px; color: #6c757d;">
+                        <strong>${data.filtered}</strong> von <strong>${data.total}</strong> Feedbacks
+                    </div>
+                    ${data.feedbacks.map(feedback => `
+                        <div class="feedback-item" style="border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: white;">
+                            <div style="display: flex; justify-content: between; align-items: start; margin-bottom: 10px;">
+                                <div>
+                                    <strong>${feedback.name || 'Anonym'}</strong>
+                                    <span class="feedback-type ${feedback.type}" style="margin-left: 10px; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+                                        ${getTypeLabel(feedback.type)}
+                                    </span>
+                                    ${feedback.rating ? `<span style="margin-left: 10px;">${'★'.repeat(feedback.rating)}</span>` : ''}
+                                </div>
+                                <div style="text-align: right; font-size: 12px; color: #6c757d;">
+                                    ${new Date(feedback.timestamp).toLocaleString('de-DE')}
+                                    <br>ID: ${feedback.id}
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 15px; line-height: 1.5;">
+                                ${feedback.message}
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                                <select onchange="updateFeedbackStatus('${feedback.id}', this.value)" style="padding: 5px;">
+                                    <option value="neu" ${feedback.status === 'neu' ? 'selected' : ''}>🆕 Neu</option>
+                                    <option value="in_bearbeitung" ${feedback.status === 'in_bearbeitung' ? 'selected' : ''}>⏳ In Bearbeitung</option>
+                                    <option value="geloest" ${feedback.status === 'geloest' ? 'selected' : ''}>✅ Gelöst</option>
+                                    <option value="vorgemerkt" ${feedback.status === 'vorgemerkt' ? 'selected' : ''}>📌 Vorgemerkt</option>
+                                    <option value="abgelehnt" ${feedback.status === 'abgelehnt' ? 'selected' : ''}>❌ Abgelehnt</option>
+                                </select>
+                                
+                                <input type="text" placeholder="Admin-Notizen..." value="${feedback.admin?.notes || ''}" 
+                                       onchange="updateFeedbackNotes('${feedback.id}', this.value)"
+                                       style="flex: 1; padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                            </div>
+                            
+                            ${feedback.contact ? `<div style="font-size: 12px; color: #6c757d;">Kontakt: ${feedback.contact}</div>` : ''}
+                            ${feedback.metadata?.page ? `<div style="font-size: 12px; color: #6c757d;">Seite: ${feedback.metadata.page}</div>` : ''}
+                        </div>
+                    `).join('')}
+                `;
+                
+            } catch (error) {
+                listDiv.innerHTML = `<div style="color: #dc3545;">Fehler: ${error.message}</div>`;
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+        
+        // Load admin statistics
+        async function loadAdminStats() {
+            if (!adminToken) return;
+            
+            try {
+                const response = await apiCall('/api/admin/stats', {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                
+                if (!response.ok) return;
+                
+                const stats = await response.json();
+                
+                document.getElementById('admin-stats-summary').innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #495057;">${stats.total}</div>
+                            <div style="color: #6c757d;">Gesamt</div>
+                        </div>
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #856404;">${stats.byStatus.neu || 0}</div>
+                            <div style="color: #856404;">Neu</div>
+                        </div>
+                        <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #0c5460;">${stats.byStatus.in_bearbeitung || 0}</div>
+                            <div style="color: #0c5460;">In Bearbeitung</div>
+                        </div>
+                        <div style="background: #d4edda; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #155724;">${stats.byStatus.geloest || 0}</div>
+                            <div style="color: #155724;">Gelöst</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading admin stats:', error);
+            }
+        }
+        
+        // Update feedback status
+        async function updateFeedbackStatus(feedbackId, newStatus) {
+            if (!adminToken) return;
+            
+            try {
+                const response = await apiCall(`/api/admin/feedback/${feedbackId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                if (response.ok) {
+                    // Refresh the list
+                    await loadAdminFeedbacks();
+                    await loadAdminStats();
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+            }
+        }
+        
+        // Update feedback notes
+        async function updateFeedbackNotes(feedbackId, notes) {
+            if (!adminToken) return;
+            
+            try {
+                const response = await apiCall(`/api/admin/feedback/${feedbackId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ notes })
+                });
+                
+                if (!response.ok) {
+                    console.error('Error updating notes');
+                }
+            } catch (error) {
+                console.error('Error updating notes:', error);
+            }
+        }
+        
+        // Helper function for type labels
+        function getTypeLabel(type) {
+            const labels = {
+                'general': '💬 Allgemein',
+                'bug': '🐛 Bug',
+                'feature': '🚀 Feature',
+                'improvement': '⚡ Verbesserung'
+            };
+            return labels[type] || type;
+        }
+        
+        // Admin keyboard shortcut (Ctrl+Shift+A)
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+                e.preventDefault();
+                const adminTabBtn = document.getElementById('admin-tab-btn');
+                adminTabBtn.style.display = adminTabBtn.style.display === 'none' ? 'block' : 'none';
+                if (adminTabBtn.style.display === 'block') {
+                    console.log('🔐 Admin tab activated');
+                }
+            }
+        });
+        
+        // Admin password enter key support
+        document.addEventListener('DOMContentLoaded', function() {
+            const adminPassword = document.getElementById('admin-password');
+            if (adminPassword) {
+                adminPassword.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        adminLogin();
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
