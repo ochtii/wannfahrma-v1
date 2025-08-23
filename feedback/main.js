@@ -4,7 +4,7 @@
 function setTheme(theme) {
     if (theme === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
-        document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #1a4a00 0%, #2d5a00 100%)');
+        document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)');
         document.documentElement.style.setProperty('--text-color', '#f0f0f0');
     } else if (theme === 'light') {
         document.documentElement.removeAttribute('data-theme');
@@ -14,7 +14,7 @@ function setTheme(theme) {
         // System/default
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.setAttribute('data-theme', 'dark');
-            document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #1a4a00 0%, #2d5a00 100%)');
+            document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)');
             document.documentElement.style.setProperty('--text-color', '#f0f0f0');
         } else {
             document.documentElement.removeAttribute('data-theme');
