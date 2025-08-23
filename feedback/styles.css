@@ -217,4 +217,89 @@ textarea {
     border-left: 4px solid #38b000;
     transition: all 0.3s;
 }
-/* ...existing code for other classes... */
+.admin-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.admin-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+.admin-controls select,
+.admin-controls button {
+    padding: 8px 15px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: white;
+}
+.admin-controls button:hover {
+    background: #e9ecef;
+}
+.delete-btn {
+    background: #dc3545 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    padding: 5px 10px !important;
+    transition: background-color 0.2s ease;
+}
+.delete-btn:hover {
+    background: #c82333 !important;
+    transform: scale(1.05);
+}
+#custom-date-range {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+#recent-pagination button:disabled {
+    background: #6c757d !important;
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+#recent-pagination button:not(:disabled):hover {
+    background: #495057 !important;
+}
+.footer {
+    width: 100%;
+    background: #f8f9fa;
+    color: #495057;
+    text-align: center;
+    padding: 20px 0 10px 0;
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    font-size: 15px;
+    border-top: 1px solid #dee2e6;
+}
+.quick-feedback {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 25px 0 30px 0;
+    justify-content: center;
+}
+.quick-btn {
+    background: linear-gradient(90deg, #f8f9fa 60%, #e9ecef 100%);
+    color: #333;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 12px 22px;
+    font-size: 18px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    user-select: none;
+    outline: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}

@@ -20,19 +20,37 @@ function setTheme(theme) {
     }
     localStorage.setItem('theme', theme);
 }
+window.setTheme = setTheme;
+
 window.addEventListener('DOMContentLoaded', function() {
     const savedTheme = localStorage.getItem('theme') || 'system';
     const themeSelect = document.getElementById('theme-select');
     if (themeSelect) {
         themeSelect.value = savedTheme;
         setTheme(savedTheme);
+        themeSelect.addEventListener('change', function() {
+            setTheme(this.value);
+        });
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
             if (themeSelect.value === 'system') {
                 setTheme('system');
             }
         });
     }
-    // ...existing code for tab logic, form, API, etc. (migrate from index.html)...
+    // Auto-detect and set platform on load
+    const platformSelect = document.getElementById('feedback-platform');
+    if (platformSelect) detectAndSetPlatform(platformSelect);
+    // Add admin password enter key support
+    const adminPassword = document.getElementById('admin-password');
+    if (adminPassword) {
+        adminPassword.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                adminLogin();
+            }
+        });
+    }
+    // Load stats for default tab
+    if (window.loadStats) loadStats();
 });
 
 // Tab management
@@ -40,10 +58,16 @@ function showTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
     document.getElementById(tabName + '-tab').classList.add('active');
-    event.target.classList.add('active');
+    // Find the nav-tab button for this tab and add active
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        if (tab.getAttribute('onclick') && tab.getAttribute('onclick').includes(`showTab('${tabName}')`)) {
+            tab.classList.add('active');
+        }
+    });
     if (tabName === 'stats') loadStats();
     else if (tabName === 'recent') loadRecentFeedback();
 }
+window.showTab = showTab;
 
 // Quick feedback buttons
 function quickFeedback(message) {
@@ -57,7 +81,7 @@ function quickFeedback(message) {
         select.value = 'feature';
     } else if (message.includes('Super') || message.includes('👍')) {
         select.value = 'general';
-        currentRating = 5;
+        window.currentRating = 5;
         updateStars();
         updateRatingText();
     }
@@ -82,6 +106,20 @@ function updateStars() {
 }
 window.updateStars = updateStars;
 
+function updateRatingText() {
+    const ratingTexts = {
+        1: '😞 Sehr unzufrieden',
+        2: '😕 Unzufrieden',
+        3: '😐 Neutral',
+        4: '😊 Zufrieden',
+        5: '🤩 Sehr zufrieden'
+    };
+    const text = (window.currentRating > 0) ? ratingTexts[window.currentRating] : 'Bewertung auswählen';
+    const ratingTextEl = document.getElementById('rating-text');
+    if (ratingTextEl) ratingTextEl.textContent = text;
+}
+window.updateRatingText = updateRatingText;
+
 function detectAndSetPlatform(selectElement) {
     const userAgent = navigator.userAgent.toLowerCase();
     const isMobile = /mobile|android|iphone|ipad/.test(userAgent);
@@ -98,4 +136,44 @@ function detectAndSetPlatform(selectElement) {
     }, 1500);
 }
 window.detectAndSetPlatform = detectAndSetPlatform;
-// ...existing code for feedback form, quick buttons, API, admin, etc. (migrate from index.html)...
+
+// Recent filters toggle
+function toggleRecentFilters() {
+    const section = document.getElementById('recent-filters-section');
+    section.style.display = section.style.display === 'none' ? 'block' : 'none';
+}
+window.toggleRecentFilters = toggleRecentFilters;
+
+// Pagination
+function changePage(direction) {
+    const newPage = (window.currentPage || 1) + direction;
+    if (newPage >= 1 && newPage <= (window.totalPages || 1)) {
+        loadRecentFeedback(newPage);
+    }
+}
+window.changePage = changePage;
+
+// Admin tab shortcut
+function showAdminTabShortcut(e) {
+    if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        e.preventDefault();
+        const adminTabBtn = document.getElementById('admin-tab-btn');
+        adminTabBtn.style.display = adminTabBtn.style.display === 'none' ? 'block' : 'none';
+        if (adminTabBtn.style.display === 'block') {
+            console.log('🔐 Admin tab activated');
+        }
+    }
+}
+document.addEventListener('keydown', showAdminTabShortcut);
+
+// Feedback form reset
+function resetForm() {
+    document.getElementById('feedback-form').reset();
+    window.currentRating = 0;
+    updateStars();
+    updateRatingText();
+    document.getElementById('message-container').innerHTML = '';
+}
+window.resetForm = resetForm;
+
+// ...add all feedback, stats, recent, admin, and API logic here as in original index.html...
