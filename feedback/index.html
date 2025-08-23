@@ -700,7 +700,8 @@
             if (hostname === 'localhost' || hostname === '127.0.0.1') {
                 apiBase = 'http://127.0.0.1:3002';
             } else {
-                apiBase = 'http://18.206.241.165:3002';
+                // Use HTTPS for production to avoid Mixed Content issues
+                apiBase = 'https://18.206.241.165:3002';
             }
             
             // Use the correct endpoint structure: /api/feedback/stats
@@ -1102,11 +1103,11 @@
             console.log('🌐 Current location:', window.location.href);
             
             const testUrls = [
-                // Test the actual feedback API endpoints (correct structure)
-                'http://18.206.241.165:3002/api/feedback/stats',
-                'http://18.206.241.165:3002/api/feedback/recent',
-                'http://18.206.241.165:3002/health',
-                'http://18.206.241.165:3002/',
+                // Test the actual feedback API endpoints (correct structure with HTTPS)
+                'https://18.206.241.165:3002/api/feedback/stats',
+                'https://18.206.241.165:3002/api/feedback/recent',
+                'https://18.206.241.165:3002/health',
+                'https://18.206.241.165:3002/',
                 // Test local development endpoints
                 'http://127.0.0.1:3002/api/feedback/stats',
                 'http://127.0.0.1:3002/',
@@ -1142,7 +1143,7 @@
             }
             
             console.log('🔧 Diagnostics complete. Analysis:');
-            console.log('💡 Expected working URL: http://18.206.241.165:3002/api/feedback/stats');
+            console.log('💡 Expected working URL: https://18.206.241.165:3002/api/feedback/stats');
             console.log('💡 If this works, the feedback system should be fully functional');
         }
         
