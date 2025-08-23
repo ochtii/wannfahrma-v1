@@ -674,11 +674,51 @@
     </div>
 
     <script>
-        // Automatically detect API base URL based on environment
-        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://127.0.0.1:3002' 
-            : `${window.location.protocol}//${window.location.hostname}:3002`;
+        // Smart API base URL detection for different deployment scenarios
+        function detectApiBase() {
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            const port = window.location.port;
+            
+            // Local development
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                return 'http://127.0.0.1:3002';
+            }
+            
+            // Production: Try different API endpoint configurations
+            // First try: Same origin (for reverse proxy setups)
+            const sameOrigin = `${protocol}//${hostname}${port ? ':' + port : ''}`;
+            
+            // Return same origin for production (nginx should handle routing)
+            return sameOrigin;
+        }
+        
+        const API_BASE = detectApiBase();
         let currentRating = 0;
+        
+        // Robust API call function with automatic endpoint detection
+        async function apiCall(endpoint, options = {}) {
+            const possibleBases = [
+                API_BASE,
+                `${API_BASE}/feedback`,
+                `${window.location.protocol}//${window.location.hostname}:3002`,
+                `${window.location.protocol}//${window.location.hostname}/feedback`
+            ];
+            
+            for (const base of possibleBases) {
+                try {
+                    const response = await fetch(`${base}${endpoint}`, options);
+                    if (response.ok || response.status < 500) {
+                        return response;
+                    }
+                } catch (error) {
+                    // Continue to next base URL
+                    console.log(`Failed to connect to ${base}${endpoint}:`, error.message);
+                }
+            }
+            
+            throw new Error('Feedback API ist momentan nicht erreichbar. Bitte versuche es später erneut.');
+        }
         
         // Tab management
         function showTab(tabName) {
@@ -842,7 +882,7 @@
             };
             
             try {
-                const response = await fetch(`${API_BASE}/api/feedback`, {
+                const response = await apiCall('/api/feedback', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -897,7 +937,7 @@
                 statsLoading.style.display = 'block';
                 statsContent.style.display = 'none';
                 
-                const response = await fetch(`${API_BASE}/api/feedback/stats`);
+                const response = await apiCall('/api/feedback/stats');
                 const stats = await response.json();
                 
                 const avgRating = Object.keys(stats.ratings).length > 0 ? 
@@ -955,7 +995,7 @@
                 recentLoading.style.display = 'block';
                 recentContent.style.display = 'none';
                 
-                const response = await fetch(`${API_BASE}/api/feedback/recent?limit=10`);
+                const response = await apiCall('/api/feedback/recent?limit=10');
                 const data = await response.json();
                 
                 if (data.count === 0) {
