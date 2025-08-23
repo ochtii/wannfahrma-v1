@@ -482,6 +482,43 @@ app.get('/api/env', (req, res) => {
     res.json(publicVars);
 });
 
+// Proxy routes for feedback API to handle HTTPS/SSL issues
+app.all('/api/feedback*', async (req, res) => {
+    const clientIP = getRealClientIP(req);
+    
+    try {
+        // Forward request to feedback API on port 3002
+        const feedbackApiUrl = `http://localhost:3002${req.originalUrl}`;
+        
+        console.log(`${colors.magenta}🔄 PROXY${colors.reset} ${colors.dim}[${new Date().toISOString()}]${colors.reset} ${req.method} ${req.originalUrl} → ${feedbackApiUrl} from ${colors.cyan}${clientIP}${colors.reset}`);
+        
+        // Forward the request
+        const response = await axios({
+            method: req.method,
+            url: feedbackApiUrl,
+            data: req.body,
+            headers: {
+                'Content-Type': req.headers['content-type'] || 'application/json',
+                'User-Agent': req.headers['user-agent'] || 'WannFahrmA-Proxy'
+            },
+            timeout: 10000,
+            validateStatus: () => true // Don't throw on HTTP error status
+        });
+        
+        // Forward response
+        res.status(response.status).json(response.data);
+        
+    } catch (error) {
+        console.error(`${colors.red}❌ PROXY ERROR${colors.reset} ${req.originalUrl}:`, error.message);
+        
+        res.status(503).json({
+            error: 'Feedback service unavailable',
+            message: 'Die Feedback-API ist momentan nicht erreichbar.',
+            type: 'PROXY_ERROR'
+        });
+    }
+});
+
 // API endpoint for departures
 app.get('/api/departures/:rbl', async (req, res) => {
     const rbl = req.params.rbl;

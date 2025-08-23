@@ -700,8 +700,9 @@
             if (hostname === 'localhost' || hostname === '127.0.0.1') {
                 apiBase = 'http://127.0.0.1:3002';
             } else {
-                // Use HTTPS for production to avoid Mixed Content issues
-                apiBase = 'https://18.206.241.165:3002';
+                // Use the main domain with proper SSL certificate
+                // This requires the main server to proxy requests to the feedback API
+                apiBase = `${window.location.protocol}//${window.location.hostname}`;
             }
             
             // Use the correct endpoint structure: /api/feedback/stats
@@ -1103,14 +1104,15 @@
             console.log('🌐 Current location:', window.location.href);
             
             const testUrls = [
-                // Test the actual feedback API endpoints (correct structure with HTTPS)
-                'https://18.206.241.165:3002/api/feedback/stats',
-                'https://18.206.241.165:3002/api/feedback/recent',
-                'https://18.206.241.165:3002/health',
-                'https://18.206.241.165:3002/',
+                // Test the main domain proxy approach
+                `${window.location.origin}/api/feedback/stats`,
+                `${window.location.origin}/feedback/api/feedback/stats`,
                 // Test local development endpoints
                 'http://127.0.0.1:3002/api/feedback/stats',
                 'http://127.0.0.1:3002/',
+                // Test direct IP (HTTP fallback)
+                'http://18.206.241.165:3002/api/feedback/stats',
+                'http://18.206.241.165:3002/',
                 // Test if static files are accessible
                 `${window.location.origin}/feedback/feedback-api.js`,
                 `${window.location.origin}/feedback/index.html`,
