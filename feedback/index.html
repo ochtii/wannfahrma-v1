@@ -426,6 +426,37 @@
         .container {
             padding-bottom: 80px;
         }
+        .quick-feedback {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 25px 0 30px 0;
+            justify-content: center;
+        }
+        .quick-btn {
+            background: linear-gradient(90deg, #f8f9fa 60%, #e9ecef 100%);
+            color: #333;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 12px 22px;
+            font-size: 18px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            user-select: none;
+            outline: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .quick-btn:hover, .quick-btn:focus {
+            background: linear-gradient(90deg, #e2e6ea 60%, #d1d5db 100%);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            transform: translateY(-2px) scale(1.04);
+            color: #007bff;
+            border-color: #007bff;
+        }
     </style>
 </head>
 <body>
