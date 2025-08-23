@@ -601,11 +601,8 @@ app.get('/api/departures/:rbl', async (req, res) => {
         });
         const responseTime = Date.now() - startTime;
         
-        // Log basic response info
-        logAPIRequest(clientIP, userAgent, apiUrl, response.status, 'EXTERNAL_RESPONSE', `${responseTime}ms - ${JSON.stringify(response.data).length} bytes`, extRequestId);
-        
-        // Log detailed response (headers + payload)
-        logDetailedAPIResponse(response, extRequestId, clientIP, userAgent, apiUrl);
+    // Log basic response info (no payload)
+    logAPIRequest(clientIP, userAgent, apiUrl, response.status, 'EXTERNAL_RESPONSE', `${responseTime}ms - ${response.headers['content-length'] || JSON.stringify(response.data).length} bytes`, extRequestId);
         
         // Process the response
         if (response.data && response.data.data && response.data.data.monitors) {
