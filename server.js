@@ -473,6 +473,10 @@ app.get('/api/env', (req, res) => {
         !process.env.SUPABASE_ANON_KEY.includes('your-anon-key')) {
         publicVars.SUPABASE_URL = process.env.SUPABASE_URL;
         publicVars.SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+    } else {
+        // Server hat keine gültigen Supabase-Werte
+        publicVars.SUPABASE_URL = '';
+        publicVars.SUPABASE_ANON_KEY = '';
     }
     
     res.json(publicVars);

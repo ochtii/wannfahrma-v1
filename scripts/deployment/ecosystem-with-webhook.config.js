@@ -35,6 +35,22 @@ module.exports = {
       time: true
     },
     {
+      name: 'wannfahrma-feedback',
+      script: 'feedback/feedback-api.js',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '512M',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3002
+      },
+      error_file: './logs/feedback-err.log',
+      out_file: './logs/feedback-out.log',
+      log_file: './logs/feedback-combined.log',
+      time: true
+    },
+    {
       name: 'wannfahrma-webhook',
       script: 'webhook-listener.js',
       instances: 1,
