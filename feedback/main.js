@@ -230,37 +230,17 @@ function loadStats() {
             })
             .catch(error => {
                 console.error('Error loading stats:', error);
-                // Fallback with demo data
-                const demoStatsHtml = `
-                    <div class="stat-card">
-                        <h3>📊 Gesamt Feedback</h3>
-                        <div class="stat-value">42</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>📝 Heute</h3>
-                        <div class="stat-value">3</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>📅 Diese Woche</h3>
-                        <div class="stat-value">12</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>⭐ Ø Bewertung</h3>
-                        <div class="stat-value">4.2</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>🐛 Bug Reports</h3>
-                        <div class="stat-value">5</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>🚀 Feature Requests</h3>
-                        <div class="stat-value">8</div>
+                statsLoading.style.display = 'none';
+                statsGrid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #dc3545;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                        <h3>Fehler beim Laden der Statistiken</h3>
+                        <p>Die Statistiken konnten nicht geladen werden.</p>
+                        <small>Fehler: ${error.message}</small>
+                        <br><br>
+                        <button onclick="loadStats()" class="btn btn-primary">� Erneut versuchen</button>
                     </div>
                 `;
-                statsGrid.innerHTML = demoStatsHtml;
-                document.getElementById('stats-updated').textContent = new Date().toLocaleString('de-DE');
-                
-                statsLoading.style.display = 'none';
                 statsContent.style.display = 'block';
             });
     } catch (error) {
@@ -309,46 +289,18 @@ function loadRecentFeedback(page = 1) {
         })
         .catch(error => {
             console.error('Error loading recent feedback:', error);
-            // Fallback with demo data
-            const demoData = {
-                feedbacks: [
-                    {
-                        id: 1,
-                        type: 'general',
-                        message: '👍 Super App! Funktioniert perfekt.',
-                        platform: 'web',
-                        rating: 5,
-                        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-                        status: 'open'
-                    },
-                    {
-                        id: 2,
-                        type: 'bug',
-                        message: '🐛 Manchmal laden die Abfahrten nicht korrekt.',
-                        platform: 'android',
-                        rating: 2,
-                        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-                        status: 'open'
-                    },
-                    {
-                        id: 3,
-                        type: 'feature',
-                        message: '🚀 Wäre cool wenn man Favoriten speichern könnte!',
-                        platform: 'web-mobile',
-                        rating: 4,
-                        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-                        status: 'open'
-                    }
-                ],
-                pagination: {
-                    page: 1,
-                    totalPages: 1,
-                    total: 3,
-                    hasNext: false,
-                    hasPrev: false
-                }
-            };
-            displayRecentFeedback(demoData);
+            recentLoading.style.display = 'none';
+            recentContent.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #dc3545;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                    <h3>Fehler beim Laden des Feedbacks</h3>
+                    <p>Das aktuelle Feedback konnte nicht geladen werden.</p>
+                    <small>Fehler: ${error.message}</small>
+                    <br><br>
+                    <button onclick="loadRecentFeedback()" class="btn btn-primary">🔄 Erneut versuchen</button>
+                </div>
+            `;
+            recentContent.style.display = 'block';
         });
 }
 
@@ -436,16 +388,294 @@ function getTimeAgo(date) {
 
 window.loadRecentFeedback = loadRecentFeedback;
 
-// Admin login (stub)
+// Admin login
 function adminLogin() {
     const errorDiv = document.getElementById('admin-login-error');
+    const passwordField = document.getElementById('admin-password');
+    const password = passwordField.value;
+    
+    if (!password) {
+        errorDiv.textContent = 'Bitte Passwort eingeben';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
     errorDiv.style.display = 'none';
-    // Simulate login
-    setTimeout(() => {
+    
+    // API call to authenticate
+    fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ password: password })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Ungültiges Passwort');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Store auth token if provided
+        if (data.token) {
+            localStorage.setItem('adminToken', data.token);
+        }
+        
         document.getElementById('admin-login').style.display = 'none';
         document.getElementById('admin-dashboard').style.display = 'block';
-    }, 500);
+        
+        // Load admin data
+        loadAdminFeedbacks();
+    })
+    .catch(error => {
+        console.error('Admin login error:', error);
+        errorDiv.textContent = error.message || 'Anmeldung fehlgeschlagen';
+        errorDiv.style.display = 'block';
+        passwordField.value = '';
+    });
 }
+
+function adminLogout() {
+    localStorage.removeItem('adminToken');
+    document.getElementById('admin-login').style.display = 'block';
+    document.getElementById('admin-dashboard').style.display = 'none';
+    document.getElementById('admin-password').value = '';
+}
+
+function loadAdminFeedbacks() {
+    const adminLoading = document.getElementById('admin-loading');
+    const adminFeedbacksList = document.getElementById('admin-feedbacks-list');
+    const adminStatsSummary = document.getElementById('admin-stats-summary');
+    
+    if (!adminLoading || !adminFeedbacksList) {
+        console.error('Admin elements not found');
+        return;
+    }
+    
+    adminLoading.style.display = 'block';
+    if (adminFeedbacksList) adminFeedbacksList.innerHTML = '';
+    
+    // Get filters
+    const statusFilter = document.getElementById('admin-status-filter')?.value || '';
+    const typeFilter = document.getElementById('admin-type-filter')?.value || '';
+    
+    const params = new URLSearchParams({
+        status: statusFilter,
+        type: typeFilter
+    });
+    
+    const token = localStorage.getItem('adminToken');
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // Load admin feedbacks
+    fetch(`/api/admin/feedbacks?${params}`, { headers })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            displayAdminFeedbacks(data);
+            adminLoading.style.display = 'none';
+        })
+        .catch(error => {
+            console.error('Error loading admin feedbacks:', error);
+            adminLoading.style.display = 'none';
+            adminFeedbacksList.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #dc3545;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                    <h3>Fehler beim Laden der Admin-Daten</h3>
+                    <p>Die Feedback-Daten konnten nicht geladen werden.</p>
+                    <small>Fehler: ${error.message}</small>
+                    <br><br>
+                    <button onclick="loadAdminFeedbacks()" class="btn btn-primary">🔄 Erneut versuchen</button>
+                </div>
+            `;
+        });
+}
+
+function displayAdminFeedbacks(data) {
+    const adminFeedbacksList = document.getElementById('admin-feedbacks-list');
+    const adminStatsSum = document.getElementById('admin-stats-summary');
+    
+    if (!data.feedbacks || data.feedbacks.length === 0) {
+        adminFeedbacksList.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #6c757d;">
+                <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
+                <h3>Keine Feedbacks gefunden</h3>
+                <p>Für die aktuellen Filter wurden keine Feedbacks gefunden.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Display summary stats
+    if (adminStatsSum && data.summary) {
+        adminStatsSum.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #007bff;">${data.summary.total || 0}</div>
+                    <div style="font-size: 0.9rem; color: #6c757d;">Gesamt</div>
+                </div>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #28a745;">${data.summary.new || 0}</div>
+                    <div style="font-size: 0.9rem; color: #6c757d;">Neu</div>
+                </div>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #ffc107;">${data.summary.inProgress || 0}</div>
+                    <div style="font-size: 0.9rem; color: #6c757d;">In Bearbeitung</div>
+                </div>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #17a2b8;">${data.summary.resolved || 0}</div>
+                    <div style="font-size: 0.9rem; color: #6c757d;">Gelöst</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Display feedbacks
+    const feedbacksHtml = data.feedbacks.map(feedback => {
+        const typeIcons = {
+            general: '💬',
+            bug: '🐛',
+            feature: '🚀',
+            improvement: '⚡'
+        };
+        
+        const platformIcons = {
+            web: '🌐',
+            'web-mobile': '📱',
+            android: '🤖'
+        };
+        
+        const statusColors = {
+            neu: '#28a745',
+            in_bearbeitung: '#ffc107',
+            geloest: '#17a2b8',
+            vorgemerkt: '#6c757d',
+            abgelehnt: '#dc3545'
+        };
+        
+        const timeAgo = getTimeAgo(new Date(feedback.timestamp));
+        const stars = feedback.rating ? '⭐'.repeat(feedback.rating) : '';
+        
+        return `
+            <div class="feedback-item" style="border-left: 4px solid ${statusColors[feedback.status] || '#6c757d'};">
+                <div class="feedback-header">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span class="feedback-type ${feedback.type}">${typeIcons[feedback.type] || '💬'} ${feedback.type}</span>
+                        <span style="color: #6c757d;">${platformIcons[feedback.platform] || '🌐'} ${feedback.platform}</span>
+                        ${stars ? `<span style="color: #ffc107;">${stars}</span>` : ''}
+                        <span style="background: ${statusColors[feedback.status] || '#6c757d'}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                            ${feedback.status || 'neu'}
+                        </span>
+                    </div>
+                    <div class="feedback-timestamp">${timeAgo}</div>
+                </div>
+                <div class="feedback-content">${feedback.message}</div>
+                ${feedback.page ? `<div style="font-size: 12px; color: #6c757d; margin-top: 5px;">📍 ${feedback.page}</div>` : ''}
+                ${feedback.contact ? `<div style="font-size: 12px; color: #6c757d;">📞 ${feedback.contact}</div>` : ''}
+                <div style="font-size: 12px; color: #6c757d; margin-top: 10px;">
+                    ID: ${feedback.id} • ${feedback.timestamp ? new Date(feedback.timestamp).toLocaleString('de-DE') : ''}
+                </div>
+                <div class="feedback-actions" style="margin-top: 15px;">
+                    <select onchange="updateFeedbackStatus(${feedback.id}, this.value)" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="neu" ${feedback.status === 'neu' ? 'selected' : ''}>✨ Neu</option>
+                        <option value="in_bearbeitung" ${feedback.status === 'in_bearbeitung' ? 'selected' : ''}>🔄 In Bearbeitung</option>
+                        <option value="geloest" ${feedback.status === 'geloest' ? 'selected' : ''}>✅ Gelöst</option>
+                        <option value="vorgemerkt" ${feedback.status === 'vorgemerkt' ? 'selected' : ''}>📌 Vorgemerkt</option>
+                        <option value="abgelehnt" ${feedback.status === 'abgelehnt' ? 'selected' : ''}>❌ Abgelehnt</option>
+                    </select>
+                    <button onclick="deleteFeedback(${feedback.id})" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px; margin-left: 10px;">
+                        🗑️ Löschen
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    adminFeedbacksList.innerHTML = feedbacksHtml;
+}
+
+function updateFeedbackStatus(id, status) {
+    const token = localStorage.getItem('adminToken');
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    fetch(`/api/admin/feedback/${id}/status`, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Status konnte nicht aktualisiert werden');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Status updated successfully');
+        // Reload the list to reflect changes
+        loadAdminFeedbacks();
+    })
+    .catch(error => {
+        console.error('Error updating status:', error);
+        alert('Fehler beim Aktualisieren des Status: ' + error.message);
+    });
+}
+
+function deleteFeedback(id) {
+    if (!confirm('Möchten Sie dieses Feedback wirklich löschen?')) {
+        return;
+    }
+    
+    const token = localStorage.getItem('adminToken');
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    fetch(`/api/admin/feedback/${id}`, {
+        method: 'DELETE',
+        headers: headers
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Feedback konnte nicht gelöscht werden');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Feedback deleted successfully');
+        // Reload the list to reflect changes
+        loadAdminFeedbacks();
+    })
+    .catch(error => {
+        console.error('Error deleting feedback:', error);
+        alert('Fehler beim Löschen des Feedbacks: ' + error.message);
+    });
+}
+
 window.adminLogin = adminLogin;
+window.adminLogout = adminLogout;
+window.loadAdminFeedbacks = loadAdminFeedbacks;
+window.updateFeedbackStatus = updateFeedbackStatus;
+window.deleteFeedback = deleteFeedback;
 
 // ...existing code...
