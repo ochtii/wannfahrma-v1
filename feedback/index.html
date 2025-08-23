@@ -564,6 +564,22 @@
         .admin-controls button:hover {
             background: #e9ecef;
         }
+        
+        .delete-btn {
+            background: #dc3545 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            font-size: 12px !important;
+            padding: 5px 10px !important;
+            transition: background-color 0.2s ease;
+        }
+        
+        .delete-btn:hover {
+            background: #c82333 !important;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -1400,6 +1416,10 @@
                                 <input type="text" placeholder="Admin-Notizen..." value="${feedback.admin?.notes || ''}" 
                                        onchange="updateFeedbackNotes('${feedback.id}', this.value)"
                                        style="flex: 1; padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                                
+                                <button onclick="deleteFeedback('${feedback.id}', '${(feedback.name || 'Anonym').replace(/'/g, '\\\'')}')" 
+                                        class="delete-btn" 
+                                        title="Feedback löschen">🗑️ Löschen</button>
                             </div>
                             
                             ${feedback.contact ? `<div style="font-size: 12px; color: #6c757d;">Kontakt: ${feedback.contact}</div>` : ''}
@@ -1496,6 +1516,43 @@
                 }
             } catch (error) {
                 console.error('Error updating notes:', error);
+            }
+        }
+        
+        // Delete feedback
+        async function deleteFeedback(feedbackId, feedbackName) {
+            if (!adminToken) return;
+            
+            // Confirmation dialog
+            const confirmMessage = `Feedback von "${feedbackName}" wirklich löschen?\n\nID: ${feedbackId}\n\nDiese Aktion kann nicht rückgängig gemacht werden!`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            try {
+                const response = await apiCall(`/api/admin/feedback/${feedbackId}`, {
+                    method: 'DELETE',
+                    headers: { 
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    // Show success message
+                    const result = await response.json();
+                    alert(`✅ Feedback erfolgreich gelöscht!\n\nID: ${feedbackId}`);
+                    
+                    // Refresh the list and stats
+                    await loadAdminFeedbacks();
+                    await loadAdminStats();
+                } else {
+                    const error = await response.json();
+                    alert(`❌ Fehler beim Löschen: ${error.error || 'Unbekannter Fehler'}`);
+                }
+            } catch (error) {
+                console.error('Error deleting feedback:', error);
+                alert(`❌ Verbindungsfehler beim Löschen: ${error.message}`);
             }
         }
         

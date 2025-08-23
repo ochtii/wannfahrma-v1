@@ -497,6 +497,63 @@ app.put('/api/admin/feedback/:id', adminAuth, (req, res) => {
     }
 });
 
+// DELETE /api/admin/feedback/:id - Delete feedback
+app.delete('/api/admin/feedback/:id', adminAuth, (req, res) => {
+    const feedbackId = req.params.id;
+    const clientIP = getClientIP(req);
+    
+    try {
+        // Find and delete feedback
+        const files = fs.readdirSync(feedbackDataDir)
+            .filter(file => file.startsWith('feedback_') && file.endsWith('.json'));
+        
+        let feedbackFound = false;
+        let deletedFeedback = null;
+        
+        for (const file of files) {
+            const filePath = path.join(feedbackDataDir, file);
+            const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            
+            const feedbackIndex = data.findIndex(f => f.id === feedbackId);
+            
+            if (feedbackIndex !== -1) {
+                // Store deleted feedback for logging
+                deletedFeedback = data[feedbackIndex];
+                
+                // Remove feedback from array
+                data.splice(feedbackIndex, 1);
+                
+                // Save updated data
+                fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+                
+                logFeedback('ADMIN_FEEDBACK_DELETED', { 
+                    id: feedbackId, 
+                    type: deletedFeedback.type,
+                    deletedBy: 'admin'
+                }, clientIP);
+                
+                res.json({
+                    success: true,
+                    message: 'Feedback deleted successfully',
+                    deletedId: feedbackId
+                });
+                
+                feedbackFound = true;
+                break;
+            }
+        }
+        
+        if (!feedbackFound) {
+            res.status(404).json({ error: 'Feedback not found' });
+        }
+        
+    } catch (error) {
+        console.error('Error deleting feedback:', error);
+        logFeedback('ADMIN_DELETE_ERROR', { id: feedbackId, error: error.message }, clientIP);
+        res.status(500).json({ error: 'Failed to delete feedback' });
+    }
+});
+
 // GET /api/admin/stats - Enhanced admin statistics
 app.get('/api/admin/stats', adminAuth, (req, res) => {
     const clientIP = getClientIP(req);
