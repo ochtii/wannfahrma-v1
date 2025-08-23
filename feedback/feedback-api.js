@@ -4,7 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const app = express();
-const PORT = process.env.FEEDBACK_PORT || 3002;
+const PORT = process.env.PORT || process.env.FEEDBACK_PORT || 3002;
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
