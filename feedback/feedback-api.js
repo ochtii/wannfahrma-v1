@@ -370,6 +370,7 @@ app.get('/api/feedback/recent', (req, res) => {
             name: feedback.name,
             platform: feedback.platform,
             contact: feedback.contact,
+            status: feedback.status,
             metadata: {
                 page: feedback.metadata?.page,
                 browser: feedback.metadata?.browser
