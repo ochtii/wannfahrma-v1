@@ -580,6 +580,22 @@
             background: #c82333 !important;
             transform: scale(1.05);
         }
+        
+        #custom-date-range {
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+        
+        #recent-pagination button:disabled {
+            background: #6c757d !important;
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+        }
+        
+        #recent-pagination button:not(:disabled):hover {
+            background: #495057 !important;
+        }
     </style>
 </head>
 <body>
@@ -712,10 +728,55 @@
             <!-- Recent Feedback Tab -->
             <div id="recent-tab" class="tab-content">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3 style="color: #495057;">Neuestes Feedback (24h)</h3>
+                    <h3 style="color: #495057;">Aktuelles Feedback</h3>
                     <button class="btn btn-secondary" onclick="loadRecentFeedback()" style="padding: 8px 15px; font-size: 14px;">
                         🔄 Aktualisieren
                     </button>
+                </div>
+                
+                <!-- Filter Controls -->
+                <div class="admin-section" style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 15px; color: #495057;">📊 Filter & Anzeige</h4>
+                    
+                    <div class="admin-controls">
+                        <select id="recent-time-filter" onchange="loadRecentFeedback()">
+                            <option value="24h">📅 Letzte 24 Stunden</option>
+                            <option value="7d">📅 Letzte 7 Tage</option>
+                            <option value="31d">📅 Letzte 31 Tage</option>
+                            <option value="month">📅 Diesen Monat</option>
+                            <option value="custom">📅 Benutzerdefiniert</option>
+                            <option value="all">📅 Alle</option>
+                        </select>
+                        
+                        <div id="custom-date-range" style="display: none;">
+                            <input type="date" id="date-from" onchange="loadRecentFeedback()" style="padding: 8px;">
+                            <span style="margin: 0 10px;">bis</span>
+                            <input type="date" id="date-to" onchange="loadRecentFeedback()" style="padding: 8px;">
+                        </div>
+                        
+                        <select id="recent-per-page" onchange="loadRecentFeedback()">
+                            <option value="10">📋 10 pro Seite</option>
+                            <option value="25" selected>📋 25 pro Seite</option>
+                            <option value="50">📋 50 pro Seite</option>
+                        </select>
+                        
+                        <select id="recent-type-filter" onchange="loadRecentFeedback()">
+                            <option value="">🔍 Alle Typen</option>
+                            <option value="general">💬 Allgemein</option>
+                            <option value="bug">🐛 Bug</option>
+                            <option value="feature">🚀 Feature</option>
+                            <option value="improvement">⚡ Verbesserung</option>
+                        </select>
+                        
+                        <select id="recent-platform-filter" onchange="loadRecentFeedback()">
+                            <option value="">🔍 Alle Plattformen</option>
+                            <option value="web">🌐 Web (Desktop)</option>
+                            <option value="web-mobile">📱 Web (Mobil)</option>
+                            <option value="android">🤖 Android</option>
+                        </select>
+                    </div>
+                    
+                    <div id="recent-filter-info" style="margin-top: 10px; font-size: 12px; color: #6c757d;"></div>
                 </div>
                 
                 <div id="recent-loading" class="loading">
@@ -723,6 +784,15 @@
                     Lade aktuelles Feedback...
                 </div>
                 <div id="recent-content" style="display: none;"></div>
+                
+                <!-- Pagination -->
+                <div id="recent-pagination" style="display: none; margin-top: 20px; text-align: center;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <button id="recent-prev-btn" onclick="changePage(-1)" style="padding: 8px 15px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" disabled>◀ Vorherige</button>
+                        <span id="recent-page-info" style="color: #495057;"></span>
+                        <button id="recent-next-btn" onclick="changePage(1)" style="padding: 8px 15px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" disabled>Nächste ▶</button>
+                    </div>
+                </div>
             </div>
             
             <!-- Admin Tab -->
@@ -1149,66 +1219,194 @@
             }
         }
         
-        // Load recent feedback
-        async function loadRecentFeedback() {
+        // Load recent feedback with enhanced filtering
+        let currentPage = 1;
+        let totalPages = 1;
+        
+        async function loadRecentFeedback(page = 1) {
             const recentLoading = document.getElementById('recent-loading');
             const recentContent = document.getElementById('recent-content');
+            const recentPagination = document.getElementById('recent-pagination');
+            const recentFilterInfo = document.getElementById('recent-filter-info');
+            
+            // Get filter values
+            const timeFilter = document.getElementById('recent-time-filter').value;
+            const perPage = document.getElementById('recent-per-page').value;
+            const typeFilter = document.getElementById('recent-type-filter').value;
+            const platformFilter = document.getElementById('recent-platform-filter').value;
+            const customDateDiv = document.getElementById('custom-date-range');
+            
+            // Show/hide custom date range
+            if (timeFilter === 'custom') {
+                customDateDiv.style.display = 'flex';
+                customDateDiv.style.alignItems = 'center';
+                customDateDiv.style.gap = '10px';
+            } else {
+                customDateDiv.style.display = 'none';
+            }
             
             try {
                 recentLoading.style.display = 'block';
                 recentContent.style.display = 'none';
+                recentPagination.style.display = 'none';
                 
-                const response = await apiCall('/api/feedback/recent?limit=10');
+                // Build API URL with filters
+                let apiUrl = `/api/feedback/recent?limit=${perPage}&page=${page}`;
+                
+                // Add time filter
+                if (timeFilter !== 'all') {
+                    if (timeFilter === 'custom') {
+                        const dateFrom = document.getElementById('date-from').value;
+                        const dateTo = document.getElementById('date-to').value;
+                        if (dateFrom) apiUrl += `&from=${dateFrom}`;
+                        if (dateTo) apiUrl += `&to=${dateTo}`;
+                    } else {
+                        apiUrl += `&timeFilter=${timeFilter}`;
+                    }
+                }
+                
+                // Add type filter
+                if (typeFilter) {
+                    apiUrl += `&type=${typeFilter}`;
+                }
+                
+                // Add platform filter
+                if (platformFilter) {
+                    apiUrl += `&platform=${platformFilter}`;
+                }
+                
+                const response = await apiCall(apiUrl);
                 
                 let data;
                 try {
                     const text = await response.text();
                     data = JSON.parse(text);
                 } catch (parseError) {
-                    throw new Error('Aktuelle Feedback-Daten konnten nicht geladen werden.');
+                    throw new Error('Feedback-Daten konnten nicht geladen werden.');
                 }
                 
-                if (data.count === 0) {
+                // Update pagination info
+                currentPage = page;
+                totalPages = Math.ceil(data.total / perPage);
+                
+                // Update filter info
+                const filterDescriptions = [];
+                if (timeFilter === '24h') filterDescriptions.push('Letzte 24 Stunden');
+                else if (timeFilter === '7d') filterDescriptions.push('Letzte 7 Tage');
+                else if (timeFilter === '31d') filterDescriptions.push('Letzte 31 Tage');
+                else if (timeFilter === 'month') filterDescriptions.push('Diesen Monat');
+                else if (timeFilter === 'custom') {
+                    const from = document.getElementById('date-from').value;
+                    const to = document.getElementById('date-to').value;
+                    if (from || to) {
+                        filterDescriptions.push(`${from || 'Anfang'} bis ${to || 'heute'}`);
+                    }
+                } else if (timeFilter === 'all') filterDescriptions.push('Alle Zeiträume');
+                
+                if (typeFilter) {
+                    const typeLabels = {'general': 'Allgemein', 'bug': 'Bug', 'feature': 'Feature', 'improvement': 'Verbesserung'};
+                    filterDescriptions.push(`Typ: ${typeLabels[typeFilter] || typeFilter}`);
+                }
+                
+                if (platformFilter) {
+                    const platformLabels = {'web': 'Web (Desktop)', 'web-mobile': 'Web (Mobil)', 'android': 'Android'};
+                    filterDescriptions.push(`Plattform: ${platformLabels[platformFilter] || platformFilter}`);
+                }
+                
+                recentFilterInfo.innerHTML = `
+                    📊 ${data.filtered} von ${data.total} Feedbacks angezeigt
+                    ${filterDescriptions.length > 0 ? `• Filter: ${filterDescriptions.join(', ')}` : ''}
+                `;
+                
+                if (data.filtered === 0) {
                     recentContent.innerHTML = `
                         <div style="text-align: center; padding: 40px; color: #6c757d;">
-                            <div style="font-size: 3em; margin-bottom: 20px;">📭</div>
-                            <h3>Noch kein Feedback vorhanden</h3>
-                            <p>Sei der erste und teile dein Feedback mit uns!</p>
+                            <div style="font-size: 3em; margin-bottom: 20px;">�</div>
+                            <h3>Kein Feedback gefunden</h3>
+                            <p>Für die gewählten Filter wurden keine Feedback-Einträge gefunden.</p>
+                            <button onclick="resetRecentFilters()" style="margin-top: 15px; padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                🔄 Filter zurücksetzen
+                            </button>
                         </div>
                     `;
                 } else {
-                    recentContent.innerHTML = `
-                        <div style="margin-bottom: 20px; color: #6c757d;">
-                            <small>📊 ${data.count} Feedback-Einträge der letzten 24 Stunden</small>
-                        </div>
-                        ${data.feedback.map(feedback => `
-                            <div class="feedback-item">
-                                <div class="feedback-meta">
-                                    <div>
-                                        📅 ${new Date(feedback.timestamp).toLocaleString('de-DE')}
-                                        <span class="feedback-type ${feedback.type}">${feedback.type}</span>
-                                    </div>
-                                    <div>
-                                        ${feedback.rating ? '⭐'.repeat(feedback.rating) + ` (${feedback.rating}/5)` : 'Keine Bewertung'}
-                                    </div>
+                    recentContent.innerHTML = data.feedback.map(feedback => `
+                        <div class="feedback-item" style="border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: white;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                <div>
+                                    <strong>${feedback.name || 'Anonym'}</strong>
+                                    <span class="feedback-type ${feedback.type}" style="margin-left: 10px; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white;">
+                                        ${getTypeLabel(feedback.type)}
+                                    </span>
+                                    ${feedback.rating ? `<span style="margin-left: 10px;">${'★'.repeat(feedback.rating)}</span>` : ''}
                                 </div>
-                                <div class="feedback-message">${feedback.message}</div>
-                                ${feedback.metadata?.page ? `<div style="margin-top: 8px; font-size: 12px; color: #868e96;">📍 ${feedback.metadata.page}</div>` : ''}
+                                <div style="text-align: right; font-size: 12px; color: #6c757d;">
+                                    ${new Date(feedback.timestamp).toLocaleString('de-DE')}
+                                    ${feedback.platform ? `<br>📱 ${getPlatformLabel(feedback.platform)}` : ''}
+                                </div>
                             </div>
-                        `).join('')}
-                    `;
+                            
+                            <div style="margin-bottom: 10px; line-height: 1.5;">
+                                ${feedback.message}
+                            </div>
+                            
+                            ${feedback.contact ? `<div style="font-size: 12px; color: #6c757d;">📧 ${feedback.contact}</div>` : ''}
+                            ${feedback.metadata?.page ? `<div style="font-size: 12px; color: #6c757d;">📍 ${feedback.metadata.page}</div>` : ''}
+                        </div>
+                    `).join('');
+                    
+                    // Show pagination if needed
+                    if (totalPages > 1) {
+                        recentPagination.style.display = 'block';
+                        document.getElementById('recent-page-info').textContent = `Seite ${currentPage} von ${totalPages}`;
+                        document.getElementById('recent-prev-btn').disabled = currentPage <= 1;
+                        document.getElementById('recent-next-btn').disabled = currentPage >= totalPages;
+                    } else {
+                        recentPagination.style.display = 'none';
+                    }
                 }
                 
                 recentLoading.style.display = 'none';
                 recentContent.style.display = 'block';
+                
             } catch (error) {
                 recentLoading.innerHTML = `
                     <div style="color: #dc3545;">
-                        ❌ Fehler beim Laden des aktuellen Feedbacks
+                        ❌ Fehler beim Laden des Feedbacks
                         <br><small>${error.message}</small>
                     </div>
                 `;
             }
+        }
+        
+        // Reset filters to default
+        function resetRecentFilters() {
+            document.getElementById('recent-time-filter').value = '24h';
+            document.getElementById('recent-per-page').value = '25';
+            document.getElementById('recent-type-filter').value = '';
+            document.getElementById('recent-platform-filter').value = '';
+            document.getElementById('date-from').value = '';
+            document.getElementById('date-to').value = '';
+            currentPage = 1;
+            loadRecentFeedback();
+        }
+        
+        // Pagination controls
+        function changePage(direction) {
+            const newPage = currentPage + direction;
+            if (newPage >= 1 && newPage <= totalPages) {
+                loadRecentFeedback(newPage);
+            }
+        }
+        
+        // Helper function for platform labels
+        function getPlatformLabel(platform) {
+            const labels = {
+                'web': '🌐 Web (Desktop)',
+                'web-mobile': '📱 Web (Mobil)',
+                'android': '🤖 Android'
+            };
+            return labels[platform] || platform;
         }
         
         // Load initial data when page loads
@@ -1297,7 +1495,7 @@
         // Auto-refresh recent feedback every 15 seconds
         setInterval(() => {
             if (document.getElementById('recent-tab').classList.contains('active')) {
-                loadRecentFeedback();
+                loadRecentFeedback(currentPage);
             }
         }, 15000);
         

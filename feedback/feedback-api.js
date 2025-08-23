@@ -268,20 +268,55 @@ app.get('/api/feedback/stats', (req, res) => {
     }
 });
 
-// GET /api/feedback/recent - Get recent feedback (last 24h)
+// GET /api/feedback/recent - Get recent feedback with enhanced filtering
 app.get('/api/feedback/recent', (req, res) => {
     const clientIP = getClientIP(req);
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 25;
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
+    
+    // Parse filters
+    const timeFilter = req.query.timeFilter || '24h';
+    const typeFilter = req.query.type || '';
+    const platformFilter = req.query.platform || '';
+    const fromDate = req.query.from ? new Date(req.query.from) : null;
+    const toDate = req.query.to ? new Date(req.query.to + 'T23:59:59.999Z') : null;
     
     try {
         const now = new Date();
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        let startDate, endDate = now;
         
-        let recentFeedback = [];
+        // Calculate date range based on filter
+        switch (timeFilter) {
+            case '24h':
+                startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                break;
+            case '7d':
+                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case '31d':
+                startDate = new Date(now.getTime() - 31 * 24 * 60 * 60 * 1000);
+                break;
+            case 'month':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case 'custom':
+                startDate = fromDate || new Date('2024-01-01');
+                endDate = toDate || now;
+                break;
+            case 'all':
+            default:
+                startDate = new Date('2024-01-01'); // Very old date to get all
+                break;
+        }
         
-        // Check last 2 days of files
-        for (let i = 0; i < 2; i++) {
-            const checkDate = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        let allFeedback = [];
+        
+        // Determine which files to check based on date range
+        const daysToCheck = timeFilter === 'all' ? 365 : Math.ceil((endDate - startDate) / (24 * 60 * 60 * 1000)) + 1;
+        
+        for (let i = 0; i < daysToCheck; i++) {
+            const checkDate = new Date(endDate.getTime() - i * 24 * 60 * 60 * 1000);
             const dateStr = checkDate.toISOString().split('T')[0];
             const file = path.join(feedbackDataDir, `feedback_${dateStr}.json`);
             
@@ -289,42 +324,78 @@ app.get('/api/feedback/recent', (req, res) => {
                 try {
                     const data = fs.readFileSync(file, 'utf8');
                     const dailyFeedback = JSON.parse(data);
-                    
-                    // Filter feedback from last 24h
-                    const filtered = dailyFeedback.filter(feedback => {
-                        const feedbackTime = new Date(feedback.timestamp);
-                        return feedbackTime >= yesterday;
-                    });
-                    
-                    recentFeedback.push(...filtered);
+                    allFeedback.push(...dailyFeedback);
                 } catch (error) {
                     console.error(`Error reading file ${file}:`, error.message);
                 }
             }
         }
         
-        // Sort by timestamp (newest first) and limit
-        recentFeedback.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        recentFeedback = recentFeedback.slice(0, limit);
+        // Apply filters
+        let filteredFeedback = allFeedback.filter(feedback => {
+            const feedbackTime = new Date(feedback.timestamp);
+            
+            // Date range filter
+            if (feedbackTime < startDate || feedbackTime > endDate) {
+                return false;
+            }
+            
+            // Type filter
+            if (typeFilter && feedback.type !== typeFilter) {
+                return false;
+            }
+            
+            // Platform filter
+            if (platformFilter && feedback.platform !== platformFilter) {
+                return false;
+            }
+            
+            return true;
+        });
+        
+        // Sort by timestamp (newest first)
+        filteredFeedback.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        // Calculate pagination
+        const total = filteredFeedback.length;
+        const paginatedFeedback = filteredFeedback.slice(offset, offset + limit);
         
         // Remove sensitive data for public API
-        const sanitized = recentFeedback.map(feedback => ({
+        const sanitized = paginatedFeedback.map(feedback => ({
             id: feedback.id,
             timestamp: feedback.timestamp,
             type: feedback.type,
             rating: feedback.rating,
             message: feedback.message,
+            name: feedback.name,
+            platform: feedback.platform,
+            contact: feedback.contact,
             metadata: {
                 page: feedback.metadata?.page,
                 browser: feedback.metadata?.browser
             }
         }));
         
-        logFeedback('RECENT_REQUEST', { count: sanitized.length, limit }, clientIP);
+        logFeedback('RECENT_REQUEST', { 
+            filtered: sanitized.length, 
+            total: total,
+            filters: { timeFilter, typeFilter, platformFilter },
+            page: page,
+            limit: limit 
+        }, clientIP);
         
         res.json({
-            count: sanitized.length,
             feedback: sanitized,
+            filtered: sanitized.length,
+            total: total,
+            page: page,
+            totalPages: Math.ceil(total / limit),
+            filters: {
+                timeFilter,
+                typeFilter,
+                platformFilter,
+                dateRange: timeFilter === 'custom' ? { from: fromDate, to: toDate } : null
+            },
             generated: new Date().toISOString()
         });
     } catch (error) {
