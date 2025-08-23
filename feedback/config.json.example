@@ -1,0 +1,22 @@
+{
+  "adminPassword": "admin123",
+  "feedbackStatuses": [
+    "neu",
+    "in_bearbeitung",
+    "geloest",
+    "vorgemerkt",
+    "abgelehnt"
+  ],
+  "server": {
+    "port": 3002,
+    "dataDirectory": "./data",
+    "logDirectory": "./logs"
+  },
+  "security": {
+    "corsOrigin": "*",
+    "rateLimit": {
+      "windowMs": 900000,
+      "max": 100
+    }
+  }
+}

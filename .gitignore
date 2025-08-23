@@ -258,6 +258,15 @@ uploads/
 static/uploads/
 public/uploads/
 
+# Feedback System Data
+# =============================================================================
+feedback/data/
+feedback/logs/*.log
+feedback/config.json
+!feedback/config.json.example
+feedback/node_modules/
+feedback/package-lock.json
+
 # Development & Testing
 # =============================================================================
 .env.test
