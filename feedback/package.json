@@ -1,0 +1,27 @@
+{
+  "name": "wannfahrma-feedback-api",
+  "version": "1.0.0",
+  "description": "Feedback API für wann fahrma OIDA App",
+  "main": "feedback-api.js",
+  "scripts": {
+    "start": "node feedback-api.js",
+    "dev": "nodemon feedback-api.js"
+  },
+  "keywords": [
+    "feedback",
+    "api",
+    "wien",
+    "öpnv"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

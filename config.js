@@ -150,6 +150,7 @@ if (typeof window !== 'undefined') {
     
     // Config-Objekt global verfügbar machen
     window.appConfig = appConfig;
+    window.CONFIG = appConfig; // Alias für einfacheren Zugriff
 }
 
 // Export für Module

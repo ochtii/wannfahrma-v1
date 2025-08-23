@@ -26,6 +26,12 @@ if (typeof window !== 'undefined' && window.supabase && isSupabaseConfigured()) 
 
 // Fallback initialization when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    // Check if User Authentication is enabled
+    if (typeof window !== 'undefined' && window.CONFIG && !window.CONFIG.isFeatureEnabled('USER_AUTH')) {
+        console.info('ℹ️ User Authentication ist deaktiviert (Feature-Flag)');
+        return;
+    }
+
     if (!supabaseClient && typeof window.supabase !== 'undefined' && isSupabaseConfigured()) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         window.supabaseClient = supabaseClient;
@@ -44,6 +50,12 @@ class Auth {
     }
 
     async initialize() {
+        // Check if User Authentication is enabled
+        if (typeof window !== 'undefined' && window.CONFIG && !window.CONFIG.isFeatureEnabled('USER_AUTH')) {
+            console.info('ℹ️ User Authentication ist deaktiviert (ENABLE_USER_AUTH=false)');
+            return;
+        }
+
         // Check if Supabase is configured
         if (!isSupabaseConfigured()) {
             console.warn('⚠️ Supabase nicht konfiguriert. Authentication wird deaktiviert.');

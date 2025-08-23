@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>� WannFahrmA - Feedback System</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚇</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1.5" fill="rgba(255,255,255,0.1)"/></svg>');
+            animation: float 20s infinite linear;
+            pointer-events: none;
+        }
+        
+        @keyframes float {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header p {
+            opacity: 0.95;
+            font-size: 1.2em;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .nav-tab.active {
+            color: #667eea;
+            background: white;
+        }
+        
+        .nav-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background: #667eea;
+            border-radius: 2px;
+        }
+        
+        .nav-tab:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        
+        .rating-container {
+            margin-top: 10px;
+        }
+        
+        .rating {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .star {
+            font-size: 35px;
+            color: #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            position: relative;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+        
+        .star:hover {
+            color: #ffd700;
+            transform: scale(1.2) rotate(10deg);
+            filter: drop-shadow(0 4px 8px rgba(255,215,0,0.4));
+        }
+        
+        .star.active {
+            color: #ffd700;
+            transform: scale(1.1);
+            filter: drop-shadow(0 4px 8px rgba(255,215,0,0.4));
+            animation: starGlow 0.4s ease-out;
+        }
+        
+        @keyframes starGlow {
+            0% { 
+                transform: scale(1);
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            }
+            50% { 
+                transform: scale(1.3);
+                filter: drop-shadow(0 6px 12px rgba(255,215,0,0.6));
+            }
+            100% { 
+                transform: scale(1.1);
+                filter: drop-shadow(0 4px 8px rgba(255,215,0,0.4));
+            }
+        }
+        
+        .rating-text {
+            font-size: 14px;
+            color: #6c757d;
+            font-style: italic;
+            min-height: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #6c757d, #495057);
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 10px 25px rgba(108, 117, 125, 0.3);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+        
+        .feedback-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s;
+        }
+        
+        .feedback-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .feedback-meta {
+            font-size: 13px;
+            color: #6c757d;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .feedback-type {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .feedback-type.bug { background: #dc3545; }
+        .feedback-type.feature { background: #28a745; }
+        .feedback-type.improvement { background: #ffc107; color: #000; }
+        
+        .feedback-message {
+            color: #495057;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .success-message, .error-message {
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        
+        .quick-feedback {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .quick-btn {
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        
+        .quick-btn:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        }
+        
+        .quick-btn:active {
+            transform: translateY(-1px) scale(0.98);
+            transition: all 0.1s ease;
+        }
+        
+        .quick-btn.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            animation: selectedPulse 0.6s ease-out;
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        @keyframes selectedPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .quick-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .quick-btn:hover::before {
+            left: 100%;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2.2em;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .nav-tab {
+                padding: 15px 10px;
+                font-size: 14px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+            }
+            
+            .quick-feedback {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>� wann fahrma OIDA</h1>
+            <p>Dein Feedback macht unsere App besser</p>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('feedback')">
+                📝 Feedback senden
+            </button>
+            <button class="nav-tab" onclick="showTab('stats')">
+                📊 Statistiken
+            </button>
+            <button class="nav-tab" onclick="showTab('recent')">
+                🕒 Aktuell
+            </button>
+        </div>
+        
+        <div class="content">
+            <!-- Feedback Tab -->
+            <div id="feedback-tab" class="tab-content active">
+                <div id="message-container"></div>
+                
+                <div class="quick-feedback">
+                    <div class="quick-btn" onclick="quickFeedback('👍 Super App! Läuft perfekt!')">
+                        👍 Gefällt mir
+                    </div>
+                    <div class="quick-btn" onclick="quickFeedback('🐛 Bug gefunden - Details folgen')">
+                        🐛 Bug melden
+                    </div>
+                    <div class="quick-btn" onclick="quickFeedback('💡 Verbesserungsidee - wäre cool wenn...')">
+                        💡 Idee
+                    </div>
+                    <div class="quick-btn" onclick="quickFeedback('❓ Frage zur Bedienung')">
+                        ❓ Frage
+                    </div>
+                    <div class="quick-btn" onclick="quickFeedback('🚀 Feature-Wunsch: ')">
+                        🚀 Feature
+                    </div>
+                    <div class="quick-btn" onclick="quickFeedback('⚡ Performance-Problem bemerkt')">
+                        ⚡ Langsam
+                    </div>
+                </div>
+                
+                <form id="feedback-form">
+                    <div class="form-group">
+                        <label for="feedback-type">Feedback-Typ:</label>
+                        <select id="feedback-type" required>
+                            <option value="general">💬 Allgemeines Feedback</option>
+                            <option value="bug">🐛 Bug Report</option>
+                            <option value="feature">🚀 Feature-Wunsch</option>
+                            <option value="improvement">⚡ Verbesserungsvorschlag</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="feedback-platform">🔧 Plattform:</label>
+                        <select id="feedback-platform" required>
+                            <option value="">Plattform auswählen...</option>
+                            <option value="web">🌐 Web Browser (Desktop)</option>
+                            <option value="web-mobile">📱 Web Browser (Mobil)</option>
+                            <option value="android">🤖 Android App</option>
+                            <option value="ios">🍎 iOS App</option>
+                            <option value="desktop">💻 Desktop App</option>
+                            <option value="other">🔧 Andere</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="feedback-message">Deine Nachricht:</label>
+                        <textarea id="feedback-message" placeholder="Erzähl uns, was dir aufgefallen ist, was du dir wünschst oder wie wir die App verbessern können..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Wie zufrieden bist du? (optional)</label>
+                        <div class="rating-container">
+                            <div class="rating" id="rating">
+                                <span class="star" data-rating="1">★</span>
+                                <span class="star" data-rating="2">★</span>
+                                <span class="star" data-rating="3">★</span>
+                                <span class="star" data-rating="4">★</span>
+                                <span class="star" data-rating="5">★</span>
+                            </div>
+                            <div class="rating-text" id="rating-text">Bewertung auswählen</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="feedback-page">Wo warst du gerade? (optional)</label>
+                        <input type="text" id="feedback-page" placeholder="z.B. Hauptseite, Stationssuche, Abfahrten...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="feedback-contact">Kontakt für Rückfragen (optional)</label>
+                        <input type="text" id="feedback-contact" placeholder="E-Mail oder anderer Kontakt (nur bei Bedarf)">
+                    </div>
+                    
+                    <button type="submit" class="btn" id="submit-btn">
+                        📤 Feedback senden
+                    </button>
+                    
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()" style="margin-left: 10px;">
+                        🔄 Zurücksetzen
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Statistics Tab -->
+            <div id="stats-tab" class="tab-content">
+                <div id="stats-loading" class="loading">
+                    <div class="loading-spinner"></div>
+                    Lade Statistiken...
+                </div>
+                <div id="stats-content" style="display: none;">
+                    <div class="stats-grid" id="stats-grid"></div>
+                    <div style="margin-top: 30px; text-align: center; color: #6c757d;">
+                        <small>Letzte Aktualisierung: <span id="stats-updated"></span></small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Feedback Tab -->
+            <div id="recent-tab" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="color: #495057;">Neuestes Feedback (24h)</h3>
+                    <button class="btn btn-secondary" onclick="loadRecentFeedback()" style="padding: 8px 15px; font-size: 14px;">
+                        🔄 Aktualisieren
+                    </button>
+                </div>
+                
+                <div id="recent-loading" class="loading">
+                    <div class="loading-spinner"></div>
+                    Lade aktuelles Feedback...
+                </div>
+                <div id="recent-content" style="display: none;"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>
+                🚇 <strong>wann fahrma OIDA</strong> - Wiener ÖPNV Live-Daten
+                <br>
+                <small>
+                    Feedback API läuft auf Port 3002 • 
+                    <a href="/health" target="_blank">Health Check</a> • 
+                    <a href="https://github.com/ochtii/wannfahrma-v1" target="_blank">GitHub</a>
+                </small>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:3002';
+        let currentRating = 0;
+        
+        // Tab management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active from all nav tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+            
+            // Load data for specific tabs
+            if (tabName === 'stats') {
+                loadStats();
+            } else if (tabName === 'recent') {
+                loadRecentFeedback();
+            }
+        }
+        
+        // Rating system
+        const ratingTexts = {
+            1: '😞 Sehr unzufrieden',
+            2: '😕 Unzufrieden', 
+            3: '😐 Neutral',
+            4: '😊 Zufrieden',
+            5: '🤩 Sehr zufrieden'
+        };
+        
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', function() {
+                currentRating = parseInt(this.dataset.rating);
+                updateStars();
+                updateRatingText();
+            });
+            
+            star.addEventListener('mouseover', function() {
+                const rating = parseInt(this.dataset.rating);
+                highlightStars(rating);
+                document.getElementById('rating-text').textContent = ratingTexts[rating] || 'Bewertung auswählen';
+            });
+        });
+        
+        document.getElementById('rating').addEventListener('mouseleave', function() {
+            updateStars();
+            updateRatingText();
+        });
+        
+        function updateStars() {
+            document.querySelectorAll('.star').forEach((star, index) => {
+                star.classList.toggle('active', index < currentRating);
+            });
+        }
+        
+        function highlightStars(rating) {
+            document.querySelectorAll('.star').forEach((star, index) => {
+                star.classList.toggle('active', index < rating);
+            });
+        }
+        
+        function updateRatingText() {
+            const text = currentRating > 0 ? ratingTexts[currentRating] : 'Bewertung auswählen';
+            document.getElementById('rating-text').textContent = text;
+        }
+        
+        // Quick feedback buttons
+        function quickFeedback(message) {
+            document.getElementById('feedback-message').value = message;
+            
+            // Auto-select type based on message
+            const select = document.getElementById('feedback-type');
+            const platformSelect = document.getElementById('feedback-platform');
+            
+            if (message.includes('Bug') || message.includes('🐛')) {
+                select.value = 'bug';
+            } else if (message.includes('Idee') || message.includes('💡')) {
+                select.value = 'feature';
+            } else if (message.includes('Super') || message.includes('👍')) {
+                select.value = 'general';
+                currentRating = 5;
+                updateStars();
+                updateRatingText();
+            }
+            
+            // Auto-detect platform
+            detectAndSetPlatform(platformSelect);
+            
+            // Highlight selected quick button temporarily
+            event.target.classList.add('selected');
+            setTimeout(() => {
+                document.querySelectorAll('.quick-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+            }, 2000);
+            
+            // Focus message textarea
+            document.getElementById('feedback-message').focus();
+        }
+        
+        // Platform detection
+        function detectAndSetPlatform(selectElement) {
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isMobile = /mobile|android|iphone|ipad/.test(userAgent);
+            
+            if (/android/.test(userAgent)) {
+                selectElement.value = 'android';
+            } else if (/iphone|ipad/.test(userAgent)) {
+                selectElement.value = 'ios';
+            } else if (isMobile) {
+                selectElement.value = 'web-mobile';
+            } else {
+                selectElement.value = 'web';
+            }
+            
+            // Visual feedback
+            selectElement.style.backgroundColor = '#e8f5e8';
+            setTimeout(() => {
+                selectElement.style.backgroundColor = '';
+            }, 1500);
+        }
+        
+        // Form reset
+        function resetForm() {
+            document.getElementById('feedback-form').reset();
+            currentRating = 0;
+            updateStars();
+            updateRatingText();
+            document.getElementById('message-container').innerHTML = '';
+        }
+        
+        // Form submission
+        document.getElementById('feedback-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const messageContainer = document.getElementById('message-container');
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Sende...';
+            
+            const feedbackData = {
+                type: document.getElementById('feedback-type').value,
+                platform: document.getElementById('feedback-platform').value,
+                message: document.getElementById('feedback-message').value,
+                rating: currentRating || null,
+                page: document.getElementById('feedback-page').value || null,
+                contact: document.getElementById('feedback-contact').value || null,
+                url: window.location.href,
+                browser: navigator.userAgent,
+                screen: `${screen.width}x${screen.height}`,
+                additional: {
+                    timestamp: new Date().toISOString(),
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    language: navigator.language
+                }
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/feedback`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(feedbackData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    messageContainer.innerHTML = `
+                        <div class="success-message">
+                            🎉 <strong>Vielen Dank!</strong> Dein Feedback wurde erfolgreich gesendet!
+                            <br><small>Feedback-ID: ${result.id}</small>
+                        </div>
+                    `;
+                    
+                    // Reset form
+                    resetForm();
+                    
+                    // Show success animation
+                    setTimeout(() => {
+                        messageContainer.innerHTML = '';
+                    }, 5000);
+                    
+                    // Refresh stats if on stats tab
+                    if (document.getElementById('stats-tab').classList.contains('active')) {
+                        setTimeout(() => loadStats(), 1000);
+                    }
+                } else {
+                    throw new Error(result.error || 'Unbekannter Fehler');
+                }
+            } catch (error) {
+                messageContainer.innerHTML = `
+                    <div class="error-message">
+                        ❌ <strong>Fehler:</strong> ${error.message}
+                        <br><small>Bitte versuche es später erneut oder kontaktiere uns direkt.</small>
+                    </div>
+                `;
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '📤 Feedback senden';
+        });
+        
+        // Load statistics
+        async function loadStats() {
+            const statsLoading = document.getElementById('stats-loading');
+            const statsContent = document.getElementById('stats-content');
+            
+            try {
+                statsLoading.style.display = 'block';
+                statsContent.style.display = 'none';
+                
+                const response = await fetch(`${API_BASE}/api/feedback/stats`);
+                const stats = await response.json();
+                
+                const avgRating = Object.keys(stats.ratings).length > 0 ? 
+                    (Object.entries(stats.ratings).reduce((sum, [rating, count]) => sum + rating * count, 0) / 
+                     Object.values(stats.ratings).reduce((sum, count) => sum + count, 0)).toFixed(1) : 'N/A';
+                
+                const statsGrid = document.getElementById('stats-grid');
+                statsGrid.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.total}</div>
+                        <div class="stat-label">Gesamt Feedback</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.files}</div>
+                        <div class="stat-label">Tage mit Feedback</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${Object.keys(stats.types).length}</div>
+                        <div class="stat-label">Verschiedene Typen</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${avgRating}</div>
+                        <div class="stat-label">⭐ Durchschnitt</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.types.bug || 0}</div>
+                        <div class="stat-label">🐛 Bug Reports</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.types.feature || 0}</div>
+                        <div class="stat-label">🚀 Feature-Wünsche</div>
+                    </div>
+                `;
+                
+                document.getElementById('stats-updated').textContent = new Date().toLocaleString('de-DE');
+                
+                statsLoading.style.display = 'none';
+                statsContent.style.display = 'block';
+            } catch (error) {
+                statsLoading.innerHTML = `
+                    <div style="color: #dc3545;">
+                        ❌ Fehler beim Laden der Statistiken
+                        <br><small>${error.message}</small>
+                    </div>
+                `;
+            }
+        }
+        
+        // Load recent feedback
+        async function loadRecentFeedback() {
+            const recentLoading = document.getElementById('recent-loading');
+            const recentContent = document.getElementById('recent-content');
+            
+            try {
+                recentLoading.style.display = 'block';
+                recentContent.style.display = 'none';
+                
+                const response = await fetch(`${API_BASE}/api/feedback/recent?limit=10`);
+                const data = await response.json();
+                
+                if (data.count === 0) {
+                    recentContent.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #6c757d;">
+                            <div style="font-size: 3em; margin-bottom: 20px;">📭</div>
+                            <h3>Noch kein Feedback vorhanden</h3>
+                            <p>Sei der erste und teile dein Feedback mit uns!</p>
+                        </div>
+                    `;
+                } else {
+                    recentContent.innerHTML = `
+                        <div style="margin-bottom: 20px; color: #6c757d;">
+                            <small>📊 ${data.count} Feedback-Einträge der letzten 24 Stunden</small>
+                        </div>
+                        ${data.feedback.map(feedback => `
+                            <div class="feedback-item">
+                                <div class="feedback-meta">
+                                    <div>
+                                        📅 ${new Date(feedback.timestamp).toLocaleString('de-DE')}
+                                        <span class="feedback-type ${feedback.type}">${feedback.type}</span>
+                                    </div>
+                                    <div>
+                                        ${feedback.rating ? '⭐'.repeat(feedback.rating) + ` (${feedback.rating}/5)` : 'Keine Bewertung'}
+                                    </div>
+                                </div>
+                                <div class="feedback-message">${feedback.message}</div>
+                                ${feedback.metadata?.page ? `<div style="margin-top: 8px; font-size: 12px; color: #868e96;">📍 ${feedback.metadata.page}</div>` : ''}
+                            </div>
+                        `).join('')}
+                    `;
+                }
+                
+                recentLoading.style.display = 'none';
+                recentContent.style.display = 'block';
+            } catch (error) {
+                recentLoading.innerHTML = `
+                    <div style="color: #dc3545;">
+                        ❌ Fehler beim Laden des aktuellen Feedbacks
+                        <br><small>${error.message}</small>
+                    </div>
+                `;
+            }
+        }
+        
+        // Load initial data when page loads
+        window.addEventListener('load', function() {
+            // Auto-fill page if opened from main app
+            const urlParams = new URLSearchParams(window.location.search);
+            const page = urlParams.get('page');
+            if (page) {
+                document.getElementById('feedback-page').value = page;
+            }
+            
+            // Auto-detect and set platform
+            const platformSelect = document.getElementById('feedback-platform');
+            detectAndSetPlatform(platformSelect);
+            
+            // Load stats for default tab
+            loadStats();
+        });
+        
+        // Auto-refresh stats every 30 seconds
+        setInterval(() => {
+            if (document.getElementById('stats-tab').classList.contains('active')) {
+                loadStats();
+            }
+        }, 30000);
+        
+        // Auto-refresh recent feedback every 15 seconds
+        setInterval(() => {
+            if (document.getElementById('recent-tab').classList.contains('active')) {
+                loadRecentFeedback();
+            }
+        }, 15000);
+    </script>
+</body>
+</html>

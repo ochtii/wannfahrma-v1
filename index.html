@@ -599,6 +599,30 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
+    <!-- Environment Variables (für lokale Entwicklung) -->
+    <script>
+        // Lade .env Datei für lokale Entwicklung
+        if (typeof process === 'undefined' || !process.env) {
+            // Versuche Environment-Variablen vom Server zu laden
+            fetch('/api/env')
+                .then(response => response.json())
+                .then(envVars => {
+                    window.ENV_VARS = envVars;
+                    console.log('🔧 Environment-Variablen vom Server geladen:', Object.keys(envVars));
+                })
+                .catch(error => {
+                    console.warn('⚠️ Konnte Environment-Variablen nicht vom Server laden:', error);
+                    // Fallback für lokale Entwicklung ohne Server
+                    window.ENV_VARS = {
+                        SUPABASE_URL: '',
+                        SUPABASE_ANON_KEY: '',
+                        DEBUG_MODE: 'true',
+                        ENABLE_USER_AUTH: 'false'
+                    };
+                });
+        }
+    </script>
+    
     <!-- Konfiguration laden (muss vor anderen Scripts sein) -->
     <script src="config.js"></script>
     <script src="supabase-config.js"></script>
