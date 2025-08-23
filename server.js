@@ -458,6 +458,34 @@ app.use((req, res, next) => {
     next();
 });
 
+// Block WordPress scan requests
+app.use((req, res, next) => {
+    const wpPatterns = [
+        /^\/wp-admin\//,
+        /^\/wp-login\.php$/,
+        /^\/wp-config\.php$/,
+        /^\/wp-content\//,
+        /^\/wp-includes\//,
+        /^\/xmlrpc\.php$/,
+        /^\/wp-cron\.php$/,
+        /^\/wp-signup\.php$/,
+        /^\/wp-links-opml\.php$/,
+        /^\/wp-load\.php$/,
+        /^\/wp-trackback\.php$/,
+        /^\/readme\.html$/,
+        /^\/license\.txt$/
+    ];
+    if (wpPatterns.some(pattern => pattern.test(req.path))) {
+        logAPIRequest(getRealClientIP(req), req.headers['user-agent'], req.originalUrl, 403, 'BLOCKED_WP_SCAN', 'Blocked WordPress scan request', req.requestId);
+        return res.status(403).json({
+            error: 'Forbidden',
+            message: 'Automatischer Scan-Request blockiert.',
+            type: 'BLOCKED_WP_SCAN'
+        });
+    }
+    next();
+});
+
 // Environment variables endpoint (safe for frontend)
 app.get('/api/env', (req, res) => {
     const publicVars = {
