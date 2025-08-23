@@ -458,6 +458,26 @@ app.use((req, res, next) => {
     next();
 });
 
+// Environment variables endpoint (safe for frontend)
+app.get('/api/env', (req, res) => {
+    const publicVars = {
+        DEBUG_MODE: process.env.DEBUG_MODE || 'false',
+        ENABLE_USER_AUTH: process.env.ENABLE_USER_AUTH || 'true',
+        ENABLE_ANALYTICS: process.env.ENABLE_ANALYTICS || 'false'
+    };
+    
+    // Only include Supabase vars if they exist and are not placeholder values
+    if (process.env.SUPABASE_URL && 
+        process.env.SUPABASE_ANON_KEY && 
+        !process.env.SUPABASE_URL.includes('your-project') &&
+        !process.env.SUPABASE_ANON_KEY.includes('your-anon-key')) {
+        publicVars.SUPABASE_URL = process.env.SUPABASE_URL;
+        publicVars.SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+    }
+    
+    res.json(publicVars);
+});
+
 // API endpoint for departures
 app.get('/api/departures/:rbl', async (req, res) => {
     const rbl = req.params.rbl;

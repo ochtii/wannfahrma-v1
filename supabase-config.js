@@ -27,7 +27,7 @@ if (typeof window !== 'undefined' && window.supabase && isSupabaseConfigured()) 
 // Fallback initialization when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     // Check if User Authentication is enabled
-    if (typeof window !== 'undefined' && window.CONFIG && !window.CONFIG.isFeatureEnabled('USER_AUTH')) {
+    if (window.CONFIG && !window.CONFIG.isFeatureEnabled('USER_AUTH')) {
         console.info('ℹ️ User Authentication ist deaktiviert (Feature-Flag)');
         return;
     }
@@ -36,7 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         window.supabaseClient = supabaseClient;
     } else if (!isSupabaseConfigured()) {
-        console.warn('⚠️ Supabase nicht konfiguriert. Bitte SUPABASE_URL und SUPABASE_ANON_KEY in .env setzen.');
+        // Nur warnen wenn Authentication aktiviert ist oder Config nicht verfügbar
+        if (!window.CONFIG || window.CONFIG.isFeatureEnabled('USER_AUTH')) {
+            console.warn('⚠️ Supabase nicht konfiguriert. Bitte SUPABASE_URL und SUPABASE_ANON_KEY in .env setzen.');
+        }
     }
 });
 
@@ -50,16 +53,28 @@ class Auth {
     }
 
     async initialize() {
+        // Warte auf Config-Verfügbarkeit
+        let configAttempts = 0;
+        while (!window.CONFIG && configAttempts < 20) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            configAttempts++;
+        }
+
         // Check if User Authentication is enabled
-        if (typeof window !== 'undefined' && window.CONFIG && !window.CONFIG.isFeatureEnabled('USER_AUTH')) {
+        if (window.CONFIG && !window.CONFIG.isFeatureEnabled('USER_AUTH')) {
             console.info('ℹ️ User Authentication ist deaktiviert (ENABLE_USER_AUTH=false)');
             return;
         }
 
         // Check if Supabase is configured
         if (!isSupabaseConfigured()) {
-            console.warn('⚠️ Supabase nicht konfiguriert. Authentication wird deaktiviert.');
-            console.info('💡 Setzen Sie SUPABASE_URL und SUPABASE_ANON_KEY in .env um Supabase zu aktivieren.');
+            // Nur warnen wenn Authentication aktiviert ist
+            if (!window.CONFIG || window.CONFIG.isFeatureEnabled('USER_AUTH')) {
+                console.warn('⚠️ Supabase nicht konfiguriert. Authentication wird deaktiviert.');
+                console.info('💡 Setzen Sie SUPABASE_URL und SUPABASE_ANON_KEY in .env um Supabase zu aktivieren.');
+            } else {
+                console.info('ℹ️ Supabase nicht konfiguriert - Authentication ist deaktiviert');
+            }
             return;
         }
 
