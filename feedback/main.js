@@ -74,4 +74,28 @@ function quickFeedback(message) {
     document.getElementById('feedback-message').focus();
 }
 window.quickFeedback = quickFeedback;
+
+function updateStars() {
+    document.querySelectorAll('.star').forEach((star, index) => {
+        star.classList.toggle('active', index < (window.currentRating || 0));
+    });
+}
+window.updateStars = updateStars;
+
+function detectAndSetPlatform(selectElement) {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobile = /mobile|android|iphone|ipad/.test(userAgent);
+    if (/android/.test(userAgent)) {
+        selectElement.value = 'android';
+    } else if (isMobile) {
+        selectElement.value = 'web-mobile';
+    } else {
+        selectElement.value = 'web';
+    }
+    selectElement.style.backgroundColor = '#e8f5e8';
+    setTimeout(() => {
+        selectElement.style.backgroundColor = '';
+    }, 1500);
+}
+window.detectAndSetPlatform = detectAndSetPlatform;
 // ...existing code for feedback form, quick buttons, API, admin, etc. (migrate from index.html)...
