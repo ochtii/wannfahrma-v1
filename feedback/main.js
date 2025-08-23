@@ -405,22 +405,25 @@ function displayRecentFeedback(data) {
                 android: '🤖'
             };
             
-            const timeAgo = getTimeAgo(new Date(feedback.timestamp));
+            const timeAgo = feedback.timestamp ? getTimeAgo(new Date(feedback.timestamp)) : 'Unbekannt';
             const stars = feedback.rating ? '⭐'.repeat(feedback.rating) : '';
             
             return `
                 <div class="feedback-item">
                     <div class="feedback-header">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <span class="feedback-type ${feedback.type}">${typeIcons[feedback.type] || '💬'} ${feedback.type}</span>
-                            <span style="color: #6c757d;">${platformIcons[feedback.platform] || '🌐'} ${feedback.platform}</span>
+                            <span class="feedback-type ${feedback.type || 'general'}">${typeIcons[feedback.type] || '💬'} ${feedback.type || 'general'}</span>
+                            <span style="color: #6c757d;">${platformIcons[feedback.platform] || '🌐'} ${feedback.platform || 'web'}</span>
                             ${stars ? `<span style="color: #ffc107;">${stars}</span>` : ''}
+                            <span style="background: #6c757d; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                                ${feedback.status || 'neu'}
+                            </span>
                         </div>
                         <div class="feedback-timestamp">${timeAgo}</div>
                     </div>
-                    <div class="feedback-content">${feedback.message}</div>
+                    <div class="feedback-content">${feedback.message || 'Keine Nachricht verfügbar'}</div>
                     <div style="font-size: 12px; color: #6c757d;">
-                        ID: ${feedback.id} • Status: ${feedback.status || 'open'}
+                        ID: ${feedback.id || 'Unbekannt'} • Status: ${feedback.status || 'neu'}
                     </div>
                 </div>
             `;
@@ -646,15 +649,15 @@ function displayAdminFeedbacks(data) {
             abgelehnt: '#dc3545'
         };
         
-        const timeAgo = getTimeAgo(new Date(feedback.timestamp));
+        const timeAgo = feedback.timestamp ? getTimeAgo(new Date(feedback.timestamp)) : 'Unbekannt';
         const stars = feedback.rating ? '⭐'.repeat(feedback.rating) : '';
         
         return `
             <div class="feedback-item" style="border-left: 4px solid ${statusColors[feedback.status] || '#6c757d'};">
                 <div class="feedback-header">
                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                        <span class="feedback-type ${feedback.type}">${typeIcons[feedback.type] || '💬'} ${feedback.type}</span>
-                        <span style="color: #6c757d;">${platformIcons[feedback.platform] || '🌐'} ${feedback.platform}</span>
+                        <span class="feedback-type ${feedback.type || 'general'}">${typeIcons[feedback.type] || '💬'} ${feedback.type || 'general'}</span>
+                        <span style="color: #6c757d;">${platformIcons[feedback.platform] || '🌐'} ${feedback.platform || 'web'}</span>
                         ${stars ? `<span style="color: #ffc107;">${stars}</span>` : ''}
                         <span style="background: ${statusColors[feedback.status] || '#6c757d'}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
                             ${feedback.status || 'neu'}
@@ -662,11 +665,11 @@ function displayAdminFeedbacks(data) {
                     </div>
                     <div class="feedback-timestamp">${timeAgo}</div>
                 </div>
-                <div class="feedback-content">${feedback.message}</div>
+                <div class="feedback-content">${feedback.message || 'Keine Nachricht verfügbar'}</div>
                 ${feedback.page ? `<div style="font-size: 12px; color: #6c757d; margin-top: 5px;">📍 ${feedback.page}</div>` : ''}
                 ${feedback.contact ? `<div style="font-size: 12px; color: #6c757d;">📞 ${feedback.contact}</div>` : ''}
                 <div style="font-size: 12px; color: #6c757d; margin-top: 10px;">
-                    ID: ${feedback.id} • ${feedback.timestamp ? new Date(feedback.timestamp).toLocaleString('de-DE') : ''}
+                    ID: ${feedback.id || 'Unbekannt'} • ${feedback.timestamp ? new Date(feedback.timestamp).toLocaleString('de-DE') : 'Unbekannte Zeit'}
                 </div>
                 <div class="feedback-actions" style="margin-top: 15px;">
                     <select onchange="updateFeedbackStatus(${feedback.id}, this.value)" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px;">

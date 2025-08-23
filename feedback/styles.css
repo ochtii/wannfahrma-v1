@@ -304,6 +304,50 @@ textarea {
     border: 1px solid var(--border-color);
 }
 
+/* Dark mode for feedback items */
+[data-theme="dark"] .feedback-item {
+    background: var(--container-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .feedback-content {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .feedback-timestamp {
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .feedback-platform {
+    color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .feedback-page,
+[data-theme="dark"] .feedback-contact {
+    color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .feedback-meta {
+    color: var(--text-muted) !important;
+}
+
+/* Feedback type colors for dark mode */
+[data-theme="dark"] .feedback-type.general {
+    background: rgba(108, 117, 125, 0.2);
+}
+
+[data-theme="dark"] .feedback-type.bug {
+    background: rgba(220, 53, 69, 0.2);
+}
+
+[data-theme="dark"] .feedback-type.feature {
+    background: rgba(56, 176, 0, 0.2);
+}
+
+[data-theme="dark"] .feedback-type.improvement {
+    background: rgba(255, 193, 7, 0.2);
+}
+
 /* Dark mode for h4 titles in filter sections */
 [data-theme="dark"] .admin-section h4 {
     color: var(--text-color) !important;
