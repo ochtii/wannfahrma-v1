@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>� WannFahrmA - Feedback System</title>
+        <title>Wann fahr ma - Feedback</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚇</text></svg>">
     <style>
         * {
@@ -431,7 +431,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>� wann fahrma OIDA</h1>
+            <h1>Wann fahrma OIDA</h1>
             <p>Dein Feedback macht unsere App besser</p>
         </div>
         
@@ -689,31 +689,7 @@
                     <!-- API Documentation Section -->
                     <div class="admin-section" style="margin-bottom: 30px;">
                         <h3 style="color: #495057; margin-bottom: 15px;">🛠️ API-Dokumentation</h3>
-                        <div id="admin-api-docs" style="background: #f8f9fa; border-radius: 8px; padding: 20px;">
-                            <h4>Feedback API Endpunkte</h4>
-                            <ul style="margin-bottom: 15px;">
-                                <li><strong>POST /api/feedback</strong> – Feedback absenden<br><small>Body: { type, message, name, rating, contact, metadata }</small></li>
-                                <li><strong>GET /api/feedback/recent</strong> – Aktuelles Feedback abrufen<br><small>Query: limit, page, timeFilter, type, platform, from, to</small></li>
-                                <li><strong>GET /api/feedback/stats</strong> – Öffentliche Statistiken</li>
-                            </ul>
-                            <h4>Admin API Endpunkte</h4>
-                            <ul>
-                                <li><strong>POST /api/admin/login</strong> – Admin-Login<br><small>Body: { password }</small></li>
-                                <li><strong>GET /api/admin/feedbacks</strong> – Alle Feedbacks mit Filter<br><small>Query: status, type, platform, limit, page, from, to</small></li>
-                                <li><strong>PUT /api/admin/feedback/:id</strong> – Feedback bearbeiten<br><small>Body: { status, notes }</small></li>
-                                <li><strong>DELETE /api/admin/feedback/:id</strong> – Feedback löschen</li>
-                                <li><strong>GET /api/admin/stats</strong> – Admin-Statistiken</li>
-                            </ul>
-                            <h4>Antwortstruktur</h4>
-                            <pre style="background: #fff; border-radius: 6px; padding: 12px; font-size: 13px; color: #495057; overflow-x: auto;">
-{
-  "success": true,
-  "feedback": { ... },
-  "message": "..."
-}
-                            </pre>
-                            <small style="color: #6c757d;">Nur mit gültigem Admin-Token nutzbar. Alle Endpunkte erwarten <code>Authorization: Bearer ...</code> im Header.</small>
-                        </div>
+                        <a href="api-docs.html" target="_blank" class="btn btn-info" style="margin-bottom: 10px;">API-Dokumentation öffnen</a>
                     </div>
                 </div>
             </div>
