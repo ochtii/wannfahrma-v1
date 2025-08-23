@@ -3,17 +3,21 @@
 // Theme switching logic
 function setTheme(theme) {
     if (theme === 'dark') {
-        document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #222 0%, #38b000 100%)');
-        document.documentElement.style.setProperty('--text-color', '#f8f9fa');
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #1a4a00 0%, #2d5a00 100%)');
+        document.documentElement.style.setProperty('--text-color', '#f0f0f0');
     } else if (theme === 'light') {
+        document.documentElement.removeAttribute('data-theme');
         document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #38b000 0%, #70e000 100%)');
         document.documentElement.style.setProperty('--text-color', '#222');
     } else {
         // System/default
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #222 0%, #38b000 100%)');
-            document.documentElement.style.setProperty('--text-color', '#f8f9fa');
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #1a4a00 0%, #2d5a00 100%)');
+            document.documentElement.style.setProperty('--text-color', '#f0f0f0');
         } else {
+            document.documentElement.removeAttribute('data-theme');
             document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #38b000 0%, #70e000 100%)');
             document.documentElement.style.setProperty('--text-color', '#222');
         }
@@ -54,7 +58,10 @@ window.addEventListener('DOMContentLoaded', function() {
     // Initialize recent feedback if on that tab
     const activeTab = document.querySelector('.tab-content.active');
     if (activeTab && activeTab.id === 'recent-tab') {
+        console.log('Recent tab is active on load, loading recent feedback');
         loadRecentFeedback();
+    } else {
+        console.log('Active tab on load:', activeTab ? activeTab.id : 'none');
     }
 });
 
@@ -70,7 +77,10 @@ function showTab(tabName) {
         }
     });
     if (tabName === 'stats') loadStats();
-    else if (tabName === 'recent') loadRecentFeedback();
+    else if (tabName === 'recent') {
+        console.log('Loading recent feedback for tab switch');
+        loadRecentFeedback();
+    }
 }
 window.showTab = showTab;
 
@@ -252,15 +262,24 @@ window.loadStats = loadStats;
 
 // Load recent feedback
 function loadRecentFeedback(page = 1) {
+    console.log('loadRecentFeedback called with page:', page);
+    
     const recentLoading = document.getElementById('recent-loading');
     const recentContent = document.getElementById('recent-content');
     const recentPagination = document.getElementById('recent-pagination');
+    
+    console.log('Elements found:', {
+        recentLoading: !!recentLoading,
+        recentContent: !!recentContent,
+        recentPagination: !!recentPagination
+    });
     
     if (!recentLoading || !recentContent) {
         console.error('Recent feedback containers not found');
         return;
     }
     
+    console.log('Setting loading state...');
     recentLoading.style.display = 'block';
     recentContent.style.display = 'none';
     if (recentPagination) recentPagination.style.display = 'none';
@@ -273,6 +292,8 @@ function loadRecentFeedback(page = 1) {
     const platformFilter = document.getElementById('recent-platform-filter')?.value || '';
     const perPage = document.getElementById('recent-per-page')?.value || 25;
     
+    console.log('Filters:', { timeFilter, typeFilter, platformFilter, perPage });
+    
     const params = new URLSearchParams({
         page: page,
         limit: perPage,
@@ -281,10 +302,20 @@ function loadRecentFeedback(page = 1) {
         platform: platformFilter
     });
     
+    const apiUrl = `/api/feedback/recent?${params}`;
+    console.log('Making API call to:', apiUrl);
+    
     // API call to get recent feedback
-    fetch(`/api/feedback/recent?${params}`)
-        .then(response => response.json())
+    fetch(apiUrl)
+        .then(response => {
+            console.log('API Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('API Response data:', data);
             displayRecentFeedback(data);
         })
         .catch(error => {
@@ -305,11 +336,20 @@ function loadRecentFeedback(page = 1) {
 }
 
 function displayRecentFeedback(data) {
+    console.log('displayRecentFeedback called with data:', data);
+    
     const recentLoading = document.getElementById('recent-loading');
     const recentContent = document.getElementById('recent-content');
     const recentPagination = document.getElementById('recent-pagination');
     
+    console.log('Display elements found:', {
+        recentLoading: !!recentLoading,
+        recentContent: !!recentContent,
+        recentPagination: !!recentPagination
+    });
+    
     if (!data.feedbacks || data.feedbacks.length === 0) {
+        console.log('No feedbacks found, showing empty state');
         recentContent.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #6c757d;">
                 <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
@@ -318,6 +358,7 @@ function displayRecentFeedback(data) {
             </div>
         `;
     } else {
+        console.log(`Displaying ${data.feedbacks.length} feedbacks`);
         const feedbackHtml = data.feedbacks.map(feedback => {
             const typeIcons = {
                 general: '💬',
@@ -371,8 +412,10 @@ function displayRecentFeedback(data) {
         recentPagination.style.display = data.pagination.totalPages > 1 ? 'block' : 'none';
     }
     
+    console.log('Setting content visibility...');
     recentLoading.style.display = 'none';
     recentContent.style.display = 'block';
+    console.log('Display completed');
 }
 
 function getTimeAgo(date) {
@@ -387,6 +430,12 @@ function getTimeAgo(date) {
 }
 
 window.loadRecentFeedback = loadRecentFeedback;
+
+// Debug function to test recent feedback loading
+window.testRecentFeedback = function() {
+    console.log('Manual test of loadRecentFeedback');
+    loadRecentFeedback();
+};
 
 // Admin login
 function adminLogin() {
