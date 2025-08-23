@@ -678,92 +678,57 @@
         function detectApiBase() {
             const hostname = window.location.hostname;
             const protocol = window.location.protocol;
-            const port = window.location.port;
             
             // Local development
             if (hostname === 'localhost' || hostname === '127.0.0.1') {
                 return 'http://127.0.0.1:3002';
             }
             
-            // Production: Try different API endpoint configurations
-            // First try: Same origin (for reverse proxy setups)
-            const sameOrigin = `${protocol}//${hostname}${port ? ':' + port : ''}`;
-            
-            // Return same origin for production (nginx should handle routing)
-            return sameOrigin;
+            // Production: Use direct IP address for API
+            return 'http://18.206.241.165:3002';
         }
         
         const API_BASE = detectApiBase();
         let currentRating = 0;
         
-        // Robust API call function with automatic endpoint detection
+        // Simple API call function with known endpoints
         async function apiCall(endpoint, options = {}) {
-            // First, let's test what endpoints are actually available
-            const testEndpoints = [
-                // Local development
-                { base: 'http://127.0.0.1:3002', path: endpoint, description: 'Local development' },
-                // Production possibilities
-                { base: `${window.location.protocol}//${window.location.hostname}/feedback`, path: endpoint, description: 'Reverse proxy with /feedback prefix' },
-                { base: `${window.location.protocol}//${window.location.hostname}`, path: `/feedback${endpoint}`, description: 'Main server with /feedback prefix' },
-                { base: `${window.location.protocol}//${window.location.hostname}:3002`, path: endpoint, description: 'Direct port 3002' },
-                { base: `${window.location.protocol}//${window.location.hostname}`, path: endpoint, description: 'Main server root' },
-                // Test if API is served from the same location as the frontend
-                { base: window.location.origin + '/feedback', path: endpoint, description: 'Same origin as frontend' },
-                // Test if there's a different API structure
-                { base: window.location.origin, path: `/feedback${endpoint}`, description: 'Root with feedback prefix' }
-            ];
+            const hostname = window.location.hostname;
             
-            let lastError = null;
-            let allAttempts = [];
-            
-            for (const config of testEndpoints) {
-                try {
-                    const url = `${config.base}${config.path}`;
-                    console.log(`🔍 Testing (${config.description}): ${url}`);
-                    
-                    const response = await fetch(url, options);
-                    
-                    allAttempts.push({
-                        url,
-                        status: response.status,
-                        contentType: response.headers.get('content-type'),
-                        description: config.description
-                    });
-                    
-                    // Check if response is actually JSON (not HTML error page)
-                    const contentType = response.headers.get('content-type');
-                    
-                    if (response.ok && contentType && contentType.includes('application/json')) {
-                        console.log(`✅ SUCCESS (${config.description}): ${url}`);
-                        console.log(`📊 Status: ${response.status}, Content-Type: ${contentType}`);
-                        return response;
-                    } else if (response.status === 404) {
-                        console.log(`❌ 404 (${config.description}): ${url}`);
-                    } else if (response.ok) {
-                        console.log(`⚠️  Non-JSON response (${config.description}): ${url}, Content-Type: ${contentType}`);
-                        
-                        // If it's HTML but status is OK, it might be the static frontend
-                        if (contentType && contentType.includes('text/html')) {
-                            console.log(`📄 Detected HTML page at: ${url}`);
-                        }
-                    } else {
-                        console.log(`❌ Error ${response.status} (${config.description}): ${url}`);
-                    }
-                } catch (error) {
-                    console.log(`❌ Network error (${config.description}): ${config.base}${config.path} - ${error.message}`);
-                    lastError = error;
-                    allAttempts.push({
-                        url: `${config.base}${config.path}`,
-                        error: error.message,
-                        description: config.description
-                    });
-                }
+            // Determine the correct API base URL
+            let apiBase;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                apiBase = 'http://127.0.0.1:3002';
+            } else {
+                apiBase = 'http://18.206.241.165:3002';
             }
             
-            // If we get here, no endpoint worked
-            console.log('📋 All attempted endpoints:', allAttempts);
+            // The endpoint structure is: /feedback/stats not /api/feedback/stats
+            const cleanEndpoint = endpoint.replace('/api/feedback/', '/feedback/');
+            const url = `${apiBase}${cleanEndpoint}`;
             
-            throw new Error('Feedback API ist momentan nicht erreichbar. Debug-Info wurde in der Konsole ausgegeben. Möglicherweise läuft die API nicht oder ist unter einem anderen Pfad erreichbar.');
+            console.log(`� API Call: ${url}`);
+            
+            try {
+                const response = await fetch(url, options);
+                
+                // Check if response is actually JSON
+                const contentType = response.headers.get('content-type');
+                
+                if (response.ok && contentType && contentType.includes('application/json')) {
+                    console.log(`✅ Success: ${url}`);
+                    return response;
+                } else if (response.ok) {
+                    console.log(`⚠️  Non-JSON response from: ${url}, Content-Type: ${contentType}`);
+                } else {
+                    console.log(`❌ HTTP Error ${response.status}: ${url}`);
+                }
+                
+                return response; // Return anyway for error handling
+            } catch (error) {
+                console.log(`❌ Network Error: ${url} - ${error.message}`);
+                throw new Error(`Verbindung zur Feedback API fehlgeschlagen: ${error.message}`);
+            }
         }
         
         // Tab management
@@ -1138,21 +1103,17 @@
             console.log('🌐 Current location:', window.location.href);
             
             const testUrls = [
-                // Test if feedback-api.js file exists (static file)
+                // Test the actual feedback API endpoints
+                'http://18.206.241.165:3002/feedback/stats',
+                'http://18.206.241.165:3002/feedback/recent',
+                'http://18.206.241.165:3002/',
+                // Test local development endpoints
+                'http://127.0.0.1:3002/feedback/stats',
+                'http://127.0.0.1:3002/',
+                // Test if static files are accessible
                 `${window.location.origin}/feedback/feedback-api.js`,
-                // Test if package.json exists in feedback directory
-                `${window.location.origin}/feedback/package.json`,
-                // Test actual API endpoints we need
-                `${window.location.origin}/feedback/api/feedback/stats`,
-                `${window.location.origin}/api/feedback/stats`,
-                `${window.location.origin}/feedback/api/test`,
-                `${window.location.origin}/api/test`,
-                // Test if PM2 is serving on port 3002
-                `${window.location.protocol}//${window.location.hostname}:3002/`,
-                `${window.location.protocol}//${window.location.hostname}:3002/api/feedback/stats`,
-                // Test if main server has feedback routes
-                `${window.location.origin}/feedback/`,
-                `${window.location.origin}/feedback/index.html`
+                `${window.location.origin}/feedback/index.html`,
+                `${window.location.origin}/feedback/package.json`
             ];
             
             for (const url of testUrls) {
@@ -1181,12 +1142,8 @@
             }
             
             console.log('🔧 Diagnostics complete. Analysis:');
-            console.log('💡 If you see the feedback-api.js file but no API responses:');
-            console.log('   → The Express server (feedback-api.js) is not running');
-            console.log('   → Only static files are being served');
-            console.log('💡 If you see 404s for everything:');
-            console.log('   → The feedback system may not be properly deployed');
-            console.log('💡 To fix: Server admin needs to start the feedback API with PM2');
+            console.log('💡 Expected working URL: http://18.206.241.165:3002/feedback/stats');
+            console.log('💡 If this works, the feedback system should be fully functional');
         }
         
         // Auto-refresh stats every 30 seconds
