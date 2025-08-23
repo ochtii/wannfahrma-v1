@@ -44,4 +44,34 @@ function showTab(tabName) {
     if (tabName === 'stats') loadStats();
     else if (tabName === 'recent') loadRecentFeedback();
 }
+
+// Quick feedback buttons
+function quickFeedback(message) {
+    document.getElementById('feedback-message').value = message;
+    // Auto-select type based on message
+    const select = document.getElementById('feedback-type');
+    const platformSelect = document.getElementById('feedback-platform');
+    if (message.includes('Bug') || message.includes('🐛')) {
+        select.value = 'bug';
+    } else if (message.includes('Idee') || message.includes('💡')) {
+        select.value = 'feature';
+    } else if (message.includes('Super') || message.includes('👍')) {
+        select.value = 'general';
+        currentRating = 5;
+        updateStars();
+        updateRatingText();
+    }
+    // Auto-detect platform
+    detectAndSetPlatform(platformSelect);
+    // Highlight selected quick button temporarily
+    event.target.classList.add('selected');
+    setTimeout(() => {
+        document.querySelectorAll('.quick-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+    }, 2000);
+    // Focus message textarea
+    document.getElementById('feedback-message').focus();
+}
+window.quickFeedback = quickFeedback;
 // ...existing code for feedback form, quick buttons, API, admin, etc. (migrate from index.html)...
