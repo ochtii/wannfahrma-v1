@@ -2,13 +2,33 @@
 // Note: Configure SUPABASE_URL and SUPABASE_ANON_KEY in .env file
 
 // Configuration from environment variables (browser-safe)
-const SUPABASE_URL = (typeof process !== 'undefined' && process.env) 
-    ? process.env.SUPABASE_URL 
-    : (typeof window !== 'undefined' && window.SUPABASE_URL) || '';
+const getSupabaseConfig = () => {
+    let url = '', key = '';
     
-const SUPABASE_ANON_KEY = (typeof process !== 'undefined' && process.env) 
-    ? process.env.SUPABASE_ANON_KEY 
-    : (typeof window !== 'undefined' && window.SUPABASE_ANON_KEY) || '';
+    // 1. Von window.ENV_VARS (moderner Weg)
+    if (typeof window !== 'undefined' && window.ENV_VARS) {
+        url = window.ENV_VARS.SUPABASE_URL || '';
+        key = window.ENV_VARS.SUPABASE_ANON_KEY || '';
+    }
+    
+    // 2. Fallback zu direkten window-Variablen (Backward-Kompatibilität)
+    if (!url && typeof window !== 'undefined' && window.SUPABASE_URL) {
+        url = window.SUPABASE_URL;
+        key = window.SUPABASE_ANON_KEY || '';
+    }
+    
+    // 3. Fallback zu process.env (Server-Kontext)
+    if (!url && typeof process !== 'undefined' && process.env) {
+        url = process.env.SUPABASE_URL || '';
+        key = process.env.SUPABASE_ANON_KEY || '';
+    }
+    
+    return { url, key };
+};
+
+const supabaseConfig = getSupabaseConfig();
+const SUPABASE_URL = supabaseConfig.url;
+const SUPABASE_ANON_KEY = supabaseConfig.key;
 
 // Check if Supabase configuration is available
 const isSupabaseConfigured = () => {
@@ -26,18 +46,24 @@ if (typeof window !== 'undefined' && window.supabase && isSupabaseConfigured()) 
 
 // Fallback initialization when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    // Re-check configuration after DOM load (in case ENV_VARS were injected)
+    const currentConfig = getSupabaseConfig();
+    const isConfigured = currentConfig.url && currentConfig.key;
+    
     // Check if User Authentication is enabled
-    if (window.CONFIG && !window.CONFIG.isFeatureEnabled('USER_AUTH')) {
+    if (window.appConfig && !window.appConfig.isFeatureEnabled('USER_AUTH')) {
         return; // Silent return - keine Log-Ausgabe nötig
     }
 
-    if (!supabaseClient && typeof window.supabase !== 'undefined' && isSupabaseConfigured()) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    if (!supabaseClient && typeof window.supabase !== 'undefined' && isConfigured) {
+        supabaseClient = window.supabase.createClient(currentConfig.url, currentConfig.key);
         window.supabaseClient = supabaseClient;
-    } else if (!isSupabaseConfigured()) {
+        console.log('✅ Supabase erfolgreich initialisiert');
+    } else if (!isConfigured) {
         // Nur warnen wenn Authentication aktiviert ist oder Config nicht verfügbar
-        if (!window.CONFIG || window.CONFIG.isFeatureEnabled('USER_AUTH')) {
+        if (!window.appConfig || window.appConfig.isFeatureEnabled('USER_AUTH')) {
             console.warn('⚠️ Supabase nicht konfiguriert. Bitte SUPABASE_URL und SUPABASE_ANON_KEY in .env setzen.');
+            console.warn('⚠️ Supabase nicht konfiguriert. Authentication wird deaktiviert.');
         }
     }
 });

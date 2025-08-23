@@ -309,8 +309,12 @@ function loadRecentFeedback(page = 1) {
     fetch(apiUrl)
         .then(response => {
             console.log('API Response status:', response.status);
+            console.log('API Response headers:', response.headers);
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                return response.text().then(text => {
+                    console.log('Error response body:', text);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText} - ${text}`);
+                });
             }
             return response.json();
         })
@@ -348,13 +352,23 @@ function displayRecentFeedback(data) {
         recentPagination: !!recentPagination
     });
     
-    if (!data.feedbacks || data.feedbacks.length === 0) {
+    if (!data) {
+        console.log('No data received');
+        recentContent.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #dc3545;">
+                <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                <h3>Keine Daten erhalten</h3>
+                <p>Die API hat keine Daten zurückgegeben.</p>
+            </div>
+        `;
+    } else if (!data.feedbacks || data.feedbacks.length === 0) {
         console.log('No feedbacks found, showing empty state');
         recentContent.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #6c757d;">
                 <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
                 <h3>Kein Feedback gefunden</h3>
                 <p>Für die aktuellen Filter wurde kein Feedback gefunden.</p>
+                <small>Total in response: ${data.total || 0}</small>
             </div>
         `;
     } else {

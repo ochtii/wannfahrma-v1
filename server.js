@@ -3,6 +3,9 @@ const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
 
+// .env Loader
+const envLoader = require('./env-loader');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -732,7 +735,35 @@ app.get('/api/departures/:rbl', async (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        env_loaded: Object.keys(envLoader.getPublicVars()).length,
+        supabase_configured: !!envLoader.get('SUPABASE_URL')
+    });
+});
+
+// API endpoint für Environment-Variablen
+app.get('/api/env', (req, res) => {
+    const publicVars = envLoader.getPublicVars();
+    res.json(publicVars);
+});
+
+// SPA Fallback für alle anderen Routen - mit Environment-Variablen injection
+app.get('*', (req, res) => {
+    try {
+        const htmlPath = path.join(__dirname, 'index.html');
+        let html = fs.readFileSync(htmlPath, 'utf8');
+        
+        // Inject Environment-Variablen vor dem schließenden </head> Tag
+        const envScript = envLoader.generateJavaScript();
+        html = html.replace('</head>', `${envScript}\n</head>`);
+        
+        res.send(html);
+    } catch (error) {
+        console.error('Error serving HTML:', error);
+        res.status(500).send('Server Error');
+    }
 });
 
 // Error handling middleware
@@ -751,6 +782,8 @@ app.listen(PORT, () => {
     console.log(`${colors.cyan}🔌 API verfügbar unter: http://localhost:${PORT}/api/departures/:rbl${colors.reset}`);
     console.log(`${colors.cyan}❤️  Health Check: http://localhost:${PORT}/health${colors.reset}`);
     console.log(`${colors.yellow}📋 Log-Datei: ${path.join(logsDir, 'api_logs.log')}${colors.reset}`);
+    console.log(`${colors.cyan}🔧 Environment-Variablen: ${Object.keys(envLoader.getPublicVars()).length} geladen${colors.reset}`);
+    console.log(`${colors.cyan}💾 Supabase konfiguriert: ${envLoader.get('SUPABASE_URL') ? '✅' : '❌'}${colors.reset}`);
     console.log('');
     console.log(`${colors.bright}Logging-System:${colors.reset}`);
     console.log(`${colors.blue}📥 IN  = Eingehende Requests${colors.reset}`);
