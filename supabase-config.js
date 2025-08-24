@@ -218,7 +218,8 @@ class SimpleAuth {
                 email,
                 password,
                 options: {
-                    data: userData
+                    data: userData,
+                    emailRedirectTo: 'https://wartenis.org' // Explizite Redirect URL zur Live-Website
                 }
             });
 
@@ -255,7 +256,9 @@ class SimpleAuth {
         }
         
         try {
-            const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email);
+            const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email, {
+                redirectTo: 'https://wartenis.org' // Explizite Redirect URL zur Live-Website
+            });
             if (error) throw error;
 
             return { 
