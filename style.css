@@ -594,6 +594,15 @@ body {
     color: var(--text-secondary);
 }
 
+/* Favorite star in line headers - better positioning */
+.line-favorite {
+    position: relative !important; /* Override absolute positioning */
+    top: auto !important;
+    right: auto !important;
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
 /* Favorites quick-select */
 .favorites-quick-select {
     margin-bottom: 15px;
