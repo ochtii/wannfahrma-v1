@@ -202,9 +202,72 @@ class SimpleAuth {
         try {
             const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
             if (error) throw error;
-            return { success: true, user: data.user };
+            return { success: true, user: data.user, message: 'Anmeldung erfolgreich!' };
         } catch (error) {
-            return { success: false, error: error.message };
+            return { success: false, error: error.message, message: error.message };
+        }
+    }
+    
+    async register(email, password, userData = {}) {
+        if (!window.supabaseClient) {
+            return { success: false, error: 'Supabase nicht verfügbar', message: 'Supabase nicht verfügbar' };
+        }
+        
+        try {
+            const { data, error } = await window.supabaseClient.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: userData
+                }
+            });
+
+            if (error) throw error;
+
+            // After successful registration, optionally migrate local storage data
+            if (data.user && !data.session) {
+                // User needs to confirm email first
+                return { 
+                    success: true, 
+                    message: 'Registrierung erfolgreich! Bitte bestätigen Sie Ihre E-Mail-Adresse.',
+                    needsEmailConfirmation: true,
+                    user: data.user
+                };
+            }
+
+            return { 
+                success: true, 
+                message: 'Registrierung erfolgreich!',
+                user: data.user
+            };
+        } catch (error) {
+            return { 
+                success: false, 
+                error: error.message,
+                message: error.message 
+            };
+        }
+    }
+    
+    async resetPassword(email) {
+        if (!window.supabaseClient) {
+            return { success: false, error: 'Supabase nicht verfügbar', message: 'Supabase nicht verfügbar' };
+        }
+        
+        try {
+            const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email);
+            if (error) throw error;
+
+            return { 
+                success: true, 
+                message: 'Password-Reset E-Mail gesendet!' 
+            };
+        } catch (error) {
+            return { 
+                success: false, 
+                error: error.message,
+                message: error.message 
+            };
         }
     }
     
@@ -216,7 +279,7 @@ class SimpleAuth {
         try {
             const { error } = await window.supabaseClient.auth.signOut();
             if (error) throw error;
-            return { success: true };
+            return { success: true, message: 'Abmeldung erfolgreich!' };
         } catch (error) {
             return { success: false, error: error.message };
         }

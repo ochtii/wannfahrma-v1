@@ -29,7 +29,10 @@ class WienOPNVApp {
         if (window.Auth && window.UserDataManager) {
             this.auth = new window.Auth();
             this.userDataManager = new window.UserDataManager(this.auth);
-            console.log('✅ Authentication system initialized');
+            console.log('✅ Authentication system initialized (old Auth)');
+        } else if (window.SimpleAuth) {
+            this.auth = new window.SimpleAuth();
+            console.log('✅ SimpleAuth system initialized');
         } else {
             console.warn('⚠️ Authentication classes not available - running in local-only mode');
             // Create a fallback auth object
