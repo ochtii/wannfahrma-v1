@@ -608,6 +608,7 @@ app.get('/api/departures/:rbl', async (req, res) => {
     }
     
     const cacheKey = `departures_${rbl}`;
+    const apiUrl = `http://www.wienerlinien.at/ogd_realtime/monitor?rbl=${rbl}&sender=WannFahrmaOIDA`;
     
     // Check cache first
     if (cache.has(cacheKey)) {
@@ -619,13 +620,10 @@ app.get('/api/departures/:rbl', async (req, res) => {
             cache.delete(cacheKey);
         }
     }
-    
+
     try {
         // External API call with detailed logging
-        const apiUrl = `http://www.wienerlinien.at/ogd_realtime/monitor?rbl=${rbl}&sender=WannFahrmaOIDA`;
-        const extRequestId = logAPIRequest(clientIP, userAgent, apiUrl, '-', 'EXTERNAL_REQUEST', 'Calling Wiener Linien API', req.requestId);
-        
-        const startTime = Date.now();
+        const extRequestId = logAPIRequest(clientIP, userAgent, apiUrl, '-', 'EXTERNAL_REQUEST', 'Calling Wiener Linien API', req.requestId);        const startTime = Date.now();
         const response = await axios.get(apiUrl, {
             timeout: 15000,
             headers: {
