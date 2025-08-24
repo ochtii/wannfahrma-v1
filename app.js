@@ -5056,11 +5056,17 @@ class WienOPNVApp {
         const usageWarningText = document.getElementById('usageWarningText');
         
         if (!this.auth.isLoggedIn) {
-            const limits = this.auth.checkUsageLimits();
-            if (!limits.withinLimits) {
-                usageWarning.style.display = 'flex';
-                usageWarningText.textContent = limits.reason;
+            // Nur prüfen wenn die Funktion existiert (alte Auth Klasse)
+            if (typeof this.auth.checkUsageLimits === 'function') {
+                const limits = this.auth.checkUsageLimits();
+                if (!limits.withinLimits) {
+                    usageWarning.style.display = 'flex';
+                    usageWarningText.textContent = limits.reason;
+                } else {
+                    usageWarning.style.display = 'none';
+                }
             } else {
+                // SimpleAuth: Keine Usage Limits - verstecken
                 usageWarning.style.display = 'none';
             }
         } else {
