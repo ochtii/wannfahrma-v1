@@ -4988,7 +4988,7 @@ class WienOPNVApp {
         
         if (result.success) {
             this.showNotification(result.message, 'success');
-            this.closeAuthModal('loginModal');
+            window.closeAuthModal('loginModal');
         } else {
             this.showNotification(result.message, 'error');
         }
@@ -5019,7 +5019,7 @@ class WienOPNVApp {
         
         if (result.success) {
             this.showNotification(result.message, 'success');
-            this.closeAuthModal('registerModal');
+            window.closeAuthModal('registerModal');
             
             // If user is logged in and wants to migrate data
             if (this.auth.isLoggedIn && migrateData) {
@@ -5042,7 +5042,7 @@ class WienOPNVApp {
         
         if (result.success) {
             this.showNotification(result.message, 'success');
-            this.closeAuthModal('resetPasswordModal');
+            window.closeAuthModal('resetPasswordModal');
         } else {
             this.showNotification(result.message, 'error');
         }
