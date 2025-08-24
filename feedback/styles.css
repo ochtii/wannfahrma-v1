@@ -1,7 +1,7 @@
 /* Modern feedback system styles with proper dark theme support */
 
 :root {
-    --bg-gradient: linear-gradient(135deg, #38b000 0%, #70e000 100%);
+    --bg-gradient: linear-gradient(135deg, #f5f2e8 0%, #ede4d3 100%);
     --text-color: #222;
     --container-bg: #ffffff;
     --form-bg: #ffffff;
@@ -10,8 +10,8 @@
     --input-color: #222;
     --card-bg: #ffffff;
     --shadow: rgba(0,0,0,0.15);
-    --header-bg: linear-gradient(45deg, #38b000, #70e000);
-    --header-text: #ffffff;
+    --header-bg: linear-gradient(45deg, #d4b896, #c4a373);
+    --header-text: #333333;
     --nav-bg: #f8f9fa;
     --nav-border: #dee2e6;
     --footer-bg: #f8f9fa;
@@ -351,6 +351,19 @@ textarea {
 /* Dark mode for h4 titles in filter sections */
 [data-theme="dark"] .admin-section h4 {
     color: var(--text-color) !important;
+}
+
+/* Dark mode for checkboxes and labels */
+[data-theme="dark"] input[type="checkbox"] {
+    accent-color: #d4b896;
+}
+
+[data-theme="dark"] .form-group label {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .form-group label[style*="color: #666"] {
+    color: var(--text-muted) !important;
 }
 
 .admin-section {

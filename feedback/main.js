@@ -422,6 +422,9 @@ function displayRecentFeedback(data) {
                         <div class="feedback-timestamp">${timeAgo}</div>
                     </div>
                     <div class="feedback-content">${feedback.message || 'Keine Nachricht verfügbar'}</div>
+                    ${feedback.name ? `<div style="font-size: 12px; color: #6c757d; margin-top: 5px;">
+                        👤 ${feedback.namePublic !== false ? feedback.name : 'Name verdeckt'}
+                    </div>` : ''}
                     <div style="font-size: 12px; color: #6c757d;">
                         ID: ${feedback.id || 'Unbekannt'} • Status: ${feedback.status || 'neu'}
                     </div>
@@ -668,6 +671,7 @@ function displayAdminFeedbacks(data) {
                 <div class="feedback-content">${feedback.message || 'Keine Nachricht verfügbar'}</div>
                 ${feedback.page ? `<div style="font-size: 12px; color: #6c757d; margin-top: 5px;">📍 ${feedback.page}</div>` : ''}
                 ${feedback.contact ? `<div style="font-size: 12px; color: #6c757d;">📞 ${feedback.contact}</div>` : ''}
+                ${feedback.name ? `<div style="font-size: 12px; color: #6c757d;">👤 Von: ${feedback.name}</div>` : ''}
                 <div style="font-size: 12px; color: #6c757d; margin-top: 10px;">
                     ID: ${feedback.id || 'Unbekannt'} • ${feedback.timestamp ? new Date(feedback.timestamp).toLocaleString('de-DE') : 'Unbekannte Zeit'}
                 </div>

@@ -52,14 +52,17 @@
                     <div class="quick-btn" onclick="quickFeedback('💡 Verbesserungsidee - wäre cool wenn...')">
                         💡 Idee
                     </div>
+                    <div class="quick-btn" onclick="quickFeedback('⚡ Verbesserungsvorschlag: ')">
+                        ⚡ Verbesserung
+                    </div>
                     <div class="quick-btn" onclick="quickFeedback('❓ Frage zur Bedienung')">
                         ❓ Frage
                     </div>
                     <div class="quick-btn" onclick="quickFeedback('🚀 Feature-Wunsch: ')">
                         🚀 Feature
                     </div>
-                    <div class="quick-btn" onclick="quickFeedback('⚡ Performance-Problem bemerkt')">
-                        ⚡ Langsam
+                    <div class="quick-btn" onclick="quickFeedback('🐌 Performance-Problem bemerkt')">
+                        🐌 Langsam
                     </div>
                 </div>
                 
@@ -75,6 +78,17 @@
                     </div>
                     
                     <div class="form-group">
+                        <label for="feedback-name">Dein Name:</label>
+                        <input type="text" id="feedback-name" placeholder="Wie können wir dich ansprechen?" required>
+                        <div style="margin-top: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #666;">
+                                <input type="checkbox" id="feedback-name-public" style="margin: 0;">
+                                Name öffentlich anzeigen
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
                         <label for="feedback-platform">🔧 Plattform:</label>
                         <select id="feedback-platform" required>
                             <option value="">Plattform auswählen...</option>
@@ -87,11 +101,6 @@
                     <div class="form-group">
                         <label for="feedback-message">Deine Nachricht:</label>
                         <textarea id="feedback-message" placeholder="Erzähl uns, was dir aufgefallen ist, was du dir wünschst oder wie wir die App verbessern können..." required></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="feedback-name">Dein Name (optional):</label>
-                        <input type="text" id="feedback-name" placeholder="Wie können wir dich ansprechen?">
                     </div>
                     
                     <div class="form-group">
@@ -125,6 +134,8 @@
                     <button type="button" class="btn btn-secondary" onclick="resetForm()" style="margin-left: 10px;">
                         🔄 Zurücksetzen
                     </button>
+                    
+                    <div id="message-container"></div>
                 </form>
             </div>
             
@@ -296,5 +307,56 @@
     </div>
 
     <script src="main.js"></script>
+    <script>
+        // Handle feedback form submission
+        document.getElementById('feedback-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                type: document.getElementById('feedback-type').value,
+                platform: document.getElementById('feedback-platform').value,
+                message: document.getElementById('feedback-message').value,
+                name: document.getElementById('feedback-name').value,
+                namePublic: document.getElementById('feedback-name-public').checked,
+                rating: window.currentRating || null,
+                page: document.getElementById('feedback-page').value,
+                contact: document.getElementById('feedback-contact').value,
+                timestamp: new Date().toISOString()
+            };
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = '⏳ Wird gesendet...';
+            submitBtn.disabled = true;
+            
+            fetch('/api/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('message-container').innerHTML = `
+                    <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        ✅ Vielen Dank! Dein Feedback wurde erfolgreich gesendet.
+                    </div>
+                `;
+                resetForm();
+            })
+            .catch(error => {
+                document.getElementById('message-container').innerHTML = `
+                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        ❌ Fehler beim Senden. Bitte versuche es später erneut.
+                    </div>
+                `;
+            })
+            .finally(() => {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    </script>
 </body>
 </html>
