@@ -353,6 +353,63 @@ textarea {
     color: var(--text-color) !important;
 }
 
+/* Checkbox styling */
+.checkbox-container {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #495057;
+    margin: 0;
+    user-select: none;
+}
+
+.checkbox-input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: #38b000;
+}
+
+.checkbox-text {
+    flex: 1;
+    font-weight: 500;
+}
+
+.checkbox-container:hover {
+    background: #e9ecef;
+    border-color: #ced4da;
+}
+
+[data-theme="dark"] .checkbox-container {
+    background: var(--input-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .checkbox-label {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .checkbox-container:hover {
+    background: #555555;
+    border-color: #666666;
+}
+
+[data-theme="dark"] .checkbox-input {
+    accent-color: #d4b896;
+}
+
 /* Dark mode for checkboxes and labels */
 [data-theme="dark"] input[type="checkbox"] {
     accent-color: #d4b896;
