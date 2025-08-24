@@ -44,10 +44,14 @@ const getSupabaseConfig = () => {
     
     // Debug-Ausgabe nur wenn nicht konfiguriert
     if (!url || !key) {
-        console.log('🔍 Supabase Config Debug:', {
-            found: { url: !!url, key: !!key },
-            sources: sources
-        });
+        console.log('🔍 Supabase Config Debug:');
+        console.log('  - URL gefunden:', !!url, url ? url.substring(0, 30) + '...' : 'LEER');
+        console.log('  - KEY gefunden:', !!key, key ? '[KEY IST GESETZT]' : 'LEER');
+        console.log('  - window.ENV_VARS:', window.ENV_VARS ? Object.keys(window.ENV_VARS) : 'NICHT VERFÜGBAR');
+        console.log('  - window.ENV_VARS.SUPABASE_URL:', window.ENV_VARS?.SUPABASE_URL ? 'GESETZT' : 'NICHT GESETZT');
+        console.log('  - window.ENV_VARS.SUPABASE_ANON_KEY:', window.ENV_VARS?.SUPABASE_ANON_KEY ? 'GESETZT' : 'NICHT GESETZT');
+    } else {
+        console.log('✅ Supabase Config gefunden!', { url: url.substring(0, 30) + '...', key: '[GESETZT]' });
     }
     
     return { url, key };
