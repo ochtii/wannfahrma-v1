@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Mail bestätigen - WannFahrma</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+        .tagline {
+            color: #6b7280;
+            font-size: 16px;
+        }
+        h1 {
+            color: #1f2937;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .welcome-text {
+            font-size: 18px;
+            margin-bottom: 25px;
+            text-align: center;
+            color: #4b5563;
+        }
+        .confirm-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px auto;
+            display: block;
+            max-width: 300px;
+            transition: transform 0.2s ease;
+        }
+        .confirm-btn:hover {
+            transform: translateY(-2px);
+        }
+        .features {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .features h3 {
+            color: #1f2937;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            color: #4b5563;
+        }
+        .feature-list li::before {
+            content: "✅ ";
+            margin-right: 8px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .backup-link {
+            background: #f3f4f6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .security-note {
+            background: #fef3cd;
+            border: 1px solid #f59e0b;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #92400e;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚇 WannFahrma</div>
+            <div class="tagline">Wiener Öffis in Echtzeit</div>
+        </div>
+
+        <h1>Willkommen bei WannFahrma!</h1>
+        
+        <p class="welcome-text">
+            Vielen Dank für Ihre Registrierung! Sie sind nur noch einen Klick davon entfernt, alle Funktionen von WannFahrma zu nutzen.
+        </p>
+
+        <div style="text-align: center;">
+            <a href="{{ .ConfirmationURL }}" class="confirm-btn">
+                📧 E-Mail-Adresse bestätigen
+            </a>
+        </div>
+
+        <div class="features">
+            <h3>🎯 Das erwartet Sie nach der Bestätigung:</h3>
+            <ul class="feature-list">
+                <li><strong>Persönliches Dashboard</strong> - Ihre Lieblingsstationen immer griffbereit</li>
+                <li><strong>Cloud-Synchronisation</strong> - Zugriff auf alle Geräte</li>
+                <li><strong>Erweiterte Funktionen</strong> - Personalisierte Einstellungen</li>
+                <li><strong>Keine Werbung</strong> - Ungestörte Nutzung für registrierte User</li>
+                <li><strong>Premium-Features</strong> - Exklusive Funktionen für Mitglieder</li>
+            </ul>
+        </div>
+
+        <div class="security-note">
+            <strong>🔒 Sicherheitshinweis:</strong> Falls Sie sich nicht bei WannFahrma registriert haben, können Sie diese E-Mail ignorieren. Ihr Account wird automatisch nach 24 Stunden gelöscht.
+        </div>
+
+        <div class="backup-link">
+            <strong>Link funktioniert nicht?</strong><br>
+            Kopieren Sie diese URL in Ihren Browser:<br>
+            {{ .ConfirmationURL }}
+        </div>
+
+        <div class="footer">
+            <p>
+                <strong>WannFahrma</strong> - Die ultimative App für Wiener Öffis<br>
+                <a href="https://wartenis.org" style="color: #2563eb;">wartenis.org</a>
+            </p>
+            <p>
+                Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht auf diese Nachricht.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

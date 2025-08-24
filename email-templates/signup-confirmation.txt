@@ -1,0 +1,30 @@
+🚇 WannFahrma - Wiener Öffis in Echtzeit
+
+WILLKOMMEN BEI WANNFAHRMA!
+
+Vielen Dank für Ihre Registrierung! Sie sind nur noch einen Klick davon entfernt, alle Funktionen von WannFahrma zu nutzen.
+
+📧 E-MAIL-ADRESSE BESTÄTIGEN:
+{{ .ConfirmationURL }}
+
+🎯 DAS ERWARTET SIE NACH DER BESTÄTIGUNG:
+
+✅ Persönliches Dashboard - Ihre Lieblingsstationen immer griffbereit
+✅ Cloud-Synchronisation - Zugriff auf alle Geräte  
+✅ Erweiterte Funktionen - Personalisierte Einstellungen
+✅ Keine Werbung - Ungestörte Nutzung für registrierte User
+✅ Premium-Features - Exklusive Funktionen für Mitglieder
+
+🔒 SICHERHEITSHINWEIS:
+Falls Sie sich nicht bei WannFahrma registriert haben, können Sie diese E-Mail ignorieren. Ihr Account wird automatisch nach 24 Stunden gelöscht.
+
+LINK FUNKTIONIERT NICHT?
+Kopieren Sie diese URL in Ihren Browser:
+{{ .ConfirmationURL }}
+
+---
+WannFahrma - Die ultimative App für Wiener Öffis
+https://wartenis.org
+
+Diese E-Mail wurde automatisch generiert. 
+Bitte antworten Sie nicht auf diese Nachricht.
