@@ -5,41 +5,22 @@
 const getSupabaseConfig = () => {
     let url = '', key = '';
     
-    // Debug: Alle verfügbaren Quellen prüfen
-    const sources = {};
-    
     // 1. Von window.ENV_VARS (moderner Weg)
     if (typeof window !== 'undefined' && window.ENV_VARS) {
-        sources.ENV_VARS = {
-            url: window.ENV_VARS.SUPABASE_URL,
-            key: window.ENV_VARS.SUPABASE_ANON_KEY ? '[GESETZT]' : undefined
-        };
         url = window.ENV_VARS.SUPABASE_URL || '';
         key = window.ENV_VARS.SUPABASE_ANON_KEY || '';
     }
     
     // 2. Fallback zu direkten window-Variablen (Backward-Kompatibilität)
-    if (typeof window !== 'undefined') {
-        sources.window = {
-            url: window.SUPABASE_URL,
-            key: window.SUPABASE_ANON_KEY ? '[GESETZT]' : undefined
-        };
-        if (!url && window.SUPABASE_URL) {
-            url = window.SUPABASE_URL;
-            key = window.SUPABASE_ANON_KEY || '';
-        }
+    if (!url && typeof window !== 'undefined' && window.SUPABASE_URL) {
+        url = window.SUPABASE_URL;
+        key = window.SUPABASE_ANON_KEY || '';
     }
     
     // 3. Fallback zu process.env (Server-Kontext)
-    if (typeof process !== 'undefined' && process.env) {
-        sources.process_env = {
-            url: process.env.SUPABASE_URL,
-            key: process.env.SUPABASE_ANON_KEY ? '[GESETZT]' : undefined
-        };
-        if (!url && process.env.SUPABASE_URL) {
-            url = process.env.SUPABASE_URL || '';
-            key = process.env.SUPABASE_ANON_KEY || '';
-        }
+    if (!url && typeof process !== 'undefined' && process.env) {
+        url = process.env.SUPABASE_URL || '';
+        key = process.env.SUPABASE_ANON_KEY || '';
     }
     
     // Debug-Ausgabe nur wenn nicht konfiguriert
@@ -50,6 +31,10 @@ const getSupabaseConfig = () => {
         console.log('  - window.ENV_VARS:', window.ENV_VARS ? Object.keys(window.ENV_VARS) : 'NICHT VERFÜGBAR');
         console.log('  - window.ENV_VARS.SUPABASE_URL:', window.ENV_VARS?.SUPABASE_URL ? 'GESETZT' : 'NICHT GESETZT');
         console.log('  - window.ENV_VARS.SUPABASE_ANON_KEY:', window.ENV_VARS?.SUPABASE_ANON_KEY ? 'GESETZT' : 'NICHT GESETZT');
+        console.log('  - Aktuelle ENV_VARS Werte:', {
+            SUPABASE_URL: window.ENV_VARS?.SUPABASE_URL,
+            SUPABASE_ANON_KEY: window.ENV_VARS?.SUPABASE_ANON_KEY ? '[HIDDEN]' : undefined
+        });
     } else {
         console.log('✅ Supabase Config gefunden!', { url: url.substring(0, 30) + '...', key: '[GESETZT]' });
     }
@@ -66,9 +51,28 @@ const isSupabaseConfigured = () => {
 // Initialize Supabase client when available
 let supabaseClient = null;
 
+// Function to wait for environment variables to be loaded
+const waitForEnvVars = async (maxAttempts = 50) => {
+    for (let i = 0; i < maxAttempts; i++) {
+        if (window.ENV_VARS?.SUPABASE_URL && window.ENV_VARS?.SUPABASE_ANON_KEY) {
+            console.log('✅ Environment-Variablen erfolgreich geladen nach', i + 1, 'Versuchen');
+            return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    console.log('⚠️ Environment-Variablen nach', maxAttempts, 'Versuchen nicht geladen');
+    return false;
+};
+
 // Function to initialize Supabase with current config
-const initializeSupabase = () => {
+const initializeSupabase = async () => {
     if (supabaseClient) return supabaseClient; // Already initialized
+    
+    // Wait for environment variables to be loaded
+    const envLoaded = await waitForEnvVars();
+    if (!envLoaded) {
+        console.log('⚠️ Environment-Variablen nicht verfügbar, verwende fallback');
+    }
     
     const config = getSupabaseConfig();
     if (typeof window !== 'undefined' && window.supabase && config.url && config.key) {
@@ -80,20 +84,22 @@ const initializeSupabase = () => {
     return null;
 };
 
-// Try to initialize immediately if Supabase is already loaded
+// Try to initialize immediately if Supabase is already loaded (async)
 if (typeof window !== 'undefined' && window.supabase) {
-    initializeSupabase();
+    initializeSupabase().then(client => {
+        if (client) console.log('🚀 Supabase sofort initialisiert');
+    });
 }
 
 // Fallback initialization when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Check if User Authentication is enabled
     if (window.appConfig && !window.appConfig.isFeatureEnabled('USER_AUTH')) {
         return; // Silent return - keine Log-Ausgabe nötig
     }
 
-    // Try to initialize Supabase
-    const client = initializeSupabase();
+    // Try to initialize Supabase (with waiting for env vars)
+    const client = await initializeSupabase();
     
     if (!client && (!window.appConfig || window.appConfig.isFeatureEnabled('USER_AUTH'))) {
         // Nur warnen wenn Authentication aktiviert ist
@@ -121,8 +127,8 @@ class Auth {
             return;
         }
 
-        // Try to initialize Supabase
-        this.supabase = initializeSupabase();
+        // Try to initialize Supabase (with waiting for env vars)
+        this.supabase = await initializeSupabase();
         
         if (!this.supabase) {
             // Nur warnen wenn Authentication aktiviert ist
@@ -137,9 +143,9 @@ class Auth {
 
         // Wait for Supabase to be available
         let attempts = 0;
-        while (!this.supabase && attempts < 50) {
+        while (!this.supabase && attempts < 10) {
             if (typeof window.supabase !== 'undefined') {
-                this.supabase = initializeSupabase();
+                this.supabase = await initializeSupabase();
                 break;
             }
             await new Promise(resolve => setTimeout(resolve, 100));
