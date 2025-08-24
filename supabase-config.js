@@ -184,9 +184,27 @@ class SimpleAuth {
                 this.callbacks.forEach(callback => callback(this.isLoggedIn, this.user));
             });
             
+            // Handle URL hash for email confirmation and password reset
+            this.handleAuthCallback();
+            
             console.log('✅ SimpleAuth erfolgreich initialisiert');
         } catch (error) {
             console.error('❌ Fehler bei SimpleAuth Init:', error);
+        }
+    }
+    
+    handleAuthCallback() {
+        const hash = window.location.hash;
+        console.log('🔍 Checking URL hash for auth callback:', hash);
+        
+        if (hash.includes('#/auth/callback')) {
+            console.log('✅ Email confirmation detected - cleaning URL');
+            // Remove the hash to clean up the URL
+            window.history.replaceState(null, null, window.location.pathname);
+        } else if (hash.includes('#/auth/reset-password')) {
+            console.log('🔐 Password reset detected - cleaning URL');
+            // Remove the hash to clean up the URL
+            window.history.replaceState(null, null, window.location.pathname);
         }
     }
     
@@ -219,7 +237,7 @@ class SimpleAuth {
                 password,
                 options: {
                     data: userData,
-                    emailRedirectTo: 'https://wartenis.org' // Explizite Redirect URL zur Live-Website
+                    emailRedirectTo: 'https://wartenis.org/#/auth/callback' // Spezifische Auth-Callback URL
                 }
             });
 
@@ -257,7 +275,7 @@ class SimpleAuth {
         
         try {
             const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email, {
-                redirectTo: 'https://wartenis.org' // Explizite Redirect URL zur Live-Website
+                redirectTo: 'https://wartenis.org/#/auth/reset-password' // Spezifische Password-Reset URL
             });
             if (error) throw error;
 
