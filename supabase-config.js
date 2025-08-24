@@ -34,7 +34,14 @@ function getSupabaseCredentials() {
         console.log('✅ Supabase Config aus process.env gefunden');
     }
     
-    // 4. DEBUG: ALLE verfügbaren Sources anzeigen
+    // 4. TEMPORÄRER FALLBACK - DIREKTE WERTE (bis Server-Problem gelöst ist)
+    if (!url || !key) {
+        url = 'https://wjzfcanojeauhjpgaydg.supabase.co';
+        key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqemZjYW5vamVhdWhqcGdheWRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0Mzk0MjEsImV4cCI6MjA3MTAxNTQyMX0.MB6FuLQ4ECESPgahc4sBcaoQv23zahlTehIVbEtcyzs';
+        console.log('🚨 FALLBACK: Verwende direkte Supabase-Werte (Server-Problem umgehen)');
+    }
+    
+    // 5. DEBUG: ALLE verfügbaren Sources anzeigen
     const debugInfo = {
         hasUrl: !!url,
         hasKey: !!key,
@@ -43,19 +50,12 @@ function getSupabaseCredentials() {
             ENV_VARS: !!window.ENV_VARS?.SUPABASE_URL,
             ENV_VARS_content: window.ENV_VARS,
             window: !!window.SUPABASE_URL,
-            process: !!(typeof process !== 'undefined' && process.env?.SUPABASE_URL)
+            process: !!(typeof process !== 'undefined' && process.env?.SUPABASE_URL),
+            fallback: true
         }
     };
     
     console.log('🔍 Supabase Status:', debugInfo);
-    
-    // Wenn keine Credentials gefunden, erweiterte Debug-Info
-    if (!url || !key) {
-        console.log('🚨 DETAILLIERTE DEBUG INFO:');
-        console.log('  window.ENV_VARS:', window.ENV_VARS);
-        console.log('  Object.keys(window):', Object.keys(window).filter(k => k.includes('ENV') || k.includes('SUPABASE')));
-        console.log('  typeof window.ENV_VARS:', typeof window.ENV_VARS);
-    }
     
     return { url, key };
 }
