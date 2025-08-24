@@ -71,13 +71,20 @@ class WienOPNVApp {
             this.setupCardConfigModal();
             this.setupAuthEventListeners();
             this.setupAuthStateHandler();
+            
+            // Initialize auth UI SOFORT
+            this.updateAuthUI();
+            
             this.showWelcomeMessage();
             
             // Show the default start page from settings
             const defaultPage = this.settings.defaultStartPage || 'start';
             this.showPage(defaultPage);
             
-            // Initialize auth UI
+            // Initialize auth UI again after a delay (für SimpleAuth die async lädt)
+            setTimeout(() => {
+                this.updateAuthUI();
+            }, 500);
             this.updateAuthUI();
         } catch (error) {
             console.error('Fehler bei der Initialisierung:', error);
@@ -4878,9 +4885,23 @@ class WienOPNVApp {
     }
     
     setupAuthStateHandler() {
-        // Override the auth state change handler only if auth is available
-        if (this.auth && typeof this.auth.onAuthStateChange !== 'undefined') {
+        // Setup auth state change handler for different auth systems
+        if (this.auth && typeof this.auth.onAuthChange === 'function') {
+            // Neue SimpleAuth API
+            this.auth.onAuthChange((isLoggedIn, user) => {
+                console.log('🔄 App Auth State Change:', isLoggedIn, user?.email);
+                this.updateAuthUI();
+                if (isLoggedIn && user) {
+                    this.handleUserLoggedIn(user);
+                } else {
+                    this.handleUserLoggedOut();
+                }
+            });
+            console.log('✅ SimpleAuth state handler registered');
+        } else if (this.auth && typeof this.auth.onAuthStateChange !== 'undefined') {
+            // Alte Auth API
             this.auth.onAuthStateChange = (isLoggedIn, user) => {
+                console.log('🔄 App Auth State Change (old):', isLoggedIn, user?.email);
                 this.updateAuthUI();
                 if (isLoggedIn && user) {
                     this.handleUserLoggedIn(user);
@@ -4888,6 +4909,7 @@ class WienOPNVApp {
                     this.handleUserLoggedOut();
                 }
             };
+            console.log('✅ Old Auth state handler registered');
         } else {
             console.warn('⚠️ Auth state handler not available - running in local mode');
         }
