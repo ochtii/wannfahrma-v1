@@ -72,8 +72,10 @@ class WienOPNVApp {
             this.setupAuthEventListeners();
             this.setupAuthStateHandler();
             
-            // Initialize auth UI SOFORT
-            this.updateAuthUI();
+            // Initialize auth UI nur wenn auth bereit ist
+            if (this.auth && typeof this.auth.isLoggedIn !== 'undefined') {
+                this.updateAuthUI();
+            }
             
             this.showWelcomeMessage();
             
@@ -83,9 +85,17 @@ class WienOPNVApp {
             
             // Initialize auth UI again after a delay (für SimpleAuth die async lädt)
             setTimeout(() => {
-                this.updateAuthUI();
+                if (this.auth && typeof this.auth.isLoggedIn !== 'undefined') {
+                    this.updateAuthUI();
+                }
             }, 500);
-            this.updateAuthUI();
+            
+            // Ein letzter Versuch für den Fall dass auth sehr langsam lädt
+            setTimeout(() => {
+                if (this.auth && typeof this.auth.isLoggedIn !== 'undefined') {
+                    this.updateAuthUI();
+                }
+            }, 2000);
         } catch (error) {
             console.error('Fehler bei der Initialisierung:', error);
         }
@@ -4925,6 +4935,12 @@ class WienOPNVApp {
         
         // Handle case where elements might not exist yet
         if (!guestStatus || !userInfo) return;
+        
+        // Sicherheitscheck für auth object
+        if (!this.auth || typeof this.auth.isLoggedIn === 'undefined') {
+            console.log('🔄 updateAuthUI: Auth noch nicht bereit');
+            return;
+        }
         
         if (this.auth.isLoggedIn && this.auth.user) {
             // Show user info
