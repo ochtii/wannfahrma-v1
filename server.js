@@ -489,6 +489,28 @@ app.use((req, res, next) => {
     next();
 });
 
+// Block sensitive file access attempts
+app.use((req, res, next) => {
+    const sensitivePatterns = [
+        /^\/\.env/,        // .env files
+        /^\/config\.php$/,  // PHP config
+        /^\/\.git\//,      // Git directory
+        /^\/\.htaccess$/,  // Apache config
+        /^\/robots\.txt$/,  // Optional: protect robots.txt
+        /^\/sitemap\.xml$/  // Optional: protect sitemap
+    ];
+    
+    if (sensitivePatterns.some(pattern => pattern.test(req.path))) {
+        logAPIRequest(getRealClientIP(req), req.headers['user-agent'], req.originalUrl, 403, 'BLOCKED_SENSITIVE_FILE', 'Blocked sensitive file access attempt', req.requestId);
+        return res.status(403).json({
+            error: 'Forbidden',
+            message: 'Zugriff auf sensible Dateien blockiert.',
+            type: 'BLOCKED_SENSITIVE_FILE'
+        });
+    }
+    next();
+});
+
 // Environment variables endpoint (safe for frontend)
 app.get('/api/env', (req, res) => {
     const publicVars = {
