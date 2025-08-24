@@ -69,9 +69,20 @@ class ConfigLoader {
     }
 
     validateConfig() {
-        // Warn wenn Supabase konfiguriert ist aber unvollständig
-        const hasSupabaseUrl = this.config.SUPABASE_URL;
-        const hasSupabaseKey = this.config.SUPABASE_ANON_KEY;
+        // NEUE Supabase-Validierung - verwendet die globale Funktion
+        let hasSupabaseUrl = false;
+        let hasSupabaseKey = false;
+        
+        // Prüfe mit der neuen getSupabaseCredentials Funktion
+        if (typeof window !== 'undefined' && window.getSupabaseCredentials) {
+            const credentials = window.getSupabaseCredentials();
+            hasSupabaseUrl = !!credentials.url;
+            hasSupabaseKey = !!credentials.key;
+        } else {
+            // Fallback für alte Validierung
+            hasSupabaseUrl = this.config.SUPABASE_URL;
+            hasSupabaseKey = this.config.SUPABASE_ANON_KEY;
+        }
         
         if ((hasSupabaseUrl && !hasSupabaseKey) || (!hasSupabaseUrl && hasSupabaseKey)) {
             console.warn('⚠️ Unvollständige Supabase-Konfiguration. Beide SUPABASE_URL und SUPABASE_ANON_KEY sind erforderlich.');
