@@ -1,6 +1,6 @@
 # 🛠️ Scripts & Tools
 
-Zentrale Sammlung aller Hilfsskripts für das wann fahrma OIDA Projekt.
+Zentrale Sammlung aller Hilfsskripts für das Warten is ORG Projekt.
 
 ## 📁 Ordner-Übersicht
 

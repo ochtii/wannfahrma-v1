@@ -1,8 +1,8 @@
-🚇 WannFahrma - Wiener Öffis in Echtzeit
+🚇 Warten is ORG - Wiener Öffis in Echtzeit
 
-WILLKOMMEN BEI WANNFAHRMA!
+WILLKOMMEN BEI WARTEN IS ORG!
 
-Vielen Dank für Ihre Registrierung! Sie sind nur noch einen Klick davon entfernt, alle Funktionen von WannFahrma zu nutzen.
+Vielen Dank für Ihre Registrierung! Sie sind nur noch einen Klick davon entfernt, alle Funktionen von Warten is ORG zu nutzen.
 
 📧 E-MAIL-ADRESSE BESTÄTIGEN:
 {{ .ConfirmationURL }}
@@ -16,14 +16,14 @@ Vielen Dank für Ihre Registrierung! Sie sind nur noch einen Klick davon entfern
 ✅ Premium-Features - Exklusive Funktionen für Mitglieder
 
 🔒 SICHERHEITSHINWEIS:
-Falls Sie sich nicht bei WannFahrma registriert haben, können Sie diese E-Mail ignorieren. Ihr Account wird automatisch nach 24 Stunden gelöscht.
+Falls Sie sich nicht bei Warten is ORG registriert haben, können Sie diese E-Mail ignorieren. Ihr Account wird automatisch nach 24 Stunden gelöscht.
 
 LINK FUNKTIONIERT NICHT?
 Kopieren Sie diese URL in Ihren Browser:
 {{ .ConfirmationURL }}
 
 ---
-WannFahrma - Die ultimative App für Wiener Öffis
+Warten is ORG - Die ultimative App für Wiener Öffis
 https://wartenis.org
 
 Diese E-Mail wurde automatisch generiert. 

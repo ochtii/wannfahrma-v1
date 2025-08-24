@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =============================================================================
-# wann fahrma OIDA - Security Check Script
+# Warten is ORG - Security Check Script
 # =============================================================================
 # Prüft auf potentielle Sicherheitsprobleme vor Git Commits
 # Läuft automatisch vom Projekt-Root
@@ -179,7 +179,7 @@ check_hardcoded_urls() {
 main() {
     echo ""
     echo -e "${BLUE}================================================================${NC}"
-    echo -e "${BLUE} 🔒 wann fahrma OIDA - Security Check ${NC}"
+    echo -e "${BLUE} 🔒 Warten is ORG - Security Check ${NC}"
     echo -e "${BLUE}================================================================${NC}"
     echo ""
     

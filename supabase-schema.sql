@@ -1,4 +1,4 @@
--- wann fahrma OIDA - Supabase Database Schema
+-- Warten is ORG - Supabase Database Schema
 -- Run these commands in your Supabase SQL Editor
 
 -- Enable Row Level Security (RLS)

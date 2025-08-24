@@ -532,7 +532,7 @@ app.all('/api/feedback*', async (req, res) => {
             data: req.body,
             headers: {
                 'Content-Type': req.headers['content-type'] || 'application/json',
-                'User-Agent': req.headers['user-agent'] || 'WannFahrmA-Proxy',
+                'User-Agent': req.headers['user-agent'] || 'WartenIsORG-Proxy',
                 'Authorization': req.headers['authorization'] || ''
             },
             timeout: 10000,
@@ -570,7 +570,7 @@ app.all('/api/admin*', async (req, res) => {
             data: req.body,
             headers: {
                 'Content-Type': req.headers['content-type'] || 'application/json',
-                'User-Agent': req.headers['user-agent'] || 'WannFahrmA-Admin-Proxy',
+                'User-Agent': req.headers['user-agent'] || 'WartenIsORG-Admin-Proxy',
                 'Authorization': req.headers['authorization'] || ''
             },
             timeout: 10000,
@@ -608,7 +608,7 @@ app.get('/api/departures/:rbl', async (req, res) => {
     }
     
     const cacheKey = `departures_${rbl}`;
-    const apiUrl = `http://www.wienerlinien.at/ogd_realtime/monitor?rbl=${rbl}&sender=WannFahrmaOIDA`;
+    const apiUrl = `http://www.wienerlinien.at/ogd_realtime/monitor?rbl=${rbl}&sender=WartenIsORG`;
     
     // Check cache first
     if (cache.has(cacheKey)) {
@@ -627,7 +627,7 @@ app.get('/api/departures/:rbl', async (req, res) => {
         const response = await axios.get(apiUrl, {
             timeout: 15000,
             headers: {
-                'User-Agent': 'WannFahrmaOIDA/1.0 (Development)'
+                'User-Agent': 'WartenIsORG/1.0 (Development)'
             }
         });
         const responseTime = Date.now() - startTime;
@@ -777,7 +777,7 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`${colors.bright}${colors.green}🚇 wann fahrma OIDA Server gestartet! (DEV)${colors.reset}`);
+    console.log(`${colors.bright}${colors.green}🚇 Warten is ORG Server gestartet! (DEV)${colors.reset}`);
     console.log(`${colors.cyan}📱 App verfügbar unter: http://localhost:${PORT}${colors.reset}`);
     console.log(`${colors.cyan}🔌 API verfügbar unter: http://localhost:${PORT}/api/departures/:rbl${colors.reset}`);
     console.log(`${colors.cyan}❤️  Health Check: http://localhost:${PORT}/health${colors.reset}`);

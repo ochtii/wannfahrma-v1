@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =============================================================================
-# wann fahrma OIDA - PM2 Configuration Update Script
+# Warten is ORG - PM2 Configuration Update Script
 # =============================================================================
 # Aktualisiert bestehende PM2 Konfiguration auf neue Pfad-Struktur
 # =============================================================================
@@ -20,7 +20,7 @@ print_success() { echo -e "${GREEN}✅ $1${NC}"; }
 print_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
 print_error() { echo -e "${RED}❌ $1${NC}"; }
 
-print_info "🔄 PM2 Konfiguration Update für wann fahrma OIDA"
+print_info "🔄 PM2 Konfiguration Update für Warten is ORG"
 echo ""
 
 APP_DIR="$HOME/wannfahrma-v1"
@@ -117,14 +117,14 @@ cat > start.sh <<'EOF'
 cd "$(dirname "$0")"
 pm2 start scripts/deployment/ecosystem.config.js
 pm2 save
-echo "✅ wann fahrma OIDA gestartet"
+echo "✅ Warten is ORG gestartet"
 EOF
 
 # Update stop.sh
 cat > stop.sh <<'EOF'
 #!/bin/bash
 pm2 stop wannfahrma
-echo "⏹️  wann fahrma OIDA gestoppt"
+echo "⏹️  Warten is ORG gestoppt"
 EOF
 
 # Update restart.sh
@@ -132,13 +132,13 @@ cat > restart.sh <<'EOF'
 #!/bin/bash
 cd "$(dirname "$0")"
 pm2 restart wannfahrma
-echo "🔄 wann fahrma OIDA neu gestartet"
+echo "🔄 Warten is ORG neu gestartet"
 EOF
 
 # Update status.sh
 cat > status.sh <<'EOF'
 #!/bin/bash
-echo "📊 wann fahrma OIDA Status:"
+echo "📊 Warten is ORG Status:"
 pm2 status wannfahrma
 echo ""
 echo "📈 Logs (letzte 20 Zeilen):"
@@ -149,7 +149,7 @@ EOF
 cat > update.sh <<'EOF'
 #!/bin/bash
 cd "$(dirname "$0")"
-echo "🔄 Update wann fahrma OIDA..."
+echo "🔄 Update Warten is ORG..."
 git pull
 npm install
 pm2 restart wannfahrma

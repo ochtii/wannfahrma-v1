@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =============================================================================
-# wann fahrma OIDA - Test Script
+# Warten is ORG - Test Script
 # =============================================================================
 # Testet das Installationsskript in einem Docker Container oder VM
 # =============================================================================
@@ -184,7 +184,7 @@ test_disk_space() {
 main() {
     echo ""
     echo -e "${BLUE}================================================================${NC}"
-    echo -e "${BLUE} wann fahrma OIDA - Installation Test ${NC}"
+    echo -e "${BLUE} Warten is ORG - Installation Test ${NC}"
     echo -e "${BLUE}================================================================${NC}"
     echo ""
     

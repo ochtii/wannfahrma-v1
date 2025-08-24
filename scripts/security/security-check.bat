@@ -1,6 +1,6 @@
 @echo off
 REM =============================================================================
-REM wann fahrma OIDA - Windows Security Check
+REM Warten is ORG - Windows Security Check
 REM =============================================================================
 REM Prueft auf potentielle Sicherheitsprobleme vor Git Commits
 REM Läuft automatisch vom Projekt-Root
@@ -14,7 +14,7 @@ cd /d "%~dp0..\.."
 
 echo.
 echo ================================================================
-echo  🔒 wann fahrma OIDA - Security Check (Windows)
+echo  🔒 Warten is ORG - Security Check (Windows)
 echo  Working Directory: %CD%
 echo ================================================================
 echo.
