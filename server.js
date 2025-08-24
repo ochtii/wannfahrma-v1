@@ -497,17 +497,19 @@ app.get('/api/env', (req, res) => {
         ENABLE_ANALYTICS: process.env.ENABLE_ANALYTICS || 'false'
     };
     
-    // Only include Supabase vars if they exist and are not placeholder values
-    if (process.env.SUPABASE_URL && 
-        process.env.SUPABASE_ANON_KEY && 
-        !process.env.SUPABASE_URL.includes('your-project') &&
-        !process.env.SUPABASE_ANON_KEY.includes('your-anon-key')) {
+    // EINFACH: Schicke Supabase-Werte wenn sie existieren
+    if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
         publicVars.SUPABASE_URL = process.env.SUPABASE_URL;
         publicVars.SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+        console.log('✅ Supabase ENV gefunden, sende an Frontend:', {
+            url: process.env.SUPABASE_URL.substring(0, 30) + '...',
+            key: '[ANON_KEY_GESETZT]'
+        });
     } else {
-        // Server hat keine gültigen Supabase-Werte
+        // Server hat keine Supabase-Werte
         publicVars.SUPABASE_URL = '';
         publicVars.SUPABASE_ANON_KEY = '';
+        console.log('⚠️ Keine Supabase ENV gefunden, sende leere Werte');
     }
     
     res.json(publicVars);
