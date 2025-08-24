@@ -34,16 +34,28 @@ function getSupabaseCredentials() {
         console.log('✅ Supabase Config aus process.env gefunden');
     }
     
-    console.log('🔍 Supabase Status:', {
+    // 4. DEBUG: ALLE verfügbaren Sources anzeigen
+    const debugInfo = {
         hasUrl: !!url,
         hasKey: !!key,
         urlStart: url ? url.substring(0, 30) + '...' : 'NICHT GEFUNDEN',
         sources: {
             ENV_VARS: !!window.ENV_VARS?.SUPABASE_URL,
+            ENV_VARS_content: window.ENV_VARS,
             window: !!window.SUPABASE_URL,
             process: !!(typeof process !== 'undefined' && process.env?.SUPABASE_URL)
         }
-    });
+    };
+    
+    console.log('🔍 Supabase Status:', debugInfo);
+    
+    // Wenn keine Credentials gefunden, erweiterte Debug-Info
+    if (!url || !key) {
+        console.log('🚨 DETAILLIERTE DEBUG INFO:');
+        console.log('  window.ENV_VARS:', window.ENV_VARS);
+        console.log('  Object.keys(window):', Object.keys(window).filter(k => k.includes('ENV') || k.includes('SUPABASE')));
+        console.log('  typeof window.ENV_VARS:', typeof window.ENV_VARS);
+    }
     
     return { url, key };
 }
@@ -105,6 +117,12 @@ function tryInitSupabase() {
 
 // SOFORT versuchen
 tryInitSupabase();
+
+// Event Listener für Environment-Variablen Updates
+window.addEventListener('envVarsUpdated', () => {
+    console.log('🔔 Environment-Variablen wurden aktualisiert - versuche Supabase Init');
+    tryInitSupabase();
+});
 
 // Auch bei DOM Ready versuchen
 document.addEventListener('DOMContentLoaded', () => {

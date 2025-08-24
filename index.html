@@ -621,6 +621,9 @@
                     Object.assign(window.ENV_VARS, envVars);
                     console.log('🔧 Environment-Variablen aktualisiert:', Object.keys(envVars));
                     
+                    // EVENT FÜR SUPABASE CONFIG!
+                    window.dispatchEvent(new CustomEvent('envVarsUpdated', { detail: envVars }));
+                    
                     // Config neu laden falls schon initialisiert
                     if (window.CONFIG && typeof window.loadConfig === 'function') {
                         window.loadConfig();
