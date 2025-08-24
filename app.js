@@ -322,7 +322,14 @@ class WienOPNVApp {
         selectedStationContainer.innerHTML = `
             <div class="selected-station-card">
                 <div class="station-header">
-                    <h3>${this.selectedStation.name}</h3>
+                    <div class="station-title-group">
+                        <h3>${this.selectedStation.name}</h3>
+                        <button class="favorite-star station-favorite ${this.isFavoriteStation() ? 'favorited' : ''}" 
+                                onclick="app.toggleCurrentStationFavorite(this)"
+                                title="${this.isFavoriteStation() ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">
+                            <i class="fas fa-star"></i>
+                        </button>
+                    </div>
                     <button class="info-icon" id="stationInfoIcon" onclick="window.app.showStationInfo()" title="Live-Daten Status anzeigen" style="display: none;">
                         <i class="fas fa-info-circle"></i>
                     </button>
@@ -922,11 +929,6 @@ class WienOPNVApp {
                             </span>
                             <span class="line-type">${this.getLineTypeText(firstDeparture.type)}</span>
                         </div>
-                        <button class="favorite-star line-favorite ${this.isFavoriteStation() ? 'favorited' : ''}" 
-                                onclick="event.stopPropagation(); app.toggleCurrentStationFavorite(this)"
-                                title="${this.isFavoriteStation() ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">
-                            <i class="fas fa-star"></i>
-                        </button>
                     </div>
                     <div class="departures-list">
                         ${this.renderSearchDepartureItems(initialDepartures, 'visible')}

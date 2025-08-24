@@ -930,6 +930,26 @@ body {
     accent-color: var(--primary-color);
 }
 
+/* Station header with favorite star */
+.station-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.station-title-group h3 {
+    margin: 0;
+    flex: 1;
+}
+
+.station-favorite {
+    position: relative !important; /* Override absolute positioning */
+    top: auto !important;
+    right: auto !important;
+    margin: 0;
+    flex-shrink: 0;
+}
+
 /* Departure Groups */
 .departure-line-group {
     border: 1px solid var(--border-color);
