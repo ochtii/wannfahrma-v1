@@ -85,6 +85,7 @@ package-lock.json.bak
 .vscode/tasks.json
 .vscode/launch.json
 .vscode/extensions.json
+*.code-workspace
 .idea/
 *.swp
 *.swo
