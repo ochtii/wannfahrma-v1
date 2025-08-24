@@ -41,6 +41,26 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Initialize star rating
+    window.currentRating = 0;
+    const stars = document.querySelectorAll('.star');
+    stars.forEach((star, index) => {
+        star.addEventListener('click', function() {
+            window.currentRating = index + 1;
+            updateStars();
+            updateRatingText();
+        });
+        star.addEventListener('mouseover', function() {
+            stars.forEach((s, i) => {
+                s.style.color = i <= index ? '#ffc107' : '#ddd';
+            });
+        });
+        star.addEventListener('mouseout', function() {
+            updateStars();
+        });
+    });
+    
     // Auto-detect and set platform on load
     const platformSelect = document.getElementById('feedback-platform');
     if (platformSelect) detectAndSetPlatform(platformSelect);
@@ -86,22 +106,43 @@ window.showTab = showTab;
 
 // Quick feedback buttons
 function quickFeedback(message) {
-    document.getElementById('feedback-message').value = message;
-    // Auto-select type based on message
-    const select = document.getElementById('feedback-type');
+    const messageTextarea = document.getElementById('feedback-message');
+    const typeSelect = document.getElementById('feedback-type');
     const platformSelect = document.getElementById('feedback-platform');
-    if (message.includes('Bug') || message.includes('🐛')) {
-        select.value = 'bug';
-    } else if (message.includes('Idee') || message.includes('💡')) {
-        select.value = 'feature';
-    } else if (message.includes('Super') || message.includes('👍')) {
-        select.value = 'general';
+    
+    // Set message and appropriate type based on content
+    if (message.includes('👍') || message.includes('Super')) {
+        messageTextarea.value = '👍 Super App! Die Funktionen sind sehr hilfreich und die Bedienung ist intuitiv. Besonders gut gefällt mir...';
+        typeSelect.value = 'general';
         window.currentRating = 5;
         updateStars();
         updateRatingText();
+    } else if (message.includes('🐛') || message.includes('Bug')) {
+        messageTextarea.value = '🐛 Bug gefunden - Details:\n\nWas ist passiert: \nWann ist es aufgetreten: \nWelche Schritte haben dazu geführt: \n\nErwartetes Verhalten: ';
+        typeSelect.value = 'bug';
+    } else if (message.includes('💡') || message.includes('Idee')) {
+        messageTextarea.value = '💡 Verbesserungsidee - Es wäre toll wenn...\n\nMeine Idee: \nWarum wäre das hilfreich: \nWie könnte es funktionieren: ';
+        typeSelect.value = 'feature';
+    } else if (message.includes('⚡') || message.includes('Verbesserung')) {
+        messageTextarea.value = '⚡ Verbesserungsvorschlag für bestehende Funktion:\n\nBetroffene Funktion: \nAktuelles Problem: \nLösungsvorschlag: \nVorteile: ';
+        typeSelect.value = 'improvement';
+    } else if (message.includes('❓') || message.includes('Frage')) {
+        messageTextarea.value = '❓ Frage zur Bedienung:\n\nMeine Frage: \nWas ich versucht habe: \nWo ich nicht weiterkomme: ';
+        typeSelect.value = 'general';
+    } else if (message.includes('🚀') || message.includes('Feature')) {
+        messageTextarea.value = '🚀 Feature-Wunsch:\n\nGewünschte Funktion: \nAnwendungsfall: \nWarum wäre das nützlich: \nWie stelle ich mir das vor: ';
+        typeSelect.value = 'feature';
+    } else if (message.includes('🐌') || message.includes('Performance')) {
+        messageTextarea.value = '🐌 Performance-Problem bemerkt:\n\nWo tritt das Problem auf: \nWie äußert sich die Langsamkeit: \nGeräte-/Browser-Info: \nUhrzeit des Auftretens: ';
+        typeSelect.value = 'bug';
+    } else {
+        messageTextarea.value = message;
+        typeSelect.value = 'general';
     }
-    // Auto-detect platform
-    detectAndSetPlatform(platformSelect);
+    
+    // Auto-detect platform without visual flash
+    detectAndSetPlatformQuiet(platformSelect);
+    
     // Highlight selected quick button temporarily
     event.target.classList.add('selected');
     setTimeout(() => {
@@ -109,14 +150,23 @@ function quickFeedback(message) {
             btn.classList.remove('selected');
         });
     }, 2000);
+    
     // Focus message textarea
-    document.getElementById('feedback-message').focus();
+    messageTextarea.focus();
+    // Move cursor to end for easy editing
+    messageTextarea.setSelectionRange(messageTextarea.value.length, messageTextarea.value.length);
 }
 window.quickFeedback = quickFeedback;
 
 function updateStars() {
     document.querySelectorAll('.star').forEach((star, index) => {
-        star.classList.toggle('active', index < (window.currentRating || 0));
+        if (index < (window.currentRating || 0)) {
+            star.classList.add('active');
+            star.style.color = '#ffc107';
+        } else {
+            star.classList.remove('active');
+            star.style.color = '#ddd';
+        }
     });
 }
 window.updateStars = updateStars;
@@ -145,12 +195,27 @@ function detectAndSetPlatform(selectElement) {
     } else {
         selectElement.value = 'web';
     }
+    // Visual feedback for initial load only
     selectElement.style.backgroundColor = '#e8f5e8';
     setTimeout(() => {
         selectElement.style.backgroundColor = '';
     }, 1500);
 }
 window.detectAndSetPlatform = detectAndSetPlatform;
+
+function detectAndSetPlatformQuiet(selectElement) {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobile = /mobile|android|iphone|ipad/.test(userAgent);
+    if (/android/.test(userAgent)) {
+        selectElement.value = 'android';
+    } else if (isMobile) {
+        selectElement.value = 'web-mobile';
+    } else {
+        selectElement.value = 'web';
+    }
+    // No visual feedback for quick button usage
+}
+window.detectAndSetPlatformQuiet = detectAndSetPlatformQuiet;
 
 // Recent filters toggle
 function toggleRecentFilters() {
