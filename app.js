@@ -5182,6 +5182,12 @@ class WienOPNVApp {
             
             if (result.success) {
                 this.showNotification(result.message, 'success');
+                
+                // Nach erfolgreichem Logout Seite neu laden für komplette Bereinigung
+                setTimeout(() => {
+                    location.reload();
+                }, 1000); // Kurz warten damit die Notification noch sichtbar ist
+                
             } else {
                 this.showNotification(result.message, 'error');
             }
