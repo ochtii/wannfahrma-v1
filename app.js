@@ -4921,7 +4921,47 @@ class WienOPNVApp {
             };
             console.log('✅ Old Auth state handler registered');
         } else {
-            console.warn('⚠️ Auth state handler not available - running in local mode');
+            console.warn('⚠️ Auth state handler not available yet - will retry');
+            
+            // RETRY-Mechanismus für späte SimpleAuth Initialisierung
+            const retrySetupAuth = () => {
+                console.log('🔄 Retrying auth state handler setup...');
+                if (window.SimpleAuth && !this.auth) {
+                    console.log('🎯 Creating new SimpleAuth instance...');
+                    this.auth = new window.SimpleAuth();
+                    
+                    // Kurz warten bis SimpleAuth bereit ist
+                    setTimeout(() => {
+                        if (this.auth && typeof this.auth.onAuthChange === 'function') {
+                            this.auth.onAuthChange((isLoggedIn, user) => {
+                                console.log('🔄 App Auth State Change (delayed):', isLoggedIn, user?.email);
+                                this.updateAuthUI();
+                                if (isLoggedIn && user) {
+                                    this.handleUserLoggedIn(user);
+                                } else {
+                                    this.handleUserLoggedOut();
+                                }
+                            });
+                            console.log('✅ SimpleAuth state handler registered (delayed)');
+                            // Sofortiges UI Update nach Verbindung
+                            this.updateAuthUI();
+                        }
+                    }, 100);
+                    return true;
+                }
+                return false;
+            };
+            
+            // Sofort versuchen
+            if (!retrySetupAuth()) {
+                // Nach 500ms versuchen
+                setTimeout(() => {
+                    if (!retrySetupAuth()) {
+                        // Nach 2s versuchen
+                        setTimeout(retrySetupAuth, 2000);
+                    }
+                }, 500);
+            }
         }
     }
     
