@@ -775,8 +775,8 @@ class WienOPNVApp {
         } catch (error) {
             console.error(`❌ API-Fehler für RBL ${rbl}:`, error.message);
             
-            // Benutzerfreundliche Fehlermeldung anzeigen
-            this.showApiError(error.message);
+            // NICHT sofort Fehlermeldung anzeigen - das macht der loadCardDepartures nach dem Laden aller RBLs
+            // this.showApiError(error.message);
             
             return null;
         }
@@ -3402,16 +3402,22 @@ class WienOPNVApp {
             // Handle new format with departureLines
             if (cardData.departureLines && cardData.departureLines.length > 0) {
                 const allDepartures = [];
+                const errors = []; // Track errors
+                let totalRbls = cardData.departureLines.length;
+                let processedRbls = 0;
                 
                 for (const departureLine of cardData.departureLines) {
                     try {
                         // Validate departure line data
                         if (!departureLine.rbl || !departureLine.line || !departureLine.direction) {
                             console.warn(`⚠️ Skipping invalid departure line:`, departureLine);
+                            processedRbls++;
                             continue;
                         }
                         
                         const rblDepartures = await this.fetchDeparturesForRBL(departureLine.rbl);
+                        processedRbls++;
+                        
                         if (rblDepartures && rblDepartures.length > 0) {
                             // Filter for specific line and direction
                             const filteredDepartures = rblDepartures.filter(dep => 
@@ -3424,12 +3430,18 @@ class WienOPNVApp {
                                 .slice(0, departureLine.departureCount || 3);
                             
                             allDepartures.push(...limitedDepartures);
+                        } else if (rblDepartures === null) {
+                            // API Error occurred
+                            errors.push(`RBL ${departureLine.rbl}: API-Fehler`);
                         }
                     } catch (error) {
                         console.warn(`Failed to load departures for ${departureLine.line}:`, error);
+                        errors.push(`${departureLine.line}: ${error.message}`);
+                        processedRbls++;
                     }
                 }
                 
+                // Jetzt prüfen ob ALLE RBLs verarbeitet wurden und wie die Ergebnisse sind
                 if (allDepartures.length > 0) {
                     console.log(`✅ Loaded ${allDepartures.length} departures for ${cardData.title}`);
                     
@@ -3441,6 +3453,16 @@ class WienOPNVApp {
                     this.showCard(card);
                 } else {
                     console.warn(`⚠️ No live data available for ${cardData.title}`);
+                    
+                    // NUR jetzt Fehlermeldung anzeigen wenn ALLE RBLs fehlgeschlagen sind
+                    if (errors.length > 0 && errors.length === totalRbls) {
+                        // Alle RBLs haben Fehler geworfen
+                        const firstError = errors[0];
+                        if (firstError.includes('API-Fehler') || firstError.includes('keine Abfahrten')) {
+                            this.showApiError('Für diese RBL-Nummern wurden keine Abfahrten gefunden.');
+                        }
+                    }
+                    
                     if (this.displaySettings.hideEmptyCards) {
                         this.hideCard(card);
                     } else {
@@ -3462,15 +3484,25 @@ class WienOPNVApp {
             
             // Get departures from all relevant RBLs
             const allDepartures = [];
+            const errors = []; // Track errors
+            let totalRbls = rbls.length;
+            let processedRbls = 0;
             
             for (const rbl of rbls) {
                 try {
                     const rblDepartures = await this.fetchDeparturesForRBL(rbl);
+                    processedRbls++;
+                    
                     if (rblDepartures && rblDepartures.length > 0) {
                         allDepartures.push(...rblDepartures);
+                    } else if (rblDepartures === null) {
+                        // API Error occurred
+                        errors.push(`RBL ${rbl}: API-Fehler`);
                     }
                 } catch (error) {
                     console.warn(`Failed to load departures for RBL ${rbl}:`, error);
+                    errors.push(`RBL ${rbl}: ${error.message}`);
+                    processedRbls++;
                 }
             }
             
@@ -3506,6 +3538,16 @@ class WienOPNVApp {
                 }
             } else {
                 console.warn(`⚠️ No departures received from any RBL`);
+                
+                // NUR jetzt Fehlermeldung anzeigen wenn ALLE RBLs fehlgeschlagen sind
+                if (errors.length > 0 && errors.length === totalRbls) {
+                    // Alle RBLs haben Fehler geworfen
+                    const firstError = errors[0];
+                    if (firstError.includes('API-Fehler') || firstError.includes('keine Abfahrten')) {
+                        this.showApiError('Für diese RBL-Nummern wurden keine Abfahrten gefunden.');
+                    }
+                }
+                
                 if (this.displaySettings.hideEmptyCards) {
                     this.hideCard(card);
                 } else {
