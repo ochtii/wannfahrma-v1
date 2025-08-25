@@ -64,6 +64,26 @@ EOF
 
 print_success "Environment Variables konfiguriert"
 
+# Determine Server Host (IP or Domain)
+print_info "🌐 Ermittle Server Host (IP/Domain)..."
+
+PUBLIC_IP=$(curl -s ifconfig.me || curl -s ipinfo.io/ip || hostname -I | awk '{print $1}')
+
+read -p "Server Host für Webhook [${PUBLIC_IP}]: " SERVER_HOST
+SERVER_HOST=${SERVER_HOST:-$PUBLIC_IP}
+
+if [[ -z "$SERVER_HOST" ]]; then
+    print_error "Server Host konnte nicht ermittelt werden. Bitte manuell eingeben."
+    read -p "Server Host (IP oder Domain): " SERVER_HOST
+    if [[ -z "$SERVER_HOST" ]]; then
+        print_error "Kein Host angegeben. Abbruch."
+        exit 1
+    fi
+fi
+
+echo "SERVER_HOST=${SERVER_HOST}" >> .env
+print_success "Server Host auf '${SERVER_HOST}' gesetzt"
+
 # Update firewall to allow webhook port
 print_info "🛡️ Konfiguriere Firewall für Webhook Port..."
 if command -v ufw >/dev/null 2>&1; then
@@ -73,48 +93,8 @@ else
     print_warning "UFW nicht verfügbar, Firewall manuell konfigurieren"
 fi
 
-# Configure Nginx for webhook (optional)
-print_info "🌐 Nginx Konfiguration für Webhook..."
-read -p "Nginx Reverse Proxy für Webhook konfigurieren? (y/N): " -n 1 -r
-echo
-
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    read -p "Domain für Webhook (z.B. hooks.example.com): " WEBHOOK_DOMAIN
-    
-    if [[ -n "$WEBHOOK_DOMAIN" ]]; then
-        print_info "Erstelle Nginx Konfiguration für $WEBHOOK_DOMAIN..."
-        
-        sudo tee /etc/nginx/sites-available/webhook > /dev/null <<EOF
-server {
-    listen 80;
-    server_name ${WEBHOOK_DOMAIN};
-    
-    location /webhook {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
-    }
-}
-EOF
-        
-        sudo ln -sf /etc/nginx/sites-available/webhook /etc/nginx/sites-enabled/
-        sudo nginx -t && sudo systemctl reload nginx
-        
-        print_success "Nginx Konfiguration erstellt für $WEBHOOK_DOMAIN"
-        WEBHOOK_URL="http://${WEBHOOK_DOMAIN}/webhook"
-    else
-        print_warning "Keine Domain angegeben, verwende Server IP"
-        WEBHOOK_URL="http://18.206.241.165:3001/webhook"
-    fi
-else
-    WEBHOOK_URL="http://18.206.241.165:3001/webhook"
-fi
+# Construct Webhook URL
+WEBHOOK_URL="http://${SERVER_HOST}:3001/webhook"
 
 # Add webhook URL to environment
 echo "WEBHOOK_URL=${WEBHOOK_URL}" >> .env

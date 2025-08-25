@@ -36,6 +36,7 @@ if [[ -f .env ]]; then
     print_success ".env Datei gefunden"
     
     # Load environment variables
+    # shellcheck disable=SC1091
     source .env
     
     if [[ -n "$WEBHOOK_SECRET" ]]; then
@@ -115,7 +116,7 @@ echo ""
 # GitHub webhook configuration check
 print_info "📋 GitHub Webhook Konfiguration..."
 print_info "Repository: https://github.com/ochtii/wannfahrma-v1/settings/hooks"
-print_info "Payload URL sollte sein: http://18.206.241.165:3001/webhook"
+print_info "Payload URL sollte sein: ${WEBHOOK_URL:-http://<SERVER_HOST>:3001/webhook}"
 print_info "Content Type: application/json"
 print_info "Secret: (der Wert aus WEBHOOK_SECRET)"
 print_info "Events: Just the push event"

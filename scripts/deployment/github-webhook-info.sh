@@ -33,17 +33,21 @@ fi
 # Load environment variables
 source .env
 
-# Get server IP
-SERVER_IP="18.206.241.165"
+# Get server host from .env
+SERVER_HOST=${SERVER_HOST:-"nicht konfiguriert"}
+WEBHOOK_URL=${WEBHOOK_URL:-"http://${SERVER_HOST}:3001/webhook"}
+
+if [[ "$SERVER_HOST" == "nicht konfiguriert" ]]; then
+    print_error "❌ SERVER_HOST nicht in .env gefunden!"
+    print_info "Führe zuerst aus: ./scripts/deployment/setup-webhook.sh"
+    exit 1
+fi
 
 # Check if webhook service is running
 WEBHOOK_RUNNING=false
 if curl -f http://localhost:3001/webhook/health >/dev/null 2>&1; then
     WEBHOOK_RUNNING=true
 fi
-
-# Set webhook URL
-WEBHOOK_URL_DISPLAY="http://18.206.241.165:3001/webhook"
 
 clear
 echo "=================================================="
@@ -53,7 +57,7 @@ echo ""
 
 # Show current status
 print_header "📊 Status Check"
-echo "   Server IP: $SERVER_IP"
+echo "   Server Host: $SERVER_HOST"
 echo "   Webhook Port: 3001"
 
 if [ "$WEBHOOK_RUNNING" = true ]; then
@@ -78,7 +82,7 @@ echo ""
 print_info "3. Webhook konfigurieren:"
 echo ""
 echo "   📍 ${BOLD}Payload URL:${NC}"
-echo "      $WEBHOOK_URL_DISPLAY"
+echo "      $WEBHOOK_URL"
 echo ""
 echo "   📦 ${BOLD}Content type:${NC}"
 echo "      application/json"
@@ -121,11 +125,11 @@ echo ""
 print_header "🧪 Webhook Testing"
 echo ""
 print_info "Health Check:"
-echo "   curl $WEBHOOK_URL_DISPLAY/health"
+echo "   curl $WEBHOOK_URL/health"
 echo ""
 
 print_info "Manual Deployment Test:"
-echo "   curl -X POST $WEBHOOK_URL_DISPLAY/deploy \\"
+echo "   curl -X POST $WEBHOOK_URL/deploy \\"
 echo "        -H 'Content-Type: application/json' \\"
 echo "        -d '{}'"
 echo ""
@@ -177,7 +181,7 @@ print_header "📋 Copy-Paste Konfiguration für GitHub"
 echo ""
 echo "=================================================="
 print_success "Payload URL:"
-echo "http://18.206.241.165:3001/webhook"
+echo "$WEBHOOK_URL"
 echo ""
 print_success "Secret:"
 echo "${WEBHOOK_SECRET:-FEHLT}"
