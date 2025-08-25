@@ -650,10 +650,6 @@ class WienOPNVApp {
             throw new Error('Keine Abfahrten gefunden für diese Station');
         }
 
-        // Sortiere nach Zeit und limitiere auf 20 Abfahrten
-        return allDepartures
-            .sort((a, b) => a.minutesUntil - b.minutesUntil)
-            .slice(0, 20);
     }
 
     async fetchLiveDeparturesWithProgress(rbls, context = 'search') {
@@ -733,10 +729,6 @@ class WienOPNVApp {
             throw new Error('Keine Abfahrten gefunden für diese Station');
         }
 
-        // Sortiere nach Zeit und limitiere auf 20 Abfahrten
-        return allDepartures
-            .sort((a, b) => a.minutesUntil - b.minutesUntil)
-            .slice(0, 20);
     }
 
     async fetchDeparturesForRBL(rbl) {

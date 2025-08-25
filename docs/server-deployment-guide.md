@@ -8,7 +8,7 @@ Die `.env` Datei enthält wichtige Konfigurationen. Stellen Sie sicher, dass die
 
 ### Wichtig: Umgebungsvariablen für Server und systemd
 
-Bei Verwendung von systemd oder PM2 als Prozess-Manager, müssen die Umgebungsvariablen direkt verfügbar gemacht werden. 
+Bei Verwendung von systemd oder PM2 als Prozess-Manager, müssen die Umgebungsvariablen direkt verfügbar gemacht werden.
 Es gibt drei Möglichkeiten:
 
 #### Option 1: Umgebungsvariablen in der systemd Service-Datei
@@ -40,16 +40,19 @@ Erstellen Sie eine PM2-Konfigurationsdatei `ecosystem.config.js`:
 
 ```javascript
 module.exports = {
-  apps: [{
-    name: "warten-is-org",
-    script: "server.js",
-    env: {
-      NODE_ENV: "production",
-      SUPABASE_URL: "https://wjzfcanojeauhjpgaydg.supabase.co",
-      SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqemZjYW5vamVhdWhqcGdheWRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0Mzk0MjEsImV4cCI6MjA3MTAxNTQyMX0.MB6FuLQ4ECESPgahc4sBcaoQv23zahlTehIVbEtcyzs"
-    }
-  }]
-}
+  apps: [
+    {
+      name: "warten-is-org",
+      script: "server.js",
+      env: {
+        NODE_ENV: "production",
+        SUPABASE_URL: "https://wjzfcanojeauhjpgaydg.supabase.co",
+        SUPABASE_ANON_KEY:
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqemZjYW5vamVhdWhqcGdheWRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0Mzk0MjEsImV4cCI6MjA3MTAxNTQyMX0.MB6FuLQ4ECESPgahc4sBcaoQv23zahlTehIVbEtcyzs",
+      },
+    },
+  ],
+};
 ```
 
 Starten mit: `pm2 start ecosystem.config.js`
@@ -91,14 +94,14 @@ sudo ufw allow 3000
 Wenn Supabase-Authentifizierung nicht funktioniert, überprüfen Sie:
 
 1. **Umgebungsvariablen**: Sind `SUPABASE_URL` und `SUPABASE_ANON_KEY` korrekt gesetzt?
-   
+
    ```bash
    echo $SUPABASE_URL
    echo $SUPABASE_ANON_KEY
    ```
 
 2. **Server-Logs**: Überprüfen Sie die Server-Logs auf Fehlermeldungen:
-   
+
    ```bash
    tail -f logs/api_logs.log
    ```
@@ -106,6 +109,7 @@ Wenn Supabase-Authentifizierung nicht funktioniert, überprüfen Sie:
 3. **Browser-Konsole**: Prüfen Sie die Browser-Konsole auf Fehler bei der Initialisierung von Supabase.
 
 4. **CORS-Einstellungen**: Prüfen Sie, ob CORS in Ihrem Supabase-Projekt korrekt konfiguriert ist.
+
    - Öffnen Sie die Supabase-Konsole
    - Gehen Sie zu Authentication > URL Configuration
    - Fügen Sie Ihre Domain zu den erlaubten URLs hinzu
@@ -122,6 +126,7 @@ export LOG_LEVEL=debug
 ```
 
 Oder in der .env Datei:
+
 ```
 DEBUG=true
 LOG_LEVEL=debug
@@ -137,4 +142,5 @@ LOG_LEVEL=debug
 ## 6. Kontakt und Support
 
 Bei Problemen oder Fragen wenden Sie sich an:
+
 - GitHub Issues: [https://github.com/ochtii/wannfahrma-v1/issues](https://github.com/ochtii/wannfahrma-v1/issues)

@@ -47,6 +47,9 @@ const CACHE_TTL = 60 * 1000; // 60 seconds
 app.set('trust proxy', true);
 
 app.use(rateLimit);
+
+// Änderung der Reihenfolge: Zuerst spezifische Routen, dann der allgemeine static handler
+app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use(express.static('.'));
 app.use(express.json());
 
@@ -772,6 +775,54 @@ app.get('/health', (req, res) => {
 // API endpoint für Environment-Variablen
 // Remove this duplicate endpoint to avoid confusion
 // The main /api/env endpoint above handles all requests
+
+// Alternative Route für Datenschutzbestimmung (synonym zu Datenschutzerklärung)
+app.get('/datenschutzbestimmung', (req, res) => {
+    try {
+        // Pfad zur Datei im Hauptverzeichnis (nicht in /public)
+        const htmlPath = path.join(__dirname, 'datenschutzerklärung.html');
+        console.log(`${colors.yellow}📄 Serving privacy policy from: ${htmlPath} (via /datenschutzbestimmung)${colors.reset}`);
+        
+        // Überprüfen, ob die Datei existiert
+        if (!fs.existsSync(htmlPath)) {
+            console.error(`${colors.red}❌ Privacy policy file not found at: ${htmlPath}${colors.reset}`);
+            return res.status(404).send('Datenschutzerklärung nicht gefunden. Bitte kontaktieren Sie den Administrator.');
+        }
+        
+        // Direkt den Dateiinhalt senden, anstatt sendFile zu verwenden
+        const content = fs.readFileSync(htmlPath, 'utf8');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(content);
+    } catch (error) {
+        console.error(`${colors.red}❌ Error serving privacy policy:${colors.reset}`, error);
+        res.status(500).send('Server Error');
+    }
+});
+
+// SPA Fallback für alle anderen Routen - mit Environment-Variablen injection
+
+// Alternative Route für Datenschutzbestimmung (synonym zu Datenschutzerklärung)
+app.get('/datenschutzbestimmung', (req, res) => {
+    try {
+        // Pfad zur Datei im Hauptverzeichnis (nicht in /public)
+        const htmlPath = path.join(__dirname, 'datenschutzerklärung.html');
+        console.log(`${colors.yellow}📄 Serving privacy policy from: ${htmlPath} (via /datenschutzbestimmung)${colors.reset}`);
+        
+        // Überprüfen, ob die Datei existiert
+        if (!fs.existsSync(htmlPath)) {
+            console.error(`${colors.red}❌ Privacy policy file not found at: ${htmlPath}${colors.reset}`);
+            return res.status(404).send('Datenschutzerklärung nicht gefunden. Bitte kontaktieren Sie den Administrator.');
+        }
+        
+        // Direkt den Dateiinhalt senden, anstatt sendFile zu verwenden
+        const content = fs.readFileSync(htmlPath, 'utf8');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(content);
+    } catch (error) {
+        console.error(`${colors.red}❌ Error serving privacy policy:${colors.reset}`, error);
+        res.status(500).send('Server Error');
+    }
+});
 
 // SPA Fallback für alle anderen Routen - mit Environment-Variablen injection
 app.get('*', (req, res) => {

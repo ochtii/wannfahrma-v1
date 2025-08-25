@@ -1,652 +1,841 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Warten is ORG - Abfahrtszeiten</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
     <div id="app">
-        <!-- Navigation -->
-        <nav class="navigation">
-            <button class="nav-btn" data-page="start">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
+      <!-- Navigation -->
+      <nav class="navigation">
+        <button class="nav-btn" data-page="start">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-btn active" data-page="search">
+          <i class="fas fa-search"></i>
+          <span>Suche</span>
+        </button>
+        <button class="nav-btn" data-page="favorites">
+          <i class="fas fa-star"></i>
+          <span>Favoriten</span>
+        </button>
+        <button class="nav-btn" data-page="settings">
+          <i class="fas fa-cog"></i>
+          <span>Einstellungen</span>
+        </button>
+      </nav>
+
+      <!-- Authentication Header -->
+      <header class="auth-header" id="authHeader">
+        <div class="auth-info">
+          <div class="user-status" id="userStatus">
+            <div class="guest-status" id="guestStatus">
+              <i class="fas fa-user-slash"></i>
+              <span>Gast-Modus</span>
+              <span class="limits-info">1 Karte, 5 Linien</span>
+            </div>
+            <div class="user-info" id="userInfo" style="display: none">
+              <i class="fas fa-user-circle"></i>
+              <span class="user-email" id="userEmail"></span>
+              <span class="unlimited-badge">Unlimited</span>
+            </div>
+          </div>
+          <div class="auth-actions" id="authActions">
+            <button class="btn btn-outline" id="loginBtn">
+              <i class="fas fa-sign-in-alt"></i>
+              Anmelden
             </button>
-            <button class="nav-btn active" data-page="search">
-                <i class="fas fa-search"></i>
-                <span>Suche</span>
+            <button class="btn btn-primary" id="registerBtn">
+              <i class="fas fa-user-plus"></i>
+              Registrieren
             </button>
-            <button class="nav-btn" data-page="favorites">
-                <i class="fas fa-star"></i>
-                <span>Favoriten</span>
+            <button
+              class="btn btn-outline"
+              id="logoutBtn"
+              style="display: none"
+            >
+              <i class="fas fa-sign-out-alt"></i>
+              Abmelden
             </button>
-            <button class="nav-btn" data-page="settings">
-                <i class="fas fa-cog"></i>
-                <span>Einstellungen</span>
+          </div>
+        </div>
+        <div class="usage-warning" id="usageWarning" style="display: none">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span id="usageWarningText"></span>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Start Page -->
+        <div id="startPage" class="page">
+          <div class="header">
+            <h1><i class="fas fa-subway"></i> Warten is ORG</h1>
+            <p>Ihr persönliches Abfahrten-Dashboard</p>
+          </div>
+
+          <!-- Dashboard Controls -->
+          <div class="dashboard-controls">
+            <div class="dashboard-actions">
+              <button class="btn btn-primary" id="addDashboardCard">
+                <i class="fas fa-plus"></i>
+                <span>Neue Karte hinzufügen</span>
+              </button>
+              <button class="btn btn-secondary" id="editDashboard">
+                <i class="fas fa-edit"></i>
+                <span>Dashboard bearbeiten</span>
+              </button>
+            </div>
+
+            <!-- Edit Mode Info -->
+            <div class="edit-mode-info" id="editModeInfo" style="display: none">
+              <div class="edit-info-content">
+                <i class="fas fa-info-circle"></i>
+                <span
+                  >Bearbeitungsmodus aktiv: Karten verschieben per Drag &
+                  Drop</span
+                >
+              </div>
+              <div class="edit-mode-actions">
+                <button class="btn btn-outline" id="selectAllCards">
+                  <i class="fas fa-check-square"></i>
+                  Alle auswählen
+                </button>
+                <button
+                  class="btn btn-danger"
+                  id="deleteSelectedCards"
+                  disabled
+                >
+                  <i class="fas fa-trash"></i>
+                  Ausgewählte löschen
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Display Options Panel -->
+          <div class="display-options" id="displayOptions">
+            <div class="options-header">
+              <h4><i class="fas fa-cog"></i> Anzeigeoptionen</h4>
+              <button class="options-toggle" id="optionsToggle">
+                <i class="fas fa-chevron-down"></i>
+              </button>
+            </div>
+            <div class="options-content" id="optionsContent">
+              <div class="options-grid">
+                <!-- Time Display -->
+                <div class="option-group">
+                  <label>Zeitanzeige</label>
+                  <div class="checkbox-group">
+                    <label class="checkbox-option">
+                      <input
+                        type="checkbox"
+                        name="timeDisplay"
+                        value="countdown"
+                        checked
+                      />
+                      <span>Verbleibende Zeit (5 min)</span>
+                    </label>
+                    <label class="checkbox-option">
+                      <input
+                        type="checkbox"
+                        name="timeDisplay"
+                        value="expected"
+                      />
+                      <span>Erwartete Zeit (14:20)</span>
+                    </label>
+                    <label class="checkbox-option">
+                      <input
+                        type="checkbox"
+                        name="timeDisplay"
+                        value="actual"
+                      />
+                      <span>Tatsächliche Zeit (14:23)</span>
+                    </label>
+                    <label class="checkbox-option">
+                      <input
+                        type="checkbox"
+                        name="timeDisplay"
+                        value="difference"
+                      />
+                      <span>Differenz (+3 min)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Dashboard Layout -->
+                <div class="option-group">
+                  <label>Dashboard-Ansicht</label>
+                  <div class="radio-group">
+                    <label class="radio-option">
+                      <input
+                        type="radio"
+                        name="dashboardLayout"
+                        value="list"
+                        checked
+                      />
+                      <span>Liste (kompakt)</span>
+                    </label>
+                    <label class="radio-option">
+                      <input
+                        type="radio"
+                        name="dashboardLayout"
+                        value="tiles"
+                      />
+                      <span>Kacheln (quadratisch)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Animation Options -->
+                <div class="option-group">
+                  <label>
+                    <input type="checkbox" id="enableAnimations" checked />
+                    Warteanzeigen-Animation (Straßenbahn)
+                  </label>
+                </div>
+
+                <!-- Hide Cards Without Data -->
+                <div class="option-group">
+                  <label>
+                    <input type="checkbox" id="hideEmptyCards" />
+                    Karten ohne Live-Daten ausblenden
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dashboard Grid -->
+          <div id="dashboardGrid">
+            <!-- Dashboard cards will be inserted here -->
+          </div>
+
+          <!-- Empty State -->
+          <div
+            id="dashboardEmpty"
+            class="dashboard-empty"
+            style="display: none"
+          >
+            <i class="fas fa-tachometer-alt"></i>
+            <h3>Erstellen Sie Ihr Dashboard</h3>
+            <p>
+              Fügen Sie Karten mit Live-Abfahrten Ihrer Lieblingsstationen hinzu
+            </p>
+            <button class="btn btn-primary" onclick="app.addDashboardCard()">
+              <i class="fas fa-plus"></i>
+              Erste Karte hinzufügen
             </button>
-        </nav>
+          </div>
+        </div>
 
-        <!-- Authentication Header -->
-        <header class="auth-header" id="authHeader">
-            <div class="auth-info">
-                <div class="user-status" id="userStatus">
-                    <div class="guest-status" id="guestStatus">
-                        <i class="fas fa-user-slash"></i>
-                        <span>Gast-Modus</span>
-                        <span class="limits-info">1 Karte, 5 Linien</span>
-                    </div>
-                    <div class="user-info" id="userInfo" style="display: none;">
-                        <i class="fas fa-user-circle"></i>
-                        <span class="user-email" id="userEmail"></span>
-                        <span class="unlimited-badge">Unlimited</span>
-                    </div>
-                </div>
-                <div class="auth-actions" id="authActions">
-                    <button class="btn btn-outline" id="loginBtn">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Anmelden
-                    </button>
-                    <button class="btn btn-primary" id="registerBtn">
-                        <i class="fas fa-user-plus"></i>
-                        Registrieren
-                    </button>
-                    <button class="btn btn-outline" id="logoutBtn" style="display: none;">
-                        <i class="fas fa-sign-out-alt"></i>
-                        Abmelden
-                    </button>
-                </div>
+        <!-- Search Page -->
+        <div id="searchPage" class="page active">
+          <div class="header">
+            <h2>Station suchen</h2>
+          </div>
+
+          <div class="search-section">
+            <div class="search-container">
+              <input
+                type="text"
+                id="stationSearch"
+                class="search-input"
+                placeholder="Station suchen (z.B. Stephansplatz, Hauptbahnhof...)"
+              />
+              <button id="clearSearch" class="clear-btn" title="Suche löschen">
+                <i class="fas fa-times"></i>
+              </button>
             </div>
-            <div class="usage-warning" id="usageWarning" style="display: none;">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span id="usageWarningText"></span>
-            </div>
-        </header>
+            <div id="searchResults" class="search-results"></div>
+          </div>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Start Page -->
-            <div id="startPage" class="page">
-                <div class="header">
-                    <h1><i class="fas fa-subway"></i> Warten is ORG</h1>
-                    <p>Ihr persönliches Abfahrten-Dashboard</p>
-                </div>
-                
-                <!-- Dashboard Controls -->
-                <div class="dashboard-controls">
-                    <div class="dashboard-actions">
-                        <button class="btn btn-primary" id="addDashboardCard">
-                            <i class="fas fa-plus"></i>
-                            <span>Neue Karte hinzufügen</span>
-                        </button>
-                        <button class="btn btn-secondary" id="editDashboard">
-                            <i class="fas fa-edit"></i>
-                            <span>Dashboard bearbeiten</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Edit Mode Info -->
-                    <div class="edit-mode-info" id="editModeInfo" style="display: none;">
-                        <div class="edit-info-content">
-                            <i class="fas fa-info-circle"></i>
-                            <span>Bearbeitungsmodus aktiv: Karten verschieben per Drag & Drop</span>
-                        </div>
-                        <div class="edit-mode-actions">
-                            <button class="btn btn-outline" id="selectAllCards">
-                                <i class="fas fa-check-square"></i>
-                                Alle auswählen
-                            </button>
-                            <button class="btn btn-danger" id="deleteSelectedCards" disabled>
-                                <i class="fas fa-trash"></i>
-                                Ausgewählte löschen
-                            </button>
-                        </div>
-                    </div>
-                </div>
+          <!-- Selected Station -->
+          <div id="selectedStation" class="station-section"></div>
 
-                <!-- Display Options Panel -->
-                <div class="display-options" id="displayOptions">
-                    <div class="options-header">
-                        <h4><i class="fas fa-cog"></i> Anzeigeoptionen</h4>
-                        <button class="options-toggle" id="optionsToggle">
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                    </div>
-                    <div class="options-content" id="optionsContent">
-                        <div class="options-grid">
-                            <!-- Time Display -->
-                            <div class="option-group">
-                                <label>Zeitanzeige</label>
-                                <div class="checkbox-group">
-                                    <label class="checkbox-option">
-                                        <input type="checkbox" name="timeDisplay" value="countdown" checked>
-                                        <span>Verbleibende Zeit (5 min)</span>
-                                    </label>
-                                    <label class="checkbox-option">
-                                        <input type="checkbox" name="timeDisplay" value="expected">
-                                        <span>Erwartete Zeit (14:20)</span>
-                                    </label>
-                                    <label class="checkbox-option">
-                                        <input type="checkbox" name="timeDisplay" value="actual">
-                                        <span>Tatsächliche Zeit (14:23)</span>
-                                    </label>
-                                    <label class="checkbox-option">
-                                        <input type="checkbox" name="timeDisplay" value="difference">
-                                        <span>Differenz (+3 min)</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Dashboard Layout -->
-                            <div class="option-group">
-                                <label>Dashboard-Ansicht</label>
-                                <div class="radio-group">
-                                    <label class="radio-option">
-                                        <input type="radio" name="dashboardLayout" value="list" checked>
-                                        <span>Liste (kompakt)</span>
-                                    </label>
-                                    <label class="radio-option">
-                                        <input type="radio" name="dashboardLayout" value="tiles">
-                                        <span>Kacheln (quadratisch)</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Animation Options -->
-                            <div class="option-group">
-                                <label>
-                                    <input type="checkbox" id="enableAnimations" checked>
-                                    Warteanzeigen-Animation (Straßenbahn)
-                                </label>
-                            </div>
-
-                            <!-- Hide Cards Without Data -->
-                            <div class="option-group">
-                                <label>
-                                    <input type="checkbox" id="hideEmptyCards">
-                                    Karten ohne Live-Daten ausblenden
-                                </label>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Dashboard Grid -->
-                <div id="dashboardGrid">
-                    <!-- Dashboard cards will be inserted here -->
-                </div>
-
-                <!-- Empty State -->
-                <div id="dashboardEmpty" class="dashboard-empty" style="display: none;">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <h3>Erstellen Sie Ihr Dashboard</h3>
-                    <p>Fügen Sie Karten mit Live-Abfahrten Ihrer Lieblingsstationen hinzu</p>
-                    <button class="btn btn-primary" onclick="app.addDashboardCard()">
-                        <i class="fas fa-plus"></i>
-                        Erste Karte hinzufügen
-                    </button>
-                </div>
+          <!-- Departures Section -->
+          <div id="departures-section" class="departures-section">
+            <div class="section-header">
+              <h3 class="section-title">Live Abfahrten</h3>
+              <div class="controls">
+                <button id="refreshBtn" class="btn btn-primary">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+                <button
+                  id="addToFavorites"
+                  class="btn btn-secondary"
+                  style="display: none"
+                >
+                  <i class="fas fa-star"></i>
+                </button>
+              </div>
             </div>
 
-            <!-- Search Page -->
-            <div id="searchPage" class="page active">
-                <div class="header">
-                    <h2>Station suchen</h2>
-                </div>
-                
-                <div class="search-section">
-                    <div class="search-container">
-                        <input type="text" id="stationSearch" class="search-input" placeholder="Station suchen (z.B. Stephansplatz, Hauptbahnhof...)">
-                        <button id="clearSearch" class="clear-btn" title="Suche löschen">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div id="searchResults" class="search-results"></div>
-                </div>
-
-                <!-- Selected Station -->
-                <div id="selectedStation" class="station-section"></div>
-
-                <!-- Departures Section -->
-                <div id="departures-section" class="departures-section">
-                    <div class="section-header">
-                        <h3 class="section-title">Live Abfahrten</h3>
-                        <div class="controls">
-                            <button id="refreshBtn" class="btn btn-primary">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                            <button id="addToFavorites" class="btn btn-secondary" style="display: none;">
-                                <i class="fas fa-star"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Loading Indicator -->
-                    <div id="loading" class="loading">
-                        <div class="spinner"></div>
-                        <p>Lade Abfahrtsdaten...</p>
-                    </div>
-
-                    <!-- Error Message -->
-                    <div id="error" class="error"></div>
-
-                    <!-- Departures Container -->
-                    <div id="departuresContainer"></div>
-
-                    <!-- Last Refresh Time -->
-                    <div id="lastRefresh" class="last-refresh"></div>
-                </div>
+            <!-- Loading Indicator -->
+            <div id="loading" class="loading">
+              <div class="spinner"></div>
+              <p>Lade Abfahrtsdaten...</p>
             </div>
 
-            <!-- Favorites Page -->
-            <div id="favoritesPage" class="page">
-                <div class="header">
-                    <h2>Favoriten</h2>
-                    <p>Ihre gespeicherten Stationen</p>
-                </div>
-                
-                <div id="favoritesList" class="favorites-list">
-                    <div class="empty-state">
-                        <i class="fas fa-star"></i>
-                        <h3>Keine Favoriten</h3>
-                        <p>Fügen Sie Stationen zu Ihren Favoriten hinzu, um sie hier zu sehen.</p>
-                    </div>
-                </div>
+            <!-- Error Message -->
+            <div id="error" class="error"></div>
 
-                <!-- Departures for selected favorite -->
-                <div id="favoriteDepartures" class="departures-section" style="display: none;">
-                    <div class="section-header">
-                        <div class="section-title">
-                            <h3 id="favoriteStationName">Live Abfahrten</h3>
-                        </div>
-                        <div class="status-indicators">
-                            <div id="favoriteLastUpdate" class="last-update"></div>
-                        </div>
-                    </div>
-                    <div id="favoriteDeparturesContainer" class="departures-container">
-                        <!-- Departures will be loaded here -->
-                    </div>
-                </div>
+            <!-- Departures Container -->
+            <div id="departuresContainer"></div>
+
+            <!-- Last Refresh Time -->
+            <div id="lastRefresh" class="last-refresh"></div>
+          </div>
+        </div>
+
+        <!-- Favorites Page -->
+        <div id="favoritesPage" class="page">
+          <div class="header">
+            <h2>Favoriten</h2>
+            <p>Ihre gespeicherten Stationen</p>
+          </div>
+
+          <div id="favoritesList" class="favorites-list">
+            <div class="empty-state">
+              <i class="fas fa-star"></i>
+              <h3>Keine Favoriten</h3>
+              <p>
+                Fügen Sie Stationen zu Ihren Favoriten hinzu, um sie hier zu
+                sehen.
+              </p>
+            </div>
+          </div>
+
+          <!-- Departures for selected favorite -->
+          <div
+            id="favoriteDepartures"
+            class="departures-section"
+            style="display: none"
+          >
+            <div class="section-header">
+              <div class="section-title">
+                <h3 id="favoriteStationName">Live Abfahrten</h3>
+              </div>
+              <div class="status-indicators">
+                <div id="favoriteLastUpdate" class="last-update"></div>
+              </div>
+            </div>
+            <div id="favoriteDeparturesContainer" class="departures-container">
+              <!-- Departures will be loaded here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settingsPage" class="page">
+          <div class="header">
+            <h2>Einstellungen</h2>
+            <p>App-Einstellungen anpassen</p>
+          </div>
+
+          <div class="settings-list">
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Standard-Startseite</h4>
+                <p>Welche Seite beim App-Start geöffnet werden soll</p>
+              </div>
+              <select id="defaultStartPage" class="setting-select">
+                <option value="start">Dashboard</option>
+                <option value="search">Suche</option>
+                <option value="favorites">Favoriten</option>
+              </select>
             </div>
 
-            <!-- Settings Page -->
-            <div id="settingsPage" class="page">
-                <div class="header">
-                    <h2>Einstellungen</h2>
-                    <p>App-Einstellungen anpassen</p>
-                </div>
-
-                <div class="settings-list">
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <h4>Standard-Startseite</h4>
-                            <p>Welche Seite beim App-Start geöffnet werden soll</p>
-                        </div>
-                        <select id="defaultStartPage" class="setting-select">
-                            <option value="start">Dashboard</option>
-                            <option value="search">Suche</option>
-                            <option value="favorites">Favoriten</option>
-                        </select>
-                    </div>
-
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <h4>Dark Mode</h4>
-                            <p>Dunkles Design verwenden</p>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="darkModeToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <h4>Favoriten löschen</h4>
-                            <p>Alle gespeicherten Favoriten entfernen</p>
-                        </div>
-                        <button id="clearFavorites" class="btn btn-danger">
-                            <i class="fas fa-trash"></i> Löschen
-                        </button>
-                    </div>
-                </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Dark Mode</h4>
+                <p>Dunkles Design verwenden</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="darkModeToggle" />
+                <span class="slider"></span>
+              </label>
             </div>
-        </main>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Favoriten löschen</h4>
+                <p>Alle gespeicherten Favoriten entfernen</p>
+              </div>
+              <button id="clearFavorites" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Löschen
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
 
     <!-- Station Info Modal -->
     <div id="stationInfoModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">Live-Daten Status</h3>
-                <button class="modal-close" onclick="window.app.closeStationInfoModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body" id="modalBody">
-                <!-- Content wird dynamisch geladen -->
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="window.app.closeStationInfoModal()">
-                    Schließen
-                </button>
-            </div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalTitle">Live-Daten Status</h3>
+          <button
+            class="modal-close"
+            onclick="window.app.closeStationInfoModal()"
+          >
+            <i class="fas fa-times"></i>
+          </button>
         </div>
+        <div class="modal-body" id="modalBody">
+          <!-- Content wird dynamisch geladen -->
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn btn-secondary"
+            onclick="window.app.closeStationInfoModal()"
+          >
+            Schließen
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Dashboard Card Configuration Modal -->
     <div id="cardConfigModal" class="modal">
-        <div class="modal-content extra-large">
-            <div class="modal-header">
-                <h3 id="cardConfigTitle">
-                    <i class="fas fa-plus-circle"></i>
-                    Neue Dashboard-Karte
-                </h3>
-                <button class="modal-close" onclick="app.closeCardConfig()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="card-config-container">
-                    <!-- Configuration Panel -->
-                    <div class="config-panel-full">
-                        <form id="cardConfigForm">
-                            <!-- Station Selection -->
-                            <div class="config-section">
-                                <h4><i class="fas fa-map-marker-alt"></i> Station auswählen</h4>
-                                <div class="form-group">
-                                    <div class="station-search-container">
-                                        <input type="text" id="cardStation" class="form-control" placeholder="Station suchen..." autocomplete="off">
-                                        <div id="cardStationResults" class="station-results"></div>
-                                    </div>
-                                    <input type="hidden" id="cardStationData">
-                                </div>
-                            </div>
-
-                            <!-- Card Settings -->
-                            <div class="config-section">
-                                <h4><i class="fas fa-cog"></i> Karten-Einstellungen</h4>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="cardTitle">Karten-Titel</label>
-                                        <input type="text" id="cardTitle" class="form-control" placeholder="Meine Station">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="cardRefreshInterval">Auto-Refresh</label>
-                                        <select id="cardRefreshInterval" class="form-control">
-                                            <option value="15" selected>15 Sekunden</option>
-                                            <option value="30">30 Sekunden</option>
-                                            <option value="60">1 Minute</option>
-                                            <option value="120">2 Minuten</option>
-                                            <option value="0">Aus</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Departure Display Settings -->
-                            <div class="config-section">
-                                <h4><i class="fas fa-display"></i> Anzeige-Einstellungen</h4>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="maxDepartureRows">Max. Abfahrtszeilen pro Karte</label>
-                                        <div class="input-with-unit">
-                                            <input type="range" id="maxDepartureRows" class="form-range" min="3" max="15" value="9">
-                                            <span class="range-value" id="maxDepartureRowsValue">9 Zeilen</span>
-                                        </div>
-                                        <small class="form-text">Maximum: 3 × Anzahl der konfigurierten Abfahrtslinien</small>
-                                    </div>
-                                    <div class="form-group">
-                                        <div class="form-check">
-                                            <input type="checkbox" id="autoSortDepartures" class="form-check-input" checked>
-                                            <label for="autoSortDepartures" class="form-check-label">
-                                                Abfahrten automatisch sortieren
-                                            </label>
-                                            <small class="form-text">Sortiert nach Abfahrtszeit (nächste zuerst)</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Departure Lines Configuration -->
-                            <div class="config-section" id="departuresConfig" style="display: none;">
-                                <div class="section-header">
-                                    <h4><i class="fas fa-route"></i> Abfahrtszeilen konfigurieren</h4>
-                                    <button type="button" class="btn btn-sm btn-primary" id="addDepartureLineBtn">
-                                        <i class="fas fa-plus"></i> Zeile hinzufügen
-                                    </button>
-                                </div>
-                                
-                                <div class="departure-lines-list" id="departureLinesList">
-                                    <!-- Departure lines will be added here dynamically -->
-                                </div>
-                                
-                                <div class="departure-lines-empty" id="departureLinesEmpty">
-                                    <i class="fas fa-info-circle"></i>
-                                    <p>Fügen Sie Abfahrtszeilen hinzu, um Live-Daten anzuzeigen</p>
-                                </div>
-                            </div>
-
-                            <div class="modal-actions">
-                                <button type="button" class="btn btn-secondary" onclick="app.closeCardConfig()">
-                                    <i class="fas fa-times"></i> Abbrechen
-                                </button>
-                                <button type="submit" class="btn btn-primary" id="saveCardBtn" disabled>
-                                    <i class="fas fa-save"></i> Karte speichern
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Live Preview Panel (Bottom) -->
-                    <div class="preview-panel-bottom">
-                        <div class="preview-header">
-                            <h4><i class="fas fa-eye"></i> Live-Vorschau</h4>
-                            <div class="preview-info">
-                                <span class="info-badge">
-                                    <i class="fas fa-arrows-alt-v"></i>
-                                    Zeilen verschiebbar
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <div class="card-preview-container-realistic">
-                            <div class="dashboard-card preview-card-realistic" id="cardPreview">
-                                <div class="card-header">
-                                    <div class="card-title">
-                                        <i class="fas fa-train"></i>
-                                        <span id="previewTitle">Neue Karte</span>
-                                    </div>
-                                    <div class="card-controls">
-                                        <button class="card-control-btn" disabled>
-                                            <i class="fas fa-sync-alt"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="card-content" id="previewContent">
-                                    <div class="card-empty">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <h4>Station auswählen</h4>
-                                        <p>Wählen Sie zuerst eine Station aus</p>
-                                    </div>
-                                </div>
-                                <div class="card-footer" id="previewFooter" style="display: none;">
-                                    <small id="previewFooterInfo">Station info</small>
-                                    <small id="previewFooterUpdate">Vorschau</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <div class="modal-content extra-large">
+        <div class="modal-header">
+          <h3 id="cardConfigTitle">
+            <i class="fas fa-plus-circle"></i>
+            Neue Dashboard-Karte
+          </h3>
+          <button class="modal-close" onclick="app.closeCardConfig()">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
+        <div class="modal-body">
+          <div class="card-config-container">
+            <!-- Configuration Panel -->
+            <div class="config-panel-full">
+              <form id="cardConfigForm">
+                <!-- Station Selection -->
+                <div class="config-section">
+                  <h4>
+                    <i class="fas fa-map-marker-alt"></i> Station auswählen
+                  </h4>
+                  <div class="form-group">
+                    <div class="station-search-container">
+                      <input
+                        type="text"
+                        id="cardStation"
+                        class="form-control"
+                        placeholder="Station suchen..."
+                        autocomplete="off"
+                      />
+                      <div
+                        id="cardStationResults"
+                        class="station-results"
+                      ></div>
+                    </div>
+                    <input type="hidden" id="cardStationData" />
+                  </div>
+                </div>
+
+                <!-- Card Settings -->
+                <div class="config-section">
+                  <h4><i class="fas fa-cog"></i> Karten-Einstellungen</h4>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="cardTitle">Karten-Titel</label>
+                      <input
+                        type="text"
+                        id="cardTitle"
+                        class="form-control"
+                        placeholder="Meine Station"
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="cardRefreshInterval">Auto-Refresh</label>
+                      <select id="cardRefreshInterval" class="form-control">
+                        <option value="15" selected>15 Sekunden</option>
+                        <option value="30">30 Sekunden</option>
+                        <option value="60">1 Minute</option>
+                        <option value="120">2 Minuten</option>
+                        <option value="0">Aus</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Departure Display Settings -->
+                <div class="config-section">
+                  <h4><i class="fas fa-display"></i> Anzeige-Einstellungen</h4>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="maxDepartureRows"
+                        >Max. Abfahrtszeilen pro Karte</label
+                      >
+                      <div class="input-with-unit">
+                        <input
+                          type="range"
+                          id="maxDepartureRows"
+                          class="form-range"
+                          min="3"
+                          max="15"
+                          value="9"
+                        />
+                        <span class="range-value" id="maxDepartureRowsValue"
+                          >9 Zeilen</span
+                        >
+                      </div>
+                      <small class="form-text"
+                        >Maximum: 3 × Anzahl der konfigurierten
+                        Abfahrtslinien</small
+                      >
+                    </div>
+                    <div class="form-group">
+                      <div class="form-check">
+                        <input
+                          type="checkbox"
+                          id="autoSortDepartures"
+                          class="form-check-input"
+                          checked
+                        />
+                        <label
+                          for="autoSortDepartures"
+                          class="form-check-label"
+                        >
+                          Abfahrten automatisch sortieren
+                        </label>
+                        <small class="form-text"
+                          >Sortiert nach Abfahrtszeit (nächste zuerst)</small
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Departure Lines Configuration -->
+                <div
+                  class="config-section"
+                  id="departuresConfig"
+                  style="display: none"
+                >
+                  <div class="section-header">
+                    <h4>
+                      <i class="fas fa-route"></i> Abfahrtszeilen konfigurieren
+                    </h4>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-primary"
+                      id="addDepartureLineBtn"
+                    >
+                      <i class="fas fa-plus"></i> Zeile hinzufügen
+                    </button>
+                  </div>
+
+                  <div class="departure-lines-list" id="departureLinesList">
+                    <!-- Departure lines will be added here dynamically -->
+                  </div>
+
+                  <div class="departure-lines-empty" id="departureLinesEmpty">
+                    <i class="fas fa-info-circle"></i>
+                    <p>
+                      Fügen Sie Abfahrtszeilen hinzu, um Live-Daten anzuzeigen
+                    </p>
+                  </div>
+                </div>
+
+                <div class="modal-actions">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="app.closeCardConfig()"
+                  >
+                    <i class="fas fa-times"></i> Abbrechen
+                  </button>
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    id="saveCardBtn"
+                    disabled
+                  >
+                    <i class="fas fa-save"></i> Karte speichern
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Live Preview Panel (Bottom) -->
+            <div class="preview-panel-bottom">
+              <div class="preview-header">
+                <h4><i class="fas fa-eye"></i> Live-Vorschau</h4>
+                <div class="preview-info">
+                  <span class="info-badge">
+                    <i class="fas fa-arrows-alt-v"></i>
+                    Zeilen verschiebbar
+                  </span>
+                </div>
+              </div>
+
+              <div class="card-preview-container-realistic">
+                <div
+                  class="dashboard-card preview-card-realistic"
+                  id="cardPreview"
+                >
+                  <div class="card-header">
+                    <div class="card-title">
+                      <i class="fas fa-train"></i>
+                      <span id="previewTitle">Neue Karte</span>
+                    </div>
+                    <div class="card-controls">
+                      <button class="card-control-btn" disabled>
+                        <i class="fas fa-sync-alt"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="card-content" id="previewContent">
+                    <div class="card-empty">
+                      <i class="fas fa-map-marker-alt"></i>
+                      <h4>Station auswählen</h4>
+                      <p>Wählen Sie zuerst eine Station aus</p>
+                    </div>
+                  </div>
+                  <div
+                    class="card-footer"
+                    id="previewFooter"
+                    style="display: none"
+                  >
+                    <small id="previewFooterInfo">Station info</small>
+                    <small id="previewFooterUpdate">Vorschau</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Authentication Modals -->
     <!-- Login Modal -->
     <div class="modal" id="loginModal">
-        <div class="modal-content auth-modal">
-            <div class="modal-header">
-                <h3><i class="fas fa-sign-in-alt"></i> Anmelden</h3>
-                <button class="modal-close" onclick="closeAuthModal('loginModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="loginForm" class="auth-form">
-                    <div class="form-group">
-                        <label for="loginEmail">E-Mail-Adresse</label>
-                        <input type="email" id="loginEmail" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="loginPassword">Passwort</label>
-                        <input type="password" id="loginPassword" required>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-sign-in-alt"></i>
-                            Anmelden
-                        </button>
-                        <button type="button" class="btn btn-link" onclick="showForgotPassword()">
-                            Passwort vergessen?
-                        </button>
-                    </div>
-                </form>
-                <div class="auth-switch">
-                    <p>Noch kein Konto? <button class="btn btn-link" onclick="switchToRegister()">Jetzt registrieren</button></p>
-                </div>
-            </div>
+      <div class="modal-content auth-modal">
+        <div class="modal-header">
+          <h3><i class="fas fa-sign-in-alt"></i> Anmelden</h3>
+          <button class="modal-close" onclick="closeAuthModal('loginModal')">
+            &times;
+          </button>
         </div>
+        <div class="modal-body">
+          <form id="loginForm" class="auth-form">
+            <div class="form-group">
+              <label for="loginEmail">E-Mail-Adresse</label>
+              <input type="email" id="loginEmail" required />
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Passwort</label>
+              <input type="password" id="loginPassword" required />
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt"></i>
+                Anmelden
+              </button>
+              <button
+                type="button"
+                class="btn btn-link"
+                onclick="showForgotPassword()"
+              >
+                Passwort vergessen?
+              </button>
+            </div>
+          </form>
+          <div class="auth-switch">
+            <p>
+              Noch kein Konto?
+              <button class="btn btn-link" onclick="switchToRegister()">
+                Jetzt registrieren
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Register Modal -->
     <div class="modal" id="registerModal">
-        <div class="modal-content auth-modal">
-            <div class="modal-header">
-                <h3><i class="fas fa-user-plus"></i> Registrieren</h3>
-                <button class="modal-close" onclick="closeAuthModal('registerModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="registerForm" class="auth-form">
-                    <div class="form-group">
-                        <label for="registerEmail">E-Mail-Adresse</label>
-                        <input type="email" id="registerEmail" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="registerPassword">Passwort</label>
-                        <input type="password" id="registerPassword" required minlength="6">
-                        <small class="form-hint">Mindestens 6 Zeichen</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="registerPasswordConfirm">Passwort bestätigen</label>
-                        <input type="password" id="registerPasswordConfirm" required>
-                    </div>
-                    
-                    <!-- Data Migration Option -->
-                    <div class="migration-option" id="migrationOption">
-                        <div class="form-group checkbox-group">
-                            <label class="checkbox-option">
-                                <input type="checkbox" id="migrateData" checked>
-                                <span>Meine lokalen Daten übernehmen</span>
-                            </label>
-                            <small class="form-hint" id="migrationHint">Ihre gespeicherten Karten werden in Ihren Account übertragen</small>
-                        </div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-user-plus"></i>
-                            Registrieren
-                        </button>
-                    </div>
-                </form>
-                <div class="auth-switch">
-                    <p>Bereits ein Konto? <button class="btn btn-link" onclick="switchToLogin()">Jetzt anmelden</button></p>
-                </div>
-            </div>
+      <div class="modal-content auth-modal">
+        <div class="modal-header">
+          <h3><i class="fas fa-user-plus"></i> Registrieren</h3>
+          <button class="modal-close" onclick="closeAuthModal('registerModal')">
+            &times;
+          </button>
         </div>
+        <div class="modal-body">
+          <form id="registerForm" class="auth-form">
+            <div class="form-group">
+              <label for="registerEmail">E-Mail-Adresse</label>
+              <input type="email" id="registerEmail" required />
+            </div>
+            <div class="form-group">
+              <label for="registerPassword">Passwort</label>
+              <input
+                type="password"
+                id="registerPassword"
+                required
+                minlength="6"
+              />
+              <small class="form-hint">Mindestens 6 Zeichen</small>
+            </div>
+            <div class="form-group">
+              <label for="registerPasswordConfirm">Passwort bestätigen</label>
+              <input type="password" id="registerPasswordConfirm" required />
+            </div>
+
+            <!-- Data Migration Option -->
+            <div class="migration-option" id="migrationOption">
+              <div class="form-group checkbox-group">
+                <label class="checkbox-option">
+                  <input type="checkbox" id="migrateData" checked />
+                  <span>Meine lokalen Daten übernehmen</span>
+                </label>
+                <small class="form-hint" id="migrationHint"
+                  >Ihre gespeicherten Karten werden in Ihren Account
+                  übertragen</small
+                >
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i>
+                Registrieren
+              </button>
+            </div>
+          </form>
+          <div class="auth-switch">
+            <p>
+              Bereits ein Konto?
+              <button class="btn btn-link" onclick="switchToLogin()">
+                Jetzt anmelden
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Password Reset Modal -->
     <div class="modal" id="resetPasswordModal">
-        <div class="modal-content auth-modal">
-            <div class="modal-header">
-                <h3><i class="fas fa-key"></i> Passwort zurücksetzen</h3>
-                <button class="modal-close" onclick="closeAuthModal('resetPasswordModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="resetPasswordForm" class="auth-form">
-                    <div class="form-group">
-                        <label for="resetEmail">E-Mail-Adresse</label>
-                        <input type="email" id="resetEmail" required>
-                        <small class="form-hint">Wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts</small>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane"></i>
-                            E-Mail senden
-                        </button>
-                        <button type="button" class="btn btn-outline" onclick="closeAuthModal('resetPasswordModal')">
-                            Abbrechen
-                        </button>
-                    </div>
-                </form>
-            </div>
+      <div class="modal-content auth-modal">
+        <div class="modal-header">
+          <h3><i class="fas fa-key"></i> Passwort zurücksetzen</h3>
+          <button
+            class="modal-close"
+            onclick="closeAuthModal('resetPasswordModal')"
+          >
+            &times;
+          </button>
         </div>
+        <div class="modal-body">
+          <form id="resetPasswordForm" class="auth-form">
+            <div class="form-group">
+              <label for="resetEmail">E-Mail-Adresse</label>
+              <input type="email" id="resetEmail" required />
+              <small class="form-hint"
+                >Wir senden Ihnen einen Link zum Zurücksetzen Ihres
+                Passworts</small
+              >
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-paper-plane"></i>
+                E-Mail senden
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline"
+                onclick="closeAuthModal('resetPasswordModal')"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.min.js" 
-            integrity="sha256-o4/QXvWpZkggQ7jzZZMdXmIPlEpKPDJNnViMpR5kDUQ=" 
-            crossorigin="anonymous"></script>
-    
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.min.js"
+      integrity="sha256-o4/QXvWpZkggQ7jzZZMdXmIPlEpKPDJNnViMpR5kDUQ="
+      crossorigin="anonymous"
+    ></script>
+
     <!-- Environment Variables - Inline Fallback für sofortige Verfügbarkeit -->
     <script>
-        // Sofortige Fallback-Werte setzen um Race-Conditions zu vermeiden
-        window.ENV_VARS = window.ENV_VARS || {
-            DEBUG_MODE: (window.location.hostname === 'localhost' || 
-                        window.location.hostname === '127.0.0.1') ? 'true' : 'false',
-            ENABLE_USER_AUTH: (window.location.hostname === 'localhost' || 
-                              window.location.hostname === '127.0.0.1') ? 'false' : 'true',
-            ENABLE_ANALYTICS: 'false',
-            SUPABASE_URL: '',
-            SUPABASE_ANON_KEY: ''
-        };
-        
-        // Versuche bessere Werte asynchron zu laden (überschreibt Fallback falls verfügbar)
-        (async function() {
-            try {
-                const response = await fetch('/api/env');
-                if (response.ok) {
-                    const envVars = await response.json();
-                    Object.assign(window.ENV_VARS, envVars);
-                    console.log('🔧 Environment-Variablen aktualisiert:', Object.keys(envVars));
-                    
-                    // EVENT FÜR SUPABASE CONFIG!
-                    window.dispatchEvent(new CustomEvent('envVarsUpdated', { detail: envVars }));
-                    
-                    // Config neu laden falls schon initialisiert
-                    if (window.CONFIG && typeof window.loadConfig === 'function') {
-                        window.loadConfig();
-                    }
-                }
-            } catch (error) {
-                console.warn('⚠️ Verwende Fallback Environment-Variablen:', error.message);
+      // Sofortige Fallback-Werte setzen um Race-Conditions zu vermeiden
+      window.ENV_VARS = window.ENV_VARS || {
+        DEBUG_MODE:
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1"
+            ? "true"
+            : "false",
+        ENABLE_USER_AUTH:
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1"
+            ? "false"
+            : "true",
+        ENABLE_ANALYTICS: "false",
+        SUPABASE_URL: "",
+        SUPABASE_ANON_KEY: "",
+      };
+
+      // Versuche bessere Werte asynchron zu laden (überschreibt Fallback falls verfügbar)
+      (async function () {
+        try {
+          const response = await fetch("/api/env");
+          if (response.ok) {
+            const envVars = await response.json();
+            Object.assign(window.ENV_VARS, envVars);
+            console.log(
+              "🔧 Environment-Variablen aktualisiert:",
+              Object.keys(envVars)
+            );
+
+            // EVENT FÜR SUPABASE CONFIG!
+            window.dispatchEvent(
+              new CustomEvent("envVarsUpdated", { detail: envVars })
+            );
+
+            // Config neu laden falls schon initialisiert
+            if (window.CONFIG && typeof window.loadConfig === "function") {
+              window.loadConfig();
             }
-        })();
-        
-        console.log('🔧 Basis Environment-Variablen verfügbar');
+          }
+        } catch (error) {
+          console.warn(
+            "⚠️ Verwende Fallback Environment-Variablen:",
+            error.message
+          );
+        }
+      })();
+
+      console.log("🔧 Basis Environment-Variablen verfügbar");
     </script>
-    
+
     <!-- Konfiguration laden (nach Environment-Setup) -->
     <script src="config.js"></script>
-    
+
     <!-- Supabase laden (mit spezifischer Version) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.min.js"></script>
     <script src="supabase-config.js"></script>
-    
+
     <!-- App starten -->
     <script src="app.js"></script>
-</body>
+  </body>
 </html>
