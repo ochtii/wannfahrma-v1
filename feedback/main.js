@@ -1,27 +1,34 @@
 // Modern feedback system JS (theme switcher, tab logic, form, API, etc.)
 
+// --- Theme Management ---
+const THEME_CONFIG = {
+    dark: {
+        gradient: 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)',
+        textColor: '#f0f0f0',
+        attribute: 'dark'
+    },
+    light: {
+        gradient: 'linear-gradient(135deg, #38b000 0%, #70e000 100%)',
+        textColor: '#222',
+        attribute: null
+    }
+};
+
+function applyThemeStyles(themeConfig) {
+    document.documentElement.style.setProperty('--bg-gradient', themeConfig.gradient);
+    document.documentElement.style.setProperty('--text-color', themeConfig.textColor);
+    if (themeConfig.attribute) {
+        document.documentElement.setAttribute('data-theme', themeConfig.attribute);
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+    }
+}
+
 // Theme switching logic
 function setTheme(theme) {
-    if (theme === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)');
-        document.documentElement.style.setProperty('--text-color', '#f0f0f0');
-    } else if (theme === 'light') {
-        document.documentElement.removeAttribute('data-theme');
-        document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #38b000 0%, #70e000 100%)');
-        document.documentElement.style.setProperty('--text-color', '#222');
-    } else {
-        // System/default
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)');
-            document.documentElement.style.setProperty('--text-color', '#f0f0f0');
-        } else {
-            document.documentElement.removeAttribute('data-theme');
-            document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #38b000 0%, #70e000 100%)');
-            document.documentElement.style.setProperty('--text-color', '#222');
-        }
-    }
+    const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const effectiveTheme = (theme === 'system') ? (isSystemDark ? 'dark' : 'light') : theme;
+    applyThemeStyles(THEME_CONFIG[effectiveTheme]);
     localStorage.setItem('theme', theme);
 }
 window.setTheme = setTheme;
@@ -69,20 +76,13 @@ window.addEventListener('DOMContentLoaded', function() {
     if (adminPassword) {
         adminPassword.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent form submission
                 adminLogin();
             }
         });
     }
     // Load stats for default tab
     if (window.loadStats) loadStats();
-    // Initialize recent feedback if on that tab
-    const activeTab = document.querySelector('.tab-content.active');
-    if (activeTab && activeTab.id === 'recent-tab') {
-        console.log('Recent tab is active on load, loading recent feedback');
-        loadRecentFeedback();
-    } else {
-        console.log('Active tab on load:', activeTab ? activeTab.id : 'none');
-    }
 });
 
 // Tab management
@@ -97,52 +97,46 @@ function showTab(tabName) {
         }
     });
     if (tabName === 'stats') loadStats();
-    else if (tabName === 'recent') {
-        console.log('Loading recent feedback for tab switch');
-        loadRecentFeedback();
-    }
+    else if (tabName === 'recent') loadRecentFeedback();
 }
 window.showTab = showTab;
 
+// --- Form & Interaction Logic ---
+
+const QUICK_FEEDBACK_CONFIG = {
+    'Super': { type: 'general', rating: 5, text: '👍 Super App! Die Funktionen sind sehr hilfreich und die Bedienung ist intuitiv. Besonders gut gefällt mir...' },
+    'Bug': { type: 'bug', text: '🐛 Bug gefunden - Details:\n\nWas ist passiert: \nWann ist es aufgetreten: \nWelche Schritte haben dazu geführt: \n\nErwartetes Verhalten: ' },
+    'Idee': { type: 'feature', text: '💡 Verbesserungsidee - Es wäre toll wenn...\n\nMeine Idee: \nWarum wäre das hilfreich: \nWie könnte es funktionieren: ' },
+    'Verbesserung': { type: 'improvement', text: '⚡ Verbesserungsvorschlag für bestehende Funktion:\n\nBetroffene Funktion: \nAktuelles Problem: \nLösungsvorschlag: \nVorteile: ' },
+    'Frage': { type: 'general', text: '❓ Frage zur Bedienung:\n\nMeine Frage: \nWas ich versucht habe: \nWo ich nicht weiterkomme: ' },
+    'Feature': { type: 'feature', text: '🚀 Feature-Wunsch:\n\nGewünschte Funktion: \nAnwendungsfall: \nWarum wäre das nützlich: \nWie stelle ich mir das vor: ' },
+    'Performance': { type: 'bug', text: '🐌 Performance-Problem bemerkt:\n\nWo tritt das Problem auf: \nWie äußert sich die Langsamkeit: \nGeräte-/Browser-Info: \nUhrzeit des Auftretens: ' }
+};
+
 // Quick feedback buttons
-function quickFeedback(message) {
+function quickFeedback(key, event) {
     const messageTextarea = document.getElementById('feedback-message');
     const typeSelect = document.getElementById('feedback-type');
     const platformSelect = document.getElementById('feedback-platform');
-    
-    // Set message and appropriate type based on content
-    if (message.includes('👍') || message.includes('Super')) {
-        messageTextarea.value = '👍 Super App! Die Funktionen sind sehr hilfreich und die Bedienung ist intuitiv. Besonders gut gefällt mir...';
-        typeSelect.value = 'general';
-        window.currentRating = 5;
+
+    const config = Object.values(QUICK_FEEDBACK_CONFIG).find(c => c.text.includes(key)) || QUICK_FEEDBACK_CONFIG[key];
+
+    if (config) {
+        messageTextarea.value = config.text;
+        typeSelect.value = config.type;
+        if (config.rating) {
+            window.currentRating = config.rating;
+        }
         updateStars();
         updateRatingText();
-    } else if (message.includes('🐛') || message.includes('Bug')) {
-        messageTextarea.value = '🐛 Bug gefunden - Details:\n\nWas ist passiert: \nWann ist es aufgetreten: \nWelche Schritte haben dazu geführt: \n\nErwartetes Verhalten: ';
-        typeSelect.value = 'bug';
-    } else if (message.includes('💡') || message.includes('Idee')) {
-        messageTextarea.value = '💡 Verbesserungsidee - Es wäre toll wenn...\n\nMeine Idee: \nWarum wäre das hilfreich: \nWie könnte es funktionieren: ';
-        typeSelect.value = 'feature';
-    } else if (message.includes('⚡') || message.includes('Verbesserung')) {
-        messageTextarea.value = '⚡ Verbesserungsvorschlag für bestehende Funktion:\n\nBetroffene Funktion: \nAktuelles Problem: \nLösungsvorschlag: \nVorteile: ';
-        typeSelect.value = 'improvement';
-    } else if (message.includes('❓') || message.includes('Frage')) {
-        messageTextarea.value = '❓ Frage zur Bedienung:\n\nMeine Frage: \nWas ich versucht habe: \nWo ich nicht weiterkomme: ';
-        typeSelect.value = 'general';
-    } else if (message.includes('🚀') || message.includes('Feature')) {
-        messageTextarea.value = '🚀 Feature-Wunsch:\n\nGewünschte Funktion: \nAnwendungsfall: \nWarum wäre das nützlich: \nWie stelle ich mir das vor: ';
-        typeSelect.value = 'feature';
-    } else if (message.includes('🐌') || message.includes('Performance')) {
-        messageTextarea.value = '🐌 Performance-Problem bemerkt:\n\nWo tritt das Problem auf: \nWie äußert sich die Langsamkeit: \nGeräte-/Browser-Info: \nUhrzeit des Auftretens: ';
-        typeSelect.value = 'bug';
     } else {
-        messageTextarea.value = message;
+        messageTextarea.value = key;
         typeSelect.value = 'general';
     }
-    
+
     // Auto-detect platform without visual flash
-    detectAndSetPlatformQuiet(platformSelect);
-    
+    detectAndSetPlatform(platformSelect, { quiet: true });
+
     // Highlight selected quick button temporarily
     event.target.classList.add('selected');
     setTimeout(() => {
@@ -150,7 +144,7 @@ function quickFeedback(message) {
             btn.classList.remove('selected');
         });
     }, 2000);
-    
+
     // Focus message textarea
     messageTextarea.focus();
     // Move cursor to end for easy editing
@@ -185,37 +179,21 @@ function updateRatingText() {
 }
 window.updateRatingText = updateRatingText;
 
-function detectAndSetPlatform(selectElement) {
+function detectAndSetPlatform(selectElement, options = { quiet: false }) {
     const userAgent = navigator.userAgent.toLowerCase();
-    const isMobile = /mobile|android|iphone|ipad/.test(userAgent);
     if (/android/.test(userAgent)) {
         selectElement.value = 'android';
-    } else if (isMobile) {
+    } else if (/mobile|iphone|ipad/.test(userAgent)) {
         selectElement.value = 'web-mobile';
     } else {
         selectElement.value = 'web';
     }
-    // Visual feedback for initial load only
-    selectElement.style.backgroundColor = '#e8f5e8';
-    setTimeout(() => {
-        selectElement.style.backgroundColor = '';
-    }, 1500);
+    if (!options.quiet) {
+        selectElement.style.backgroundColor = '#e8f5e8';
+        setTimeout(() => { selectElement.style.backgroundColor = ''; }, 1500);
+    }
 }
 window.detectAndSetPlatform = detectAndSetPlatform;
-
-function detectAndSetPlatformQuiet(selectElement) {
-    const userAgent = navigator.userAgent.toLowerCase();
-    const isMobile = /mobile|android|iphone|ipad/.test(userAgent);
-    if (/android/.test(userAgent)) {
-        selectElement.value = 'android';
-    } else if (isMobile) {
-        selectElement.value = 'web-mobile';
-    } else {
-        selectElement.value = 'web';
-    }
-    // No visual feedback for quick button usage
-}
-window.detectAndSetPlatformQuiet = detectAndSetPlatformQuiet;
 
 // Recent filters toggle
 function toggleRecentFilters() {
@@ -256,109 +234,97 @@ function resetForm() {
 }
 window.resetForm = resetForm;
 
+// --- API & Data Loading ---
+
+async function apiFetch(url, options = {}, loadingElement, contentElement, errorContainer) {
+    if (loadingElement) loadingElement.style.display = 'block';
+    if (contentElement) contentElement.style.display = 'none';
+
+    try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+        }
+        const data = await response.json();
+        if (loadingElement) loadingElement.style.display = 'none';
+        if (contentElement) contentElement.style.display = 'block';
+        return data;
+    } catch (error) {
+        console.error(`Error fetching ${url}:`, error);
+        if (loadingElement) loadingElement.style.display = 'none';
+        if (errorContainer) {
+            errorContainer.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #dc3545;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                    <h3>Fehler beim Laden der Daten</h3>
+                    <p>Die angeforderten Informationen konnten nicht geladen werden.</p>
+                    <small>Fehler: ${error.message}</small>
+                    <br><br>
+                    <button onclick="${options.retryCallback || 'location.reload()'}" class="btn btn-primary">🔄 Erneut versuchen</button>
+                </div>
+            `;
+            if (contentElement) contentElement.style.display = 'block';
+        }
+        throw error; // Re-throw for specific handlers
+    }
+}
+
+function createStatCard(label, value) {
+    return `
+        <div class="stat-card">
+            <h3>${label}</h3>
+            <div class="stat-value">${value || 0}</div>
+        </div>
+    `;
+}
+
 // Load statistics
-function loadStats() {
+async function loadStats() {
     const statsLoading = document.getElementById('stats-loading');
     const statsContent = document.getElementById('stats-content');
     const statsGrid = document.getElementById('stats-grid');
-    
+
     try {
-        statsLoading.style.display = 'block';
-        statsContent.style.display = 'none';
-        
-        // API call to get stats
-        fetch('/api/feedback/stats')
-            .then(response => response.json())
-            .then(data => {
-                // Generate stats cards
-                const statsHtml = `
-                    <div class="stat-card">
-                        <h3>📊 Gesamt Feedback</h3>
-                        <div class="stat-value">${data.total || 0}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>📝 Heute</h3>
-                        <div class="stat-value">${data.today || 0}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>📅 Diese Woche</h3>
-                        <div class="stat-value">${data.thisWeek || 0}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>⭐ Ø Bewertung</h3>
-                        <div class="stat-value">${data.averageRating || '0.0'}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>🐛 Bug Reports</h3>
-                        <div class="stat-value">${data.bugReports || 0}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>🚀 Feature Requests</h3>
-                        <div class="stat-value">${data.featureRequests || 0}</div>
-                    </div>
-                `;
-                statsGrid.innerHTML = statsHtml;
-                document.getElementById('stats-updated').textContent = new Date().toLocaleString('de-DE');
-                
-                statsLoading.style.display = 'none';
-                statsContent.style.display = 'block';
-            })
-            .catch(error => {
-                console.error('Error loading stats:', error);
-                statsLoading.style.display = 'none';
-                statsGrid.innerHTML = `
-                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #dc3545;">
-                        <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
-                        <h3>Fehler beim Laden der Statistiken</h3>
-                        <p>Die Statistiken konnten nicht geladen werden.</p>
-                        <small>Fehler: ${error.message}</small>
-                        <br><br>
-                        <button onclick="loadStats()" class="btn btn-primary">� Erneut versuchen</button>
-                    </div>
-                `;
-                statsContent.style.display = 'block';
-            });
-    } catch (error) {
-        console.error('Error in loadStats:', error);
-        statsLoading.innerHTML = `<div style='color: #dc3545;'>❌ Fehler beim Laden der Statistiken<br><small>${error.message}</small></div>`;
+        const data = await apiFetch('/api/feedback/stats', { retryCallback: 'loadStats()' }, statsLoading, statsContent, statsGrid);
+
+        const statsHtml = [
+            createStatCard('📊 Gesamt Feedback', data.total),
+            createStatCard('📝 Heute', data.today),
+            createStatCard('📅 Diese Woche', data.thisWeek),
+            createStatCard('⭐ Ø Bewertung', data.averageRating || '0.0'),
+            createStatCard('🐛 Bug Reports', data.bugReports),
+            createStatCard('🚀 Feature Requests', data.featureRequests)
+        ].join('');
+
+        statsGrid.innerHTML = statsHtml;
+        document.getElementById('stats-updated').textContent = new Date().toLocaleString('de-DE');
+    } catch (e) {
+        // Error is already displayed by apiFetch
     }
 }
 window.loadStats = loadStats;
 
 // Load recent feedback
-function loadRecentFeedback(page = 1) {
-    console.log('loadRecentFeedback called with page:', page);
-    
+async function loadRecentFeedback(page = 1) {
     const recentLoading = document.getElementById('recent-loading');
     const recentContent = document.getElementById('recent-content');
     const recentPagination = document.getElementById('recent-pagination');
-    
-    console.log('Elements found:', {
-        recentLoading: !!recentLoading,
-        recentContent: !!recentContent,
-        recentPagination: !!recentPagination
-    });
-    
+
     if (!recentLoading || !recentContent) {
         console.error('Recent feedback containers not found');
         return;
     }
-    
-    console.log('Setting loading state...');
-    recentLoading.style.display = 'block';
-    recentContent.style.display = 'none';
     if (recentPagination) recentPagination.style.display = 'none';
-    
+
     window.currentPage = page;
-    
+
     // Get filter values
     const timeFilter = document.getElementById('recent-time-filter')?.value || '24h';
     const typeFilter = document.getElementById('recent-type-filter')?.value || '';
     const platformFilter = document.getElementById('recent-platform-filter')?.value || '';
     const perPage = document.getElementById('recent-per-page')?.value || 25;
-    
-    console.log('Filters:', { timeFilter, typeFilter, platformFilter, perPage });
-    
+
     const params = new URLSearchParams({
         page: page,
         limit: perPage,
@@ -366,59 +332,23 @@ function loadRecentFeedback(page = 1) {
         type: typeFilter,
         platform: platformFilter
     });
-    
+
     const apiUrl = `/api/feedback/recent?${params}`;
-    console.log('Making API call to:', apiUrl);
-    
-    // API call to get recent feedback
-    fetch(apiUrl)
-        .then(response => {
-            console.log('API Response status:', response.status);
-            console.log('API Response headers:', response.headers);
-            if (!response.ok) {
-                return response.text().then(text => {
-                    console.log('Error response body:', text);
-                    throw new Error(`HTTP ${response.status}: ${response.statusText} - ${text}`);
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('API Response data:', data);
-            displayRecentFeedback(data);
-        })
-        .catch(error => {
-            console.error('Error loading recent feedback:', error);
-            recentLoading.style.display = 'none';
-            recentContent.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #dc3545;">
-                    <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
-                    <h3>Fehler beim Laden des Feedbacks</h3>
-                    <p>Das aktuelle Feedback konnte nicht geladen werden.</p>
-                    <small>Fehler: ${error.message}</small>
-                    <br><br>
-                    <button onclick="loadRecentFeedback()" class="btn btn-primary">🔄 Erneut versuchen</button>
-                </div>
-            `;
-            recentContent.style.display = 'block';
-        });
+
+    try {
+        const data = await apiFetch(apiUrl, { retryCallback: 'loadRecentFeedback()' }, recentLoading, recentContent, recentContent);
+        displayRecentFeedback(data);
+    } catch (e) {
+        // Error is already displayed by apiFetch
+    }
 }
 
 function displayRecentFeedback(data) {
-    console.log('displayRecentFeedback called with data:', data);
-    
     const recentLoading = document.getElementById('recent-loading');
     const recentContent = document.getElementById('recent-content');
     const recentPagination = document.getElementById('recent-pagination');
-    
-    console.log('Display elements found:', {
-        recentLoading: !!recentLoading,
-        recentContent: !!recentContent,
-        recentPagination: !!recentPagination
-    });
-    
+
     if (!data) {
-        console.log('No data received');
         recentContent.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #dc3545;">
                 <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
@@ -427,7 +357,6 @@ function displayRecentFeedback(data) {
             </div>
         `;
     } else if (!data.feedbacks && !data.feedback) {
-        console.log('No feedbacks property found in data');
         recentContent.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #dc3545;">
                 <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
@@ -441,7 +370,6 @@ function displayRecentFeedback(data) {
         const feedbacks = data.feedbacks || data.feedback || [];
         
         if (feedbacks.length === 0) {
-            console.log('No feedbacks found, showing empty state');
             recentContent.innerHTML = `
                 <div style="text-align: center; padding: 40px; color: #6c757d;">
                     <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
@@ -451,75 +379,56 @@ function displayRecentFeedback(data) {
                 </div>
             `;
         } else {
-            console.log(`Displaying ${feedbacks.length} feedbacks`);
-            
             // Update data object to use consistent property name
             data.feedbacks = feedbacks;
-            
-            const feedbackHtml = data.feedbacks.map(feedback => {
-            const typeIcons = {
-                general: '💬',
-                bug: '🐛',
-                feature: '🚀',
-                improvement: '⚡'
-            };
-            
-            const platformIcons = {
-                web: '🌐',
-                'web-mobile': '📱',
-                android: '🤖'
-            };
-            
-            const timeAgo = feedback.timestamp ? getTimeAgo(new Date(feedback.timestamp)) : 'Unbekannt';
-            const stars = feedback.rating ? '⭐'.repeat(feedback.rating) : '';
-            
-            return `
-                <div class="feedback-item">
-                    <div class="feedback-header">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span class="feedback-type ${feedback.type || 'general'}">${typeIcons[feedback.type] || '💬'} ${feedback.type || 'general'}</span>
-                            <span style="color: #6c757d;">${platformIcons[feedback.platform] || '🌐'} ${feedback.platform || 'web'}</span>
-                            ${stars ? `<span style="color: #ffc107;">${stars}</span>` : ''}
-                            <span style="background: #6c757d; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
-                                ${feedback.status || 'neu'}
-                            </span>
-                        </div>
-                        <div class="feedback-timestamp">${timeAgo}</div>
-                    </div>
-                    <div class="feedback-content">${feedback.message || 'Keine Nachricht verfügbar'}</div>
-                    ${feedback.name ? `<div style="font-size: 12px; color: #6c757d; margin-top: 5px;">
-                        👤 ${feedback.namePublic !== false ? feedback.name : 'Name verdeckt'}
-                    </div>` : ''}
-                    <div style="font-size: 12px; color: #6c757d;">
-                        ID: ${feedback.id || 'Unbekannt'} • Status: ${feedback.status || 'neu'}
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        recentContent.innerHTML = feedbackHtml;
+            const feedbackHtml = data.feedbacks.map(createRecentFeedbackItem).join('');
+            recentContent.innerHTML = feedbackHtml;
         }
     }
-    
+
     // Update pagination
     if (data.pagination && recentPagination) {
         window.totalPages = data.pagination.totalPages;
-        document.getElementById('recent-page-info').textContent = 
+        document.getElementById('recent-page-info').textContent =
             `Seite ${data.pagination.page} von ${data.pagination.totalPages} (${data.pagination.total} gesamt)`;
-        
+
         const prevBtn = document.getElementById('recent-prev-btn');
         const nextBtn = document.getElementById('recent-next-btn');
-        
+
         if (prevBtn) prevBtn.disabled = !data.pagination.hasPrev;
         if (nextBtn) nextBtn.disabled = !data.pagination.hasNext;
-        
+
         recentPagination.style.display = data.pagination.totalPages > 1 ? 'block' : 'none';
     }
-    
-    console.log('Setting content visibility...');
+
     recentLoading.style.display = 'none';
     recentContent.style.display = 'block';
-    console.log('Display completed');
+}
+
+function createRecentFeedbackItem(feedback) {
+    const typeIcons = { general: '💬', bug: '🐛', feature: '🚀', improvement: '⚡' };
+    const platformIcons = { web: '🌐', 'web-mobile': '📱', android: '🤖' };
+    const timeAgo = feedback.timestamp ? getTimeAgo(new Date(feedback.timestamp)) : 'Unbekannt';
+    const stars = feedback.rating ? '⭐'.repeat(feedback.rating) : '';
+
+    return `
+        <div class="feedback-item">
+            <div class="feedback-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="feedback-type ${feedback.type || 'general'}">${typeIcons[feedback.type] || '💬'} ${feedback.type || 'general'}</span>
+                    <span style="color: #6c757d;">${platformIcons[feedback.platform] || '🌐'} ${feedback.platform || 'web'}</span>
+                    ${stars ? `<span style="color: #ffc107;">${stars}</span>` : ''}
+                    <span style="background: #6c757d; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                        ${feedback.status || 'neu'}
+                    </span>
+                </div>
+                <div class="feedback-timestamp">${timeAgo}</div>
+            </div>
+            <div class="feedback-content">${feedback.message || 'Keine Nachricht verfügbar'}</div>
+            ${feedback.name ? `<div style="font-size: 12px; color: #6c757d; margin-top: 5px;">👤 ${feedback.namePublic !== false ? feedback.name : 'Name verdeckt'}</div>` : ''}
+            <div style="font-size: 12px; color: #6c757d;">ID: ${feedback.id || 'Unbekannt'} • Status: ${feedback.status || 'neu'}</div>
+        </div>
+    `;
 }
 
 function getTimeAgo(date) {
@@ -535,12 +444,6 @@ function getTimeAgo(date) {
 
 window.loadRecentFeedback = loadRecentFeedback;
 
-// Debug function to test recent feedback loading
-window.testRecentFeedback = function() {
-    console.log('Manual test of loadRecentFeedback');
-    loadRecentFeedback();
-};
-
 // Admin login
 function adminLogin() {
     const errorDiv = document.getElementById('admin-login-error');
@@ -555,35 +458,27 @@ function adminLogin() {
     
     errorDiv.style.display = 'none';
     
-    // API call to authenticate
-    fetch('/api/admin/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ password: password })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Ungültiges Passwort');
-        }
-        return response.json();
-    })
-    .then(data => {
-        // Store auth token if provided
+    apiFetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: password })
+        })
+        .then(data => {
         if (data.token) {
             localStorage.setItem('adminToken', data.token);
         }
-        
         document.getElementById('admin-login').style.display = 'none';
         document.getElementById('admin-dashboard').style.display = 'block';
-        
-        // Load admin data
         loadAdminFeedbacks();
     })
     .catch(error => {
         console.error('Admin login error:', error);
-        errorDiv.textContent = error.message || 'Anmeldung fehlgeschlagen';
+        // Customize error message for login
+        if (error.message.includes('401')) {
+            errorDiv.textContent = 'Ungültiges Passwort';
+        } else {
+            errorDiv.textContent = 'Anmeldung fehlgeschlagen';
+        }
         errorDiv.style.display = 'block';
         passwordField.value = '';
     });
@@ -596,7 +491,7 @@ function adminLogout() {
     document.getElementById('admin-password').value = '';
 }
 
-function loadAdminFeedbacks() {
+async function loadAdminFeedbacks() {
     const adminLoading = document.getElementById('admin-loading');
     const adminFeedbacksList = document.getElementById('admin-feedbacks-list');
     const adminStatsSummary = document.getElementById('admin-stats-summary');
@@ -605,9 +500,8 @@ function loadAdminFeedbacks() {
         console.error('Admin elements not found');
         return;
     }
-    
-    adminLoading.style.display = 'block';
-    if (adminFeedbacksList) adminFeedbacksList.innerHTML = '';
+
+    adminFeedbacksList.innerHTML = '';
     
     // Get filters
     const statusFilter = document.getElementById('admin-status-filter')?.value || '';
@@ -627,32 +521,14 @@ function loadAdminFeedbacks() {
         headers['Authorization'] = `Bearer ${token}`;
     }
     
-    // Load admin feedbacks
-    fetch(`/api/admin/feedbacks?${params}`, { headers })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            displayAdminFeedbacks(data);
-            adminLoading.style.display = 'none';
-        })
-        .catch(error => {
-            console.error('Error loading admin feedbacks:', error);
-            adminLoading.style.display = 'none';
-            adminFeedbacksList.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #dc3545;">
-                    <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
-                    <h3>Fehler beim Laden der Admin-Daten</h3>
-                    <p>Die Feedback-Daten konnten nicht geladen werden.</p>
-                    <small>Fehler: ${error.message}</small>
-                    <br><br>
-                    <button onclick="loadAdminFeedbacks()" class="btn btn-primary">🔄 Erneut versuchen</button>
-                </div>
-            `;
-        });
+    try {
+        const data = await apiFetch(`/api/admin/feedbacks?${params}`, { headers, retryCallback: 'loadAdminFeedbacks()' }, adminLoading, adminFeedbacksList, adminFeedbacksList);
+        displayAdminFeedbacks(data);
+    } catch (e) {
+        if (e.message.includes('401') || e.message.includes('403')) {
+            adminLogout(); // Token likely expired, log out
+        }
+    }
 }
 
 function displayAdminFeedbacks(data) {
@@ -759,71 +635,46 @@ function displayAdminFeedbacks(data) {
     adminFeedbacksList.innerHTML = feedbacksHtml;
 }
 
-function updateFeedbackStatus(id, status) {
+async function updateFeedbackStatus(id, status) {
     const token = localStorage.getItem('adminToken');
-    const headers = {
-        'Content-Type': 'application/json'
-    };
-    
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    fetch(`/api/admin/feedback/${id}/status`, {
+    const options = {
         method: 'PUT',
-        headers: headers,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ status: status })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Status konnte nicht aktualisiert werden');
-        }
-        return response.json();
-    })
-    .then(data => {
+    };
+
+    try {
+        await apiFetch(`/api/admin/feedback/${id}/status`, options);
         console.log('Status updated successfully');
-        // Reload the list to reflect changes
         loadAdminFeedbacks();
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Error updating status:', error);
         alert('Fehler beim Aktualisieren des Status: ' + error.message);
-    });
+    }
 }
 
-function deleteFeedback(id) {
+async function deleteFeedback(id) {
     if (!confirm('Möchten Sie dieses Feedback wirklich löschen?')) {
         return;
     }
-    
+
     const token = localStorage.getItem('adminToken');
-    const headers = {
-        'Content-Type': 'application/json'
-    };
-    
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    fetch(`/api/admin/feedback/${id}`, {
+    const options = {
         method: 'DELETE',
-        headers: headers
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Feedback konnte nicht gelöscht werden');
-        }
-        return response.json();
-    })
-    .then(data => {
+        headers: { 'Authorization': `Bearer ${token}` }
+    };
+
+    try {
+        await apiFetch(`/api/admin/feedback/${id}`, options);
         console.log('Feedback deleted successfully');
-        // Reload the list to reflect changes
         loadAdminFeedbacks();
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Error deleting feedback:', error);
         alert('Fehler beim Löschen des Feedbacks: ' + error.message);
-    });
+    }
 }
 
 window.adminLogin = adminLogin;
