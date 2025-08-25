@@ -1,5 +1,5 @@
-// NEUE SUPABASE KONFIGURATION - KOMPLETT NEU GESCHRIEBEN
-// Einfach, robust, funktioniert IMMER
+// VERBESSERTE SUPABASE KONFIGURATION - ROBUSTER FÜR ALLE UMGEBUNGEN
+// Mit besserer Fehlerbehandlung und Debugging
 
 console.log('🔧 Supabase Config wird geladen...');
 
@@ -7,7 +7,7 @@ console.log('🔧 Supabase Config wird geladen...');
 window.supabaseClient = null;
 window.supabaseReady = false;
 
-// EINFACHE Funktion um Supabase Config zu holen
+// Verbesserte Funktion um Supabase Config zu holen
 function getSupabaseCredentials() {
     // ALLE möglichen Quellen prüfen
     let url = null;
@@ -17,7 +17,10 @@ function getSupabaseCredentials() {
     if (window.ENV_VARS?.SUPABASE_URL) {
         url = window.ENV_VARS.SUPABASE_URL;
         key = window.ENV_VARS.SUPABASE_ANON_KEY;
-        console.log('✅ Supabase Config aus window.ENV_VARS gefunden');
+        console.log('✅ Supabase Config aus window.ENV_VARS gefunden:', 
+            url ? url.substring(0, 30) + '...' : 'URL fehlt!', 
+            key ? 'Key vorhanden' : 'KEY FEHLT!'
+        );
     }
     
     // 2. Direkte window Variablen
@@ -128,6 +131,26 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Auch nach kurzer Verzögerung versuchen (für Environment-Variablen die später geladen werden)
+setTimeout(() => {
+    console.log('⏱️ Zeitverzögerte Supabase Initialisierung');
+    tryInitSupabase();
+    
+    // API-Endpunkt neu abfragen
+    fetch('/api/env')
+        .then(response => response.json())
+        .then(data => {
+            console.log('🔄 Neue ENV Daten von Server geladen:', 
+                data.SUPABASE_URL ? 'URL ✓' : 'URL ✗', 
+                data.SUPABASE_ANON_KEY ? 'KEY ✓' : 'KEY ✗'
+            );
+            
+            window.ENV_VARS = data;
+            window.dispatchEvent(new Event('envVarsUpdated'));
+        })
+        .catch(err => {
+            console.warn('⚠️ Konnte /api/env nicht laden:', err.message);
+        });
+}, 1000);
 setTimeout(() => {
     console.log('⏰ Delayed Init - versuche Supabase Init');
     tryInitSupabase();

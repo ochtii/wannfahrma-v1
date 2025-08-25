@@ -513,25 +513,29 @@ app.use((req, res, next) => {
 
 // Environment variables endpoint (safe for frontend)
 app.get('/api/env', (req, res) => {
-    const publicVars = {
-        DEBUG_MODE: process.env.DEBUG_MODE || 'false',
-        ENABLE_USER_AUTH: process.env.ENABLE_USER_AUTH || 'true',
-        ENABLE_ANALYTICS: process.env.ENABLE_ANALYTICS || 'false'
-    };
+    // VERBESSERT: Nutze den EnvLoader für konsistente Werte
+    const publicVars = envLoader.getPublicVars();
     
-    // EINFACH: Schicke Supabase-Werte wenn sie existieren
-    if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
-        publicVars.SUPABASE_URL = process.env.SUPABASE_URL;
-        publicVars.SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-        console.log('✅ Supabase ENV gefunden, sende an Frontend:', {
-            url: process.env.SUPABASE_URL.substring(0, 30) + '...',
-            key: '[ANON_KEY_GESETZT]'
+    // Debug-Informationen hinzufügen
+    console.log('====== DEBUG INFO /api/env ======');
+    console.log('1. envLoader.env enthält:', JSON.stringify(Object.keys(envLoader.env), null, 2));
+    console.log('2. SUPABASE_URL in envLoader:', envLoader.env.SUPABASE_URL ? 'JA' : 'NEIN');
+    console.log('3. SUPABASE_ANON_KEY in envLoader:', envLoader.env.SUPABASE_ANON_KEY ? 'JA' : 'NEIN');
+    console.log('4. process.env enthält SUPABASE_URL:', process.env.SUPABASE_URL ? 'JA' : 'NEIN');
+    console.log('5. process.env enthält SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'JA' : 'NEIN');
+    console.log('6. publicVars enthält:', JSON.stringify(Object.keys(publicVars), null, 2));
+    console.log('7. Werte von publicVars.SUPABASE_URL:', publicVars.SUPABASE_URL);
+    console.log('================================');
+    
+    if (publicVars.SUPABASE_URL && publicVars.SUPABASE_ANON_KEY) {
+        console.log('✅ Supabase ENV gefunden, sende an Frontend:', { 
+            url: publicVars.SUPABASE_URL.substring(0, 30) + '...', 
+            key: '[ANON_KEY_GESETZT]' 
         });
     } else {
-        // Server hat keine Supabase-Werte
+        console.warn('⚠️ Keine Supabase ENV gefunden, sende leere Werte');
         publicVars.SUPABASE_URL = '';
         publicVars.SUPABASE_ANON_KEY = '';
-        console.log('⚠️ Keine Supabase ENV gefunden, sende leere Werte');
     }
     
     res.json(publicVars);
@@ -766,10 +770,8 @@ app.get('/health', (req, res) => {
 });
 
 // API endpoint für Environment-Variablen
-app.get('/api/env', (req, res) => {
-    const publicVars = envLoader.getPublicVars();
-    res.json(publicVars);
-});
+// Remove this duplicate endpoint to avoid confusion
+// The main /api/env endpoint above handles all requests
 
 // SPA Fallback für alle anderen Routen - mit Environment-Variablen injection
 app.get('*', (req, res) => {

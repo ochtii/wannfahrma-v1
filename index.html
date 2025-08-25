@@ -597,7 +597,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.min.js" 
+            integrity="sha256-o4/QXvWpZkggQ7jzZZMdXmIPlEpKPDJNnViMpR5kDUQ=" 
+            crossorigin="anonymous"></script>
     
     <!-- Environment Variables - Inline Fallback für sofortige Verfügbarkeit -->
     <script>
@@ -639,7 +641,12 @@
     
     <!-- Konfiguration laden (nach Environment-Setup) -->
     <script src="config.js"></script>
+    
+    <!-- Supabase laden (mit spezifischer Version) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.min.js"></script>
     <script src="supabase-config.js"></script>
+    
+    <!-- App starten -->
     <script src="app.js"></script>
 </body>
 </html>

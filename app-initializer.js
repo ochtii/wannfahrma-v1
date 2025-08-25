@@ -25,14 +25,25 @@ class AppInitializer {
                 
                 // Versuche vom Server zu laden
                 try {
+                    console.log('🔄 Lade Environment-Variablen vom Server...');
                     const response = await fetch('/api/env');
                     if (response.ok) {
                         const envVars = await response.json();
                         window.ENV_VARS = envVars;
                         console.log('🔧 Environment-Variablen geladen:', Object.keys(envVars));
+                        
+                        // WICHTIG: Event für andere Module triggern
+                        window.dispatchEvent(new Event('envVarsUpdated'));
+                        
+                        // Debug für Supabase
+                        if (envVars.SUPABASE_URL && envVars.SUPABASE_ANON_KEY) {
+                            console.log('✅ Supabase Konfiguration gefunden in ENV:', envVars.SUPABASE_URL.substring(0, 30) + '...');
+                        } else {
+                            console.warn('⚠️ Supabase Konfiguration nicht vollständig in ENV!');
+                        }
                     }
                 } catch (error) {
-                    console.warn('⚠️ Konnte Environment-Variablen nicht laden, nutze Fallback');
+                    console.warn('⚠️ Konnte Environment-Variablen nicht laden, nutze Fallback:', error.message);
                 }
                 
                 // Fallback-Werte setzen

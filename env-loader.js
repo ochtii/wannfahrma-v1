@@ -11,6 +11,7 @@ class EnvLoader {
     constructor() {
         this.env = {};
         this.loadEnvFile();
+        this.loadProcessEnv();
     }
 
     loadEnvFile() {
@@ -38,6 +39,29 @@ class EnvLoader {
         } catch (error) {
             console.error('❌ Fehler beim Laden der .env Datei:', error.message);
         }
+    }
+    
+    // Lädt Werte aus process.env (für server Umgebung)
+    loadProcessEnv() {
+        // Supabase Werte immer aus process.env laden wenn verfügbar
+        if (process.env.SUPABASE_URL) {
+            this.env.SUPABASE_URL = process.env.SUPABASE_URL;
+        }
+        
+        if (process.env.SUPABASE_ANON_KEY) {
+            this.env.SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+        }
+        
+        // Andere wichtige Werte überschreiben
+        if (process.env.API_BASE_URL) {
+            this.env.API_BASE_URL = process.env.API_BASE_URL;
+        }
+        
+        console.log('🔍 Process Env Values loaded:', 
+            Object.keys(process.env)
+                .filter(key => key === 'SUPABASE_URL' || key === 'SUPABASE_ANON_KEY')
+                .map(key => `${key}=${process.env[key] ? '✓' : '✗'}`)
+        );
     }
 
     // Nur sichere (public) Variablen für Frontend
